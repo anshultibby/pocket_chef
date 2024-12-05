@@ -1,0 +1,33 @@
+Frontend:
+src/
+├── app/
+│   ├── page.tsx              # Main page (already modified above)
+│   ├── layout.tsx            # (existing)
+│   └── globals.css           # (existing)
+├── components/
+│   ├── PantryTab.tsx         # New component for pantry management
+│   ├── RecipesTab.tsx        # New component for recipe management
+│   ├── PantryItem.tsx        # Component for displaying individual pantry items
+│   └── RecipeCard.tsx        # Component for displaying individual recipes
+├── types/
+│   └── index.ts              # Type definitions
+└── lib/
+    └── api.ts                # API client functions
+
+
+
+Backend:
+backend/
+├── app/
+│   ├── main.py              # FastAPI application entry point
+│   ├── routers/
+│   │   ├── pantry.py        # Pantry-related endpoints
+│   │   └── recipes.py       # Recipe-related endpoints
+│   ├── models/
+│   │   ├── pantry.py        # Pantry data models
+│   │   └── recipe.py        # Recipe data models
+│   └── services/
+│       ├── receipt_parser.py # Receipt processing service
+│       ├── recipe_generator.py # Recipe generation service
+│       └── claude_service.py # Claude API integration
+└── requirements.txt         # Python dependencies
