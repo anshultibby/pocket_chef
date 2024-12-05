@@ -9,16 +9,18 @@ services:
       - ./frontend:/app
       - /app/node_modules
     environment:
-      - NEXT_PUBLIC_API_URL=http://backend:8000
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
     stdin_open: true
     tty: true
     depends_on:
       - backend
     healthcheck:
-      test: ["CMD", "wget", "--spider", "http://localhost:3000"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 10s
       timeout: 5s
       retries: 3
+    networks:
+      - app-network
 
   backend:
     build: ./backend
@@ -28,8 +30,17 @@ services:
       - ./backend:/app
     environment:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - HOST=0.0.0.0
+      - PORT=8000
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 10s
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health || exit 1"]
+      interval: 5s
       timeout: 5s
-      retries: 3
+      retries: 5
+      start_period: 10s
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

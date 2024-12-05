@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { PantryItem } from '@/types';
+import { pantryApi } from '@/lib/api';
 
 interface PantryTabProps {
   pantryItems: PantryItem[];
@@ -25,23 +26,26 @@ export default function PantryTab({
     setError(null);
 
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const response = await fetch('/api/pantry/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to upload receipt');
-      }
-
-      const items = await response.json();
+      const items = await pantryApi.uploadReceipt(file);
       onAddItems(items);
-    } catch (err) {
-      setError('Failed to process receipt. Please try again.');
-      console.error(err);
+    } catch (err: unknown) {
+      let errorMessage = 'Failed to process receipt';
+      
+      if (err instanceof TypeError && 
+          (err.message.includes('ERR_NAME_NOT_RESOLVED') || 
+           err.message.includes('Failed to fetch'))) {
+        errorMessage = 'Cannot connect to backend service. Please ensure the backend is running.';
+        console.error('Backend connection error:', err);
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
+      console.error('Receipt upload error:', {
+        error: err,
+        type: typeof err,
+        url: 'localhost:8000'
+      });
     } finally {
       setLoading(false);
     }
@@ -79,34 +83,30 @@ export default function PantryTab({
         {pantryItems.map((item) => (
           <div
             key={item.id}
-            className="p-4 border rounded shadow hover:shadow-md transition-shadow"
+            className="p-4 border border-gray-800 rounded shadow hover:shadow-md transition-shadow bg-gray-900"
           >
-            <h3 className="font-semibold">{item.name}</h3>
-            <div className="text-sm text-gray-600 space-y-1">
+            <h3 className="font-semibold text-white">{item.name}</h3>
+            <div className="text-sm text-gray-300 space-y-1">
               <p>Quantity: {item.quantity} {item.unit}</p>
               <p>Category: {item.category}</p>
               <p>Expires: {new Date(item.expiry_date).toLocaleDateString()}</p>
             </div>
             <div className="mt-2 flex justify-end space-x-2">
               <button
-                onClick={() => onUpdateItem(item.id, { 
-                  quantity: item.quantity + 1 
-                })}
-                className="text-blue-600 hover:text-blue-800"
+                onClick={() => onUpdateItem(item.id, { quantity: item.quantity + 1 })}
+                className="text-blue-400 hover:text-blue-300"
               >
                 +
               </button>
               <button
-                onClick={() => onUpdateItem(item.id, { 
-                  quantity: Math.max(0, item.quantity - 1) 
-                })}
-                className="text-blue-600 hover:text-blue-800"
+                onClick={() => onUpdateItem(item.id, { quantity: Math.max(0, item.quantity - 1) })}
+                className="text-blue-400 hover:text-blue-300"
               >
                 -
               </button>
               <button
                 onClick={() => onDeleteItem(item.id)}
-                className="text-red-600 hover:text-red-800"
+                className="text-red-400 hover:text-red-300"
               >
                 Delete
               </button>
@@ -116,7 +116,7 @@ export default function PantryTab({
       </div>
 
       {pantryItems.length === 0 && (
-        <div className="text-center text-gray-500 py-8">
+        <div className="text-center text-gray-400 py-8">
           No items in your pantry. Upload a receipt to get started!
         </div>
       )}

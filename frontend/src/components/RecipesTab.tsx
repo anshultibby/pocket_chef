@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Recipe, PantryItem } from '@/types';
 import RecipeCard from './RecipeCard';
-import { generateRecipes, saveRecipe } from '@/lib/api';
+import { recipeApi } from '@/lib/api';
 
 interface RecipesTabProps {
   pantryItems: PantryItem[];
@@ -36,11 +36,12 @@ export default function RecipesTab({
 
     try {
       const ingredients = pantryItems.map(item => item.name);
-      const recipes = await generateRecipes(ingredients, preferences);
+      const recipes = await recipeApi.generate(ingredients);
       setGeneratedRecipes(recipes);
     } catch (err) {
-      setError('Failed to generate recipes. Please try again.');
-      console.error(err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to generate recipes';
+      setError(`Failed to generate recipes: ${errorMessage}`);
+      console.error('Recipe generation error:', err);
     } finally {
       setLoading(false);
     }
@@ -49,13 +50,13 @@ export default function RecipesTab({
   return (
     <div className="space-y-8">
       {/* Pantry Overview */}
-      <section className="bg-gray-50 p-4 rounded-lg">
-        <h2 className="text-xl font-bold mb-4">Available Ingredients</h2>
+      <section className="bg-gray-900 p-4 rounded-lg border border-gray-800">
+        <h2 className="text-xl font-bold mb-4 text-white">Available Ingredients</h2>
         <div className="flex flex-wrap gap-2">
           {pantryItems.map(item => (
             <span 
               key={item.id}
-              className="bg-white px-3 py-1 rounded-full shadow-sm text-sm"
+              className="bg-gray-800 px-3 py-1 rounded-full shadow-sm text-sm text-gray-100"
             >
               {item.name} ({item.quantity} {item.unit})
             </span>
@@ -64,11 +65,11 @@ export default function RecipesTab({
       </section>
 
       {/* Preferences Section */}
-      <section className="bg-white p-6 rounded-lg shadow-sm">
-        <h2 className="text-xl font-bold mb-4">Recipe Preferences</h2>
+      <section className="bg-gray-900 p-6 rounded-lg shadow-sm border border-gray-800">
+        <h2 className="text-xl font-bold mb-4 text-white">Recipe Preferences</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1">
+            <label className="block text-sm font-medium mb-1 text-gray-300">
               Dietary Restrictions
             </label>
             <select
@@ -77,7 +78,7 @@ export default function RecipesTab({
                 ...prev,
                 dietary_restrictions: e.target.value
               }))}
-              className="w-full border rounded p-2"
+              className="w-full border border-gray-800 rounded p-2 text-white bg-gray-800"
             >
               <option value="">None</option>
               <option value="vegetarian">Vegetarian</option>
@@ -87,7 +88,7 @@ export default function RecipesTab({
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">
+            <label className="block text-sm font-medium mb-1 text-gray-300">
               Cuisine Type
             </label>
             <select
@@ -96,7 +97,7 @@ export default function RecipesTab({
                 ...prev,
                 cuisine_type: e.target.value
               }))}
-              className="w-full border rounded p-2"
+              className="w-full border border-gray-800 rounded p-2 text-white bg-gray-800"
             >
               <option value="">Any</option>
               <option value="italian">Italian</option>
@@ -107,7 +108,7 @@ export default function RecipesTab({
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">
+            <label className="block text-sm font-medium mb-1 text-gray-300">
               Spice Level
             </label>
             <select
@@ -116,7 +117,7 @@ export default function RecipesTab({
                 ...prev,
                 spice_level: e.target.value
               }))}
-              className="w-full border rounded p-2"
+              className="w-full border border-gray-800 rounded p-2 text-white bg-gray-800"
             >
               <option value="">Any</option>
               <option value="mild">Mild</option>
