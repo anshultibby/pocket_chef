@@ -31,7 +31,12 @@ async def add_items(items: List[PantryItemCreate]):
         pantry_item = PantryItem(
             id=str(uuid.uuid4()),
             added_date=datetime.now(),
-            **item.dict()
+            name=item.name,
+            quantity=item.quantity,
+            unit=item.unit,
+            category=item.category,
+            expiry_date=item.expiry_date,
+            notes=item.notes
         )
         pantry_items[pantry_item.id] = pantry_item
         new_items.append(pantry_item)
@@ -39,7 +44,23 @@ async def add_items(items: List[PantryItemCreate]):
 
 @router.get("/items", response_model=List[PantryItem])
 async def get_items():
-    return list(pantry_items.values())
+    # Sort items by category and name for better organization
+    sorted_items = sorted(
+        pantry_items.values(),
+        key=lambda x: (x.category or "Uncategorized", x.name)
+    )
+    
+    # Add some logging for debugging
+    logger.info(f"Returning {len(sorted_items)} pantry items")
+    
+    # Format dates in a more readable way for each item
+    for item in sorted_items:
+        if item.added_date:
+            item.added_date = item.added_date.strftime("%Y-%m-%d %H:%M")
+        if item.expiry_date:
+            item.expiry_date = item.expiry_date.strftime("%Y-%m-%d")
+    
+    return sorted_items
 
 @router.put("/items/{item_id}", response_model=PantryItem)
 async def update_item(item_id: str, item_update: PantryItemUpdate):

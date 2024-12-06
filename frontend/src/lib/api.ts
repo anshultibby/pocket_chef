@@ -30,27 +30,30 @@ async function fetchApi<T>(
 
 // Pantry-related API calls
 export const pantryApi = {
-  uploadReceipt: async (file: File): Promise<PantryItem[]> => {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    return fetchApi<PantryItem[]>('/pantry/upload-receipt', {
+  uploadReceipt: async (formData: FormData): Promise<PantryItem[]> => {
+    const response = await fetch(`${API_BASE_URL}/pantry/upload`, {
       method: 'POST',
-      headers: {}, // Let browser set correct Content-Type for FormData
       body: formData,
     });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to upload receipt');
+    }
+
+    return response.json();
   },
 
   addItems: async (items: Omit<PantryItem, 'id'>[]): Promise<PantryItem[]> => {
     return fetchApi<PantryItem[]>('/pantry/items', {
       method: 'POST',
-      body: JSON.stringify({ items }),
+      body: JSON.stringify(items),
     });
   },
 
   updateItem: async (id: string, updates: Partial<PantryItem>): Promise<PantryItem> => {
     return fetchApi<PantryItem>(`/pantry/items/${id}`, {
-      method: 'PATCH',
+      method: 'PUT',
       body: JSON.stringify(updates),
     });
   },

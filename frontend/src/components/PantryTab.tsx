@@ -26,35 +26,41 @@ export default function PantryTab({
     setError(null);
 
     try {
-      const items = await pantryApi.uploadReceipt(file);
-      onAddItems(items);
-    } catch (err: unknown) {
-      let errorMessage = 'Failed to process receipt';
+      // Create FormData with the exact field name expected by FastAPI
+      const formData = new FormData();
+      formData.append('file', file, file.name); // Include filename
+
+      // Upload the receipt using formData
+      const parsedItems = await pantryApi.uploadReceipt(formData);
       
-      if (err instanceof TypeError && 
-          (err.message.includes('ERR_NAME_NOT_RESOLVED') || 
-           err.message.includes('Failed to fetch'))) {
-        errorMessage = 'Cannot connect to backend service. Please ensure the backend is running.';
-        console.error('Backend connection error:', err);
-      } else if (err instanceof Error) {
-        errorMessage = err.message;
-      }
-      
-      setError(errorMessage);
-      console.error('Receipt upload error:', {
-        error: err,
-        type: typeof err,
-        url: 'localhost:8000'
-      });
+      // Then add the items to the pantry
+      const addedItems = await pantryApi.addItems(parsedItems);
+      onAddItems(addedItems);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to process receipt';
+      setError(message);
+      console.warn('Receipt upload error:', err);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleQuantityChange = async (item: PantryItem, change: number) => {
+    const newQuantity = Math.max(0, item.quantity + change);
+    if (newQuantity === item.quantity) return;
+
+    try {
+      await onUpdateItem(item.id, { quantity: newQuantity });
+    } catch (err) {
+      setError('Failed to update quantity');
+    }
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Upload Section */}
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">My Pantry</h2>
+        <h2 className="text-xl font-semibold text-white">My Pantry</h2>
         <div>
           <input
             type="file"
@@ -66,58 +72,75 @@ export default function PantryTab({
           />
           <label
             htmlFor="receipt-upload"
-            className="bg-blue-600 text-white px-4 py-2 rounded cursor-pointer hover:bg-blue-700"
+            className={`px-4 py-2 rounded cursor-pointer ${
+              loading 
+                ? 'bg-gray-500 text-gray-300' 
+                : 'bg-blue-600 hover:bg-blue-700 text-white'
+            }`}
           >
             {loading ? 'Processing...' : 'Upload Receipt'}
           </label>
         </div>
       </div>
 
+      {/* Error Display */}
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+        <div className="bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded">
           {error}
         </div>
       )}
 
+      {/* Items Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {pantryItems.map((item) => (
           <div
             key={item.id}
-            className="p-4 border border-gray-800 rounded shadow hover:shadow-md transition-shadow bg-gray-900"
+            className="p-4 border border-gray-700 rounded-lg bg-gray-800 hover:bg-gray-750 transition-colors"
           >
-            <h3 className="font-semibold text-white">{item.name}</h3>
-            <div className="text-sm text-gray-300 space-y-1">
-              <p>Quantity: {item.quantity} {item.unit}</p>
-              <p>Category: {item.category}</p>
-              <p>Expires: {new Date(item.expiry_date).toLocaleDateString()}</p>
-            </div>
-            <div className="mt-2 flex justify-end space-x-2">
-              <button
-                onClick={() => onUpdateItem(item.id, { quantity: item.quantity + 1 })}
-                className="text-blue-400 hover:text-blue-300"
-              >
-                +
-              </button>
-              <button
-                onClick={() => onUpdateItem(item.id, { quantity: Math.max(0, item.quantity - 1) })}
-                className="text-blue-400 hover:text-blue-300"
-              >
-                -
-              </button>
-              <button
-                onClick={() => onDeleteItem(item.id)}
-                className="text-red-400 hover:text-red-300"
-              >
-                Delete
-              </button>
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="font-semibold text-white">{item.name}</h3>
+                <div className="text-sm text-gray-300 space-y-1">
+                  <p>
+                    {item.quantity} {item.unit}
+                    {item.category && ` • ${item.category}`}
+                  </p>
+                  {item.expiry_date && (
+                    <p>Expires: {new Date(item.expiry_date).toLocaleDateString()}</p>
+                  )}
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => handleQuantityChange(item, -1)}
+                  className="p-1 text-gray-400 hover:text-white"
+                >
+                  -
+                </button>
+                <button
+                  onClick={() => handleQuantityChange(item, 1)}
+                  className="p-1 text-gray-400 hover:text-white"
+                >
+                  +
+                </button>
+                <button
+                  onClick={() => onDeleteItem(item.id)}
+                  className="p-1 text-red-400 hover:text-red-300"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           </div>
         ))}
       </div>
 
+      {/* Empty State */}
       {pantryItems.length === 0 && (
-        <div className="text-center text-gray-400 py-8">
-          No items in your pantry. Upload a receipt to get started!
+        <div className="text-center py-12 text-gray-400">
+          <p>No items in your pantry.</p>
+          <p className="text-sm">Upload a receipt to get started!</p>
         </div>
       )}
     </div>

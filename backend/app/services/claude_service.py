@@ -6,7 +6,7 @@ import os
 from anthropic import Anthropic
 from fastapi import UploadFile
 
-from ..models import schemas
+from ..models.pantry import PantryItem, PantryItemCreate
 
 # Constants
 MODEL = "claude-3-5-sonnet-20240620"
@@ -48,23 +48,35 @@ class ClaudeService:
             
             # Add image to message if provided
             if image_file:
+                # Ensure file pointer is at start
+                await image_file.seek(0)
                 contents = await image_file.read()
+                
+                if not contents:
+                    raise ValueError("Empty file content")
+                    
                 base64_image = base64.b64encode(contents).decode('utf-8')
                 messages[0]["content"].append({
                     "type": "image",
                     "source": {
                         "type": "base64",
-                        "media_type": "image/jpeg",
+                        "media_type": image_file.content_type or "image/jpeg",
                         "data": base64_image
                     }
                 })
 
-            response = self.anthropic.messages.create(
-                model=MODEL,
-                max_tokens=MAX_TOKENS,
-                system=system_prompt,
-                messages=messages
-            )
+            # Create API request parameters
+            params = {
+                "model": MODEL,
+                "max_tokens": MAX_TOKENS,
+                "messages": messages,
+            }
+
+            # Add system prompt if provided
+            if system_prompt:
+                params["system"] = [{"role": "system", "content": system_prompt}]
+
+            response = self.anthropic.messages.create(**params)
             
             return self._clean_response(response.content[0].text)
             
@@ -82,7 +94,7 @@ class ClaudeService:
         return content.strip()
 
     # Convenience methods for specific use cases
-    async def extract_grocery_items(self, file: UploadFile) -> list[schemas.Item]:
+    async def extract_grocery_items(self, file: UploadFile) -> list[PantryItemCreate]:
         content = await self.chat(
             prompt=RECEIPT_PROMPT,
             image_file=file
@@ -94,7 +106,7 @@ class ClaudeService:
                 item for item in items 
                 if isinstance(item, dict) and 'name' in item and 'quantity' in item and 'unit' in item
             ]
-            return [schemas.Item.from_input(item) for item in validated_items]
+            return [PantryItemCreate(**item) for item in validated_items]
         except Exception as e:
             self.logger.error(f"Error parsing items: {str(e)}")
             return []
