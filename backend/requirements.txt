@@ -4,3 +4,10 @@ python-multipart==0.0.6
 easyocr==1.7.1
 anthropic
 python-dotenv==1.0.0
+supabase==2.3.0
+postgrest==0.13.0
+alembic==1.13.1
+sqlalchemy==2.0.27
+psycopg2-binary==2.9.9
+httpx>=0.24.0
+httpcore>=0.16.0

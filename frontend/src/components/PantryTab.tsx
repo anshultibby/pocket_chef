@@ -65,13 +65,33 @@ export default function PantryTab({
   };
 
   const handleQuantityChange = async (item: PantryItem, change: number) => {
+    console.log('Updating quantity:', item.id, change);
     const newQuantity = Math.max(0, item.quantity + change);
     if (newQuantity === item.quantity) return;
 
     try {
+      // First update the item in the backend
+      await pantryApi.updateItem(item.id, { quantity: newQuantity });
+      // Then update the UI
       await onUpdateItem(item.id, { quantity: newQuantity });
     } catch (err) {
-      setError('Failed to update quantity');
+      const message = err instanceof Error ? err.message : 'Failed to update quantity';
+      setError(message);
+      console.warn('Update quantity error:', err);
+    }
+  };
+
+  const handleDeleteItem = async (itemId: string) => {
+    console.log('Deleting item:', itemId);
+    try {
+      // First delete the item in the backend
+      await pantryApi.deleteItem(itemId);
+      // Then update the UI
+      onDeleteItem(itemId);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to delete item';
+      setError(message);
+      console.warn('Delete item error:', err);
     }
   };
 
@@ -170,29 +190,32 @@ export default function PantryTab({
         </div>
       )}
 
-      {/* Filters */}
+      {/* Category Filters */}
       <div className="flex gap-4 items-center">
         <input
           type="text"
           placeholder="Search items..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="bg-gray-800 rounded px-3 py-1.5 text-sm text-white"
+          className="bg-gray-800 rounded px-3 py-2 text-sm text-white flex-grow"
         />
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {categories.map(category => (
             <button
               key={category}
               onClick={() => setSelectedCategory(
                 selectedCategory === category ? null : category
               )}
-              className={`px-3 py-1 rounded text-sm ${
-                selectedCategory === category
-                  ? 'bg-blue-600 text-white'
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors
+                ${selectedCategory === category
+                  ? 'bg-blue-600 text-white shadow-lg'
                   : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-              }`}
+                }`}
             >
               {category}
+              <span className="ml-2 bg-gray-700 px-2 py-0.5 rounded-full text-xs">
+                {pantryItems.filter(item => item.category === category).length}
+              </span>
             </button>
           ))}
         </div>
@@ -205,39 +228,39 @@ export default function PantryTab({
             <h3 className="text-gray-400 text-sm font-medium">{category}</h3>
             <div className="divide-y divide-gray-700">
               {items.map((item) => (
-                <div
-                  key={item.id}
-                  className="py-2 flex items-center justify-between"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-white text-sm">{item.name}</span>
-                    <span className="text-xs text-gray-400">
-                      • {item.quantity} {item.unit}
-                      {item.expiry_date && 
-                        ` • Expires ${new Date(item.expiry_date).toLocaleDateString()}`
-                      }
-                    </span>
+                <div key={item.id} className="py-3 flex items-center justify-between hover:bg-gray-800/50 rounded px-3 transition-colors">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-white font-medium">{item.name}</span>
+                    <div className="flex gap-2 text-xs text-gray-400">
+                      <span>{item.quantity} {item.unit}</span>
+                      {item.expiry_date && (
+                        <>
+                          <span>•</span>
+                          <span>Expires {new Date(item.expiry_date).toLocaleDateString()}</span>
+                        </>
+                      )}
+                    </div>
                   </div>
                   
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center bg-gray-800 rounded text-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center bg-gray-700 rounded-lg shadow-inner">
                       <button
                         onClick={() => handleQuantityChange(item, -1)}
-                        className="px-2 py-0.5 text-gray-400 hover:text-white"
+                        className="px-3 py-1.5 text-gray-300 hover:text-white hover:bg-gray-600 rounded-l-lg transition-colors"
                       >
                         -
                       </button>
-                      <span className="px-2 text-white">{item.quantity}</span>
+                      <span className="px-3 text-white font-medium">{item.quantity}</span>
                       <button
                         onClick={() => handleQuantityChange(item, 1)}
-                        className="px-2 py-0.5 text-gray-400 hover:text-white"
+                        className="px-3 py-1.5 text-gray-300 hover:text-white hover:bg-gray-600 rounded-r-lg transition-colors"
                       >
                         +
                       </button>
                     </div>
                     <button
-                      onClick={() => onDeleteItem(item.id)}
-                      className="text-xs text-red-400 hover:text-red-300"
+                      onClick={() => handleDeleteItem(item.id)}
+                      className="text-sm text-red-400 hover:text-red-300 hover:underline"
                     >
                       Delete
                     </button>

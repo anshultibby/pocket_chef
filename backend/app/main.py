@@ -1,5 +1,6 @@
 import logging
 import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -37,11 +38,6 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["*"]
 )
-
-@app.on_event("startup")
-async def startup_event():
-    logger.info(f"FastAPI server starting up on {HOST}:{PORT}")
-    logger.info(f"CORS origins configured: {CORS_ORIGINS}")
 
 # Include routers
 app.include_router(pantry.router, prefix="/pantry", tags=["pantry"])

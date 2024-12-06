@@ -52,16 +52,26 @@ export const pantryApi = {
   },
 
   updateItem: async (id: string, updates: Partial<PantryItem>): Promise<PantryItem> => {
-    return fetchApi<PantryItem>(`/pantry/items/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(updates),
-    });
+    try {
+      return await fetchApi<PantryItem>(`/pantry/items/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates),
+      });
+    } catch (error) {
+      console.error('Update item error:', error);
+      throw error; // Re-throw to handle in the component
+    }
   },
 
   deleteItem: async (id: string): Promise<void> => {
-    return fetchApi<void>(`/pantry/items/${id}`, {
-      method: 'DELETE',
-    });
+    try {
+      await fetchApi<void>(`/pantry/items/${id}`, {
+        method: 'DELETE',
+      });
+    } catch (error) {
+      console.error('Delete item error:', error);
+      throw error; // Re-throw to handle in the component
+    }
   },
 
   getItems: async () => {

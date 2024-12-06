@@ -29,6 +29,8 @@ services:
     volumes:
       - ./backend:/app
     environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - HOST=0.0.0.0
       - PORT=8000

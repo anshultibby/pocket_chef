@@ -16,11 +16,12 @@ export default function Home() {
     const loadInitialData = async () => {
       try {
         setConnectionError(null);
-        const [savedRecipesData] = await Promise.all([
+        const [savedRecipesData, pantryItemsData] = await Promise.all([
           recipeApi.getSaved(),
-          // Add other initial data fetches here
+          pantryApi.getItems(),
         ]);
         setSavedRecipes(savedRecipesData);
+        setPantryItems(pantryItemsData);
       } catch (error) {
         const errorMessage = 'Cannot connect to backend service. Please ensure the backend is running.';
         setConnectionError(errorMessage);

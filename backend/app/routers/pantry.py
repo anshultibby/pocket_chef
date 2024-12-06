@@ -27,49 +27,30 @@ logger.addHandler(console_handler)
 async def add_items(items: List[PantryItemCreate]):
     new_items = []
     for item in items:
-        pantry_item = pantry_manager.add_item(item)
+        pantry_item = await pantry_manager.add_item(item)
         new_items.append(pantry_item)
     return new_items
 
 @router.get("/items", response_model=List[PantryItem])
 async def get_items():
-    # Sort items by category and name for better organization
-    sorted_items = sorted(
-        pantry_manager.get_items(),
-        key=lambda x: (x.category or "Uncategorized", x.name)
-    )
-    
-    # Add some logging for debugging
-    logger.info(f"Returning {len(sorted_items)} pantry items")
-    
-    # Format dates in a more readable way for each item
-    for item in sorted_items:
-        if item.added_date:
-            item.added_date = item.added_date.strftime("%Y-%m-%d %H:%M")
-        if item.expiry_date:
-            item.expiry_date = item.expiry_date.strftime("%Y-%m-%d")
-    
-    return sorted_items
+    return await pantry_manager.get_items()
 
 @router.put("/items/{item_id}", response_model=PantryItem)
 async def update_item(item_id: str, item_update: PantryItemUpdate):
-    if item_id not in pantry_manager.get_items():
+    current_item = await pantry_manager.get_item(item_id)
+    if not current_item:
         raise HTTPException(status_code=404, detail="Item not found")
     
-    current_item = pantry_manager.get_item(item_id)
-    update_data = item_update.dict(exclude_unset=True)
-    
-    for field, value in update_data.items():
-        setattr(current_item, field, value)
-    
-    return current_item
+    updated_item = await pantry_manager.update_item(item_id, item_update)
+    return updated_item
 
 @router.delete("/items/{item_id}")
 async def delete_item(item_id: str):
-    if item_id not in pantry_manager.get_items():
+    current_item = await pantry_manager.get_item(item_id)
+    if not current_item:
         raise HTTPException(status_code=404, detail="Item not found")
     
-    pantry_manager.delete_item(item_id)
+    await pantry_manager.delete_item(item_id)
     return {"message": "Item deleted"}
 
 @router.post("/upload", response_model=List[PantryItemCreate])
@@ -89,8 +70,3 @@ async def upload_receipt(file: UploadFile = File(...)):
             status_code=500,
             detail=f"Error processing receipt: {str(e)}"
         )
-
-@router.delete("/clear")
-async def clear_pantry():
-    pantry_manager.clear()
-    return {"message": "Pantry cleared"}

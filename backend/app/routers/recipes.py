@@ -20,7 +20,8 @@ async def generate_recipes(request: RecipeCreate):
         all_ingredients = set(request.ingredients)  # Convert to set to remove duplicates
         
         # Add pantry items to available ingredients
-        for item in pantry_manager.get_items():
+        pantry_items = await pantry_manager.get_items()
+        for item in pantry_items:
             all_ingredients.add(f"{item.name} ({item.quantity} {item.unit})")
         
         # Create a prompt from all available ingredients and preferences
@@ -28,7 +29,7 @@ async def generate_recipes(request: RecipeCreate):
         prompt += "Specified ingredients: " + ", ".join(request.ingredients) + "\n"
         prompt += "Pantry ingredients: " + ", ".join(
             f"{item.name} ({item.quantity} {item.unit})" 
-            for item in pantry_manager.get_items()
+            for item in pantry_items
         ) + "\n"
         
         if request.preferences:
@@ -46,11 +47,17 @@ async def generate_recipes(request: RecipeCreate):
 
 @router.post("/save", response_model=Recipe)
 async def save_recipe(recipe: Recipe):
-    return recipe_manager.save_recipe(recipe)
+    try:
+        return await recipe_manager.save_recipe(recipe)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to save recipe: {str(e)}")
 
 @router.get("/saved", response_model=List[Recipe])
 async def get_saved_recipes():
-    return recipe_manager.get_saved_recipes()
+    try:
+        return await recipe_manager.get_saved_recipes()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to fetch saved recipes: {str(e)}")
 
 @router.delete("/saved/{recipe_id}")
 async def delete_saved_recipe(recipe_id: str):
