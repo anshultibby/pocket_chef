@@ -6,10 +6,12 @@ from typing import List
 from fastapi import APIRouter, File, HTTPException, UploadFile
 
 from ..models.pantry import PantryItem, PantryItemCreate, PantryItemUpdate
+from ..services.pantry import get_pantry_manager
 from ..services.receipt_parser import ReceiptParser
 
 router = APIRouter()
 receipt_parser = ReceiptParser()
+pantry_manager = get_pantry_manager()
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -21,24 +23,11 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
-# In-memory storage (replace with database in production)
-pantry_items = {}
-
 @router.post("/items", response_model=List[PantryItem])
 async def add_items(items: List[PantryItemCreate]):
     new_items = []
     for item in items:
-        pantry_item = PantryItem(
-            id=str(uuid.uuid4()),
-            added_date=datetime.now(),
-            name=item.name,
-            quantity=item.quantity,
-            unit=item.unit,
-            category=item.category,
-            expiry_date=item.expiry_date,
-            notes=item.notes
-        )
-        pantry_items[pantry_item.id] = pantry_item
+        pantry_item = pantry_manager.add_item(item)
         new_items.append(pantry_item)
     return new_items
 
@@ -46,7 +35,7 @@ async def add_items(items: List[PantryItemCreate]):
 async def get_items():
     # Sort items by category and name for better organization
     sorted_items = sorted(
-        pantry_items.values(),
+        pantry_manager.get_items(),
         key=lambda x: (x.category or "Uncategorized", x.name)
     )
     
@@ -64,10 +53,10 @@ async def get_items():
 
 @router.put("/items/{item_id}", response_model=PantryItem)
 async def update_item(item_id: str, item_update: PantryItemUpdate):
-    if item_id not in pantry_items:
+    if item_id not in pantry_manager.get_items():
         raise HTTPException(status_code=404, detail="Item not found")
     
-    current_item = pantry_items[item_id]
+    current_item = pantry_manager.get_item(item_id)
     update_data = item_update.dict(exclude_unset=True)
     
     for field, value in update_data.items():
@@ -77,10 +66,10 @@ async def update_item(item_id: str, item_update: PantryItemUpdate):
 
 @router.delete("/items/{item_id}")
 async def delete_item(item_id: str):
-    if item_id not in pantry_items:
+    if item_id not in pantry_manager.get_items():
         raise HTTPException(status_code=404, detail="Item not found")
     
-    del pantry_items[item_id]
+    pantry_manager.delete_item(item_id)
     return {"message": "Item deleted"}
 
 @router.post("/upload", response_model=List[PantryItemCreate])
@@ -100,3 +89,8 @@ async def upload_receipt(file: UploadFile = File(...)):
             status_code=500,
             detail=f"Error processing receipt: {str(e)}"
         )
+
+@router.delete("/clear")
+async def clear_pantry():
+    pantry_manager.clear()
+    return {"message": "Pantry cleared"}

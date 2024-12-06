@@ -8,12 +8,12 @@ interface RecipeCardProps {
 
 export default function RecipeCard({ recipe, onSave, onRemove }: RecipeCardProps) {
   return (
-    <div className="border rounded-lg p-6 bg-white shadow-sm">
-      <h3 className="text-xl font-bold mb-4">{recipe.name}</h3>
+    <div className="border border-gray-700 rounded-lg p-6 bg-gray-800 shadow-sm text-gray-100">
+      <h3 className="text-xl font-bold mb-4 text-white">{recipe.name}</h3>
       
       <div className="space-y-4">
         <div>
-          <h4 className="font-semibold mb-2">Ingredients:</h4>
+          <h4 className="font-semibold mb-2 text-gray-200">Ingredients:</h4>
           <ul className="list-disc pl-5">
             {recipe.ingredients.map((ingredient, index) => (
               <li key={index}>{ingredient}</li>
@@ -22,7 +22,7 @@ export default function RecipeCard({ recipe, onSave, onRemove }: RecipeCardProps
         </div>
 
         <div>
-          <h4 className="font-semibold mb-2">Instructions:</h4>
+          <h4 className="font-semibold mb-2 text-gray-200">Instructions:</h4>
           <ol className="list-decimal pl-5">
             {recipe.instructions.map((step, index) => (
               <li key={index}>{step}</li>
@@ -31,8 +31,8 @@ export default function RecipeCard({ recipe, onSave, onRemove }: RecipeCardProps
         </div>
 
         {recipe.nutritionalInfo && (
-          <div className="bg-gray-50 p-4 rounded">
-            <h4 className="font-semibold mb-2">Nutritional Information:</h4>
+          <div className="bg-gray-700 p-4 rounded">
+            <h4 className="font-semibold mb-2 text-gray-200">Nutritional Information:</h4>
             <div className="grid grid-cols-2 gap-2 text-sm">
               <p>Calories: {recipe.nutritionalInfo.calories}</p>
               <p>Protein: {recipe.nutritionalInfo.protein}g</p>
@@ -43,7 +43,7 @@ export default function RecipeCard({ recipe, onSave, onRemove }: RecipeCardProps
         )}
 
         <div className="flex justify-between items-center pt-4">
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-gray-300">
             {recipe.preparationTime && <span>Prep time: {recipe.preparationTime}</span>}
             {recipe.difficulty && <span className="ml-4">Difficulty: {recipe.difficulty}</span>}
           </div>

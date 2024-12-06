@@ -63,6 +63,18 @@ export const pantryApi = {
       method: 'DELETE',
     });
   },
+
+  getItems: async () => {
+    const response = await fetch(`${API_BASE_URL}/pantry/items`);
+    if (!response.ok) throw new Error('Failed to fetch pantry items');
+    return response.json();
+  },
+
+  clearPantry: async (): Promise<void> => {
+    return fetchApi<void>('/pantry/clear', {
+      method: 'DELETE',
+    });
+  },
 };
 
 // Recipe-related API calls

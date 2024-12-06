@@ -34,7 +34,29 @@ Example response:
 
 Keep responses concise and ensure JSON is complete."""
 
-RECIPE_SYSTEM_PROMPT = "You are a helpful assistant that creates recipes from available ingredients. Return recipes in JSON format."
+RECIPE_SYSTEM_PROMPT = """You are a helpful assistant that creates recipes from available ingredients. 
+Return recipes in JSON format as an array of objects with the following structure:
+{
+    "id": "unique-string-id",
+    "name": "Recipe Name",
+    "ingredients": ["ingredient 1", "ingredient 2"],
+    "instructions": ["step 1", "step 2"],
+    "preparationTime": "30 minutes",
+    "difficulty": "Easy",
+    "nutritionalInfo": {
+        "calories": 500,
+        "protein": 20.5,
+        "carbs": 30.5,
+        "fat": 15.5
+    }
+}
+
+Important:
+- All fields are required
+- nutritionalInfo must always be included with realistic values
+- Use camelCase for all field names
+- Calories should be whole numbers
+- Protein, carbs, and fat should be in grams with up to 1 decimal place"""
 
 class ClaudeService:
     def __init__(self):
@@ -74,7 +96,7 @@ class ClaudeService:
 
             # Add system prompt if provided
             if system_prompt:
-                params["system"] = [{"role": "system", "content": system_prompt}]
+                params["system"] = system_prompt
 
             response = self.anthropic.messages.create(**params)
             
@@ -85,13 +107,25 @@ class ClaudeService:
             raise
 
     def _clean_response(self, content: str) -> str:
-        """Clean up JSON response from Claude"""
-        content = content.replace('\n', ' ').strip()
-        if content.startswith('```json'):
-            content = content[7:]
-        if content.endswith('```'):
-            content = content[:-3]
-        return content.strip()
+        """Clean up JSON response from Claude by finding the JSON array"""
+        try:
+            # Find the first array
+            start = content.find('[')
+            end = content.rfind(']')
+            
+            if start == -1 or end == -1:
+                raise ValueError("No JSON array found in response")
+                
+            content = content[start:end + 1]
+            
+            # Validate JSON structure
+            json.loads(content)  # Test if parseable
+            return content
+            
+        except Exception as e:
+            self.logger.error(f"Error cleaning response: {content}")
+            self.logger.error(f"Clean response error details: {str(e)}")
+            raise
 
     # Convenience methods for specific use cases
     async def extract_grocery_items(self, file: UploadFile) -> list[PantryItemCreate]:
@@ -112,7 +146,8 @@ class ClaudeService:
             return []
 
     async def get_recipes(self, prompt: str) -> str:
+        full_prompt = prompt + "\n\nEnsure each recipe has a unique ID and ingredients are simple strings, not objects."
         return await self.chat(
-            prompt=prompt,
+            prompt=full_prompt,
             system_prompt=RECIPE_SYSTEM_PROMPT
         )

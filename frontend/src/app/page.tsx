@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { PantryItem, Recipe } from '@/types';
 import PantryTab from '@/components/PantryTab';
 import RecipesTab from '@/components/RecipesTab';
@@ -89,6 +89,10 @@ export default function Home() {
     }
   };
 
+  const onAddItems = useCallback((items: PantryItem[]) => {
+    setPantryItems(items);
+  }, []);
+
   return (
     <main className="min-h-screen p-8 max-w-7xl mx-auto bg-black text-white">
       <h1 className="text-3xl font-bold mb-8 text-white">Smart Kitchen Assistant</h1>
@@ -119,7 +123,7 @@ export default function Home() {
       {activeTab === 'pantry' ? (
         <PantryTab
           pantryItems={pantryItems}
-          onAddItems={handleAddPantryItems}
+          onAddItems={onAddItems}
           onUpdateItem={handleUpdatePantryItem}
           onDeleteItem={handleDeletePantryItem}
         />
