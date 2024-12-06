@@ -1,126 +1,106 @@
-from anthropic import Anthropic
-import os
-from ..models import schemas
+import base64
 import json
 import logging
-import base64
+import os
+
+from anthropic import Anthropic
 from fastapi import UploadFile
 
-# Constants for token limits and configuration
-MAX_TOKENS = 4096  # Increased from 1024
-CHUNK_SIZE = 2000
+from ..models import schemas
+
+# Constants
 MODEL = "claude-3-5-sonnet-20240620"
+MAX_TOKENS = 4096
+
+# Predefined prompts
+RECEIPT_PROMPT = """Look at this receipt image and extract all grocery items.
+Return ONLY a JSON array where each item has:
+- name: product name only (required)
+- quantity: numeric amount (required)
+- unit: unit of measurement (e.g., pieces, kg, g, lb) (required)
+- category: type of food (e.g., produce, dairy, meat, pantry)
+- notes: any additional information
+
+Example response:
+[
+    {
+        "name": "Milk",
+        "quantity": 1,
+        "unit": "gallon",
+        "category": "dairy",
+        "notes": "organic"
+    }
+]
+
+Keep responses concise and ensure JSON is complete."""
+
+RECIPE_SYSTEM_PROMPT = "You are a helpful assistant that creates recipes from available ingredients. Return recipes in JSON format."
 
 class ClaudeService:
     def __init__(self):
         self.anthropic = Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
         self.logger = logging.getLogger(__name__)
 
-    async def extract_items(self, file: UploadFile, prompt: str) -> list[schemas.Item]:
-        contents = await file.read()
-        base64_image = base64.b64encode(contents).decode('utf-8')
-        
-        response = self.anthropic.messages.create(
-            model=MODEL,
-            max_tokens=MAX_TOKENS,  # Increased token limit
-            system="You are a helpful assistant that extracts grocery items from receipt images. Always respond with a valid JSON array of items.",
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": """Look at this receipt image and extract all grocery items.
-                            Return ONLY a JSON array where each item has:
-                            - name: product name only (required)
-                            - price: numeric price (required)
-                            - quantity: default to 1
-                            - shelf_life_days: estimate (7 for fresh, 90 for packaged, 180 for frozen)
-                            
-                            Keep responses concise and ensure JSON is complete.
-                            Format example:
-                            [
-                                {
-                                    "name": "Rice Noodle Mushroom",
-                                    "price": 0.99,
-                                    "quantity": 1,
-                                    "shelf_life_days": 90
-                                }
-                            ]"""
-                        },
-                        {
-                            "type": "image",
-                            "source": {
-                                "type": "base64",
-                                "media_type": "image/jpeg",
-                                "data": base64_image
-                            }
-                        }
-                    ]
-                }
-            ]
-        )
-        
+    async def chat(self, prompt: str, system_prompt: str = None, image_file: UploadFile = None):
+        """Generic method to chat with Claude, with optional image support"""
         try:
-            content = response.content[0].text.strip()
-            # Clean up common JSON formatting issues
-            content = content.replace('\n', ' ').strip()
-            if content.startswith('```json'):
-                content = content[7:]
-            if content.endswith('```'):
-                content = content[:-3]
-            content = content.strip()
+            messages = [{"role": "user", "content": [{"type": "text", "text": prompt}]}]
             
-            self.logger.info(f"Claude response length: {len(content)}")
-            
-            items = json.loads(content)
-            # Validate items before converting
-            validated_items = [
-                item for item in items 
-                if isinstance(item, dict) and 'name' in item and 'price' in item
-            ]
-            
-            return [schemas.Item.from_input(item) for item in validated_items]
-        except Exception as e:
-            self.logger.error(f"Error parsing response: {str(e)}")
-            self.logger.error(f"Raw response: {content}")
-            return []
+            # Add image to message if provided
+            if image_file:
+                contents = await image_file.read()
+                base64_image = base64.b64encode(contents).decode('utf-8')
+                messages[0]["content"].append({
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": "image/jpeg",
+                        "data": base64_image
+                    }
+                })
 
-    async def get_completion(self, prompt: str) -> str:
-        """Generic completion function for getting responses from Claude"""
-        try:
             response = self.anthropic.messages.create(
                 model=MODEL,
                 max_tokens=MAX_TOKENS,
-                system="You are a helpful assistant that creates recipes from available ingredients. Return recipes in JSON format.",
-                messages=[
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ]
+                system=system_prompt,
+                messages=messages
             )
             
-            content = response.content[0].text.strip()
+            return self._clean_response(response.content[0].text)
             
-            # Clean up JSON formatting
-            content = content.replace('\n', ' ').strip()
-            if content.startswith('```json'):
-                content = content[7:]
-            if content.endswith('```'):
-                content = content[:-3]
-            content = content.strip()
-            
-            # Validate JSON by parsing it (will raise exception if invalid)
-            json.loads(content)
-            
-            self.logger.info(f"Successfully generated response of length: {len(content)}")
-            return content
-            
-        except json.JSONDecodeError as e:
-            self.logger.error(f"JSON parsing error: {str(e)}")
-            self.logger.error(f"Raw response content: {content}")
-            raise
         except Exception as e:
-            self.logger.error(f"Error in get_completion: {str(e)}")
+            self.logger.error(f"Error in chat: {str(e)}")
             raise
+
+    def _clean_response(self, content: str) -> str:
+        """Clean up JSON response from Claude"""
+        content = content.replace('\n', ' ').strip()
+        if content.startswith('```json'):
+            content = content[7:]
+        if content.endswith('```'):
+            content = content[:-3]
+        return content.strip()
+
+    # Convenience methods for specific use cases
+    async def extract_grocery_items(self, file: UploadFile) -> list[schemas.Item]:
+        content = await self.chat(
+            prompt=RECEIPT_PROMPT,
+            image_file=file
+        )
+        
+        try:
+            items = json.loads(content)
+            validated_items = [
+                item for item in items 
+                if isinstance(item, dict) and 'name' in item and 'quantity' in item and 'unit' in item
+            ]
+            return [schemas.Item.from_input(item) for item in validated_items]
+        except Exception as e:
+            self.logger.error(f"Error parsing items: {str(e)}")
+            return []
+
+    async def get_recipes(self, prompt: str) -> str:
+        return await self.chat(
+            prompt=prompt,
+            system_prompt=RECIPE_SYSTEM_PROMPT
+        )
