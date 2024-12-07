@@ -124,7 +124,7 @@ export default function PantryTab({
   const handleAddItem = async (item: PantryItemCreate) => {
     try {
       const addedItems = await pantryApi.addItems([item]);
-      onAddItems(addedItems);
+      onAddItems([...pantryItems, ...addedItems]);
       setShowAddItemForm(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to add item';
@@ -255,6 +255,106 @@ export default function PantryTab({
       </div>
     </div>
   );
+
+  const AddItemModal = ({ onClose, onAdd }: {
+    onClose: () => void;
+    onAdd: (item: PantryItemCreate) => void;
+  }) => {
+    const [newItem, setNewItem] = useState<PantryItemCreate>({
+      name: '',
+      quantity: 1,
+      unit: '',
+      category: '',
+      expiry_date: null,
+      notes: ''
+    });
+
+    return (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md space-y-4">
+          <h3 className="text-lg font-medium text-white">Add New Item</h3>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm text-gray-400">Name</label>
+              <input
+                type="text"
+                value={newItem.name}
+                onChange={(e) => setNewItem(prev => ({ ...prev, name: e.target.value }))}
+                className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm text-gray-400">Quantity</label>
+                <input
+                  type="number"
+                  value={newItem.quantity}
+                  onChange={(e) => setNewItem(prev => ({ ...prev, quantity: parseFloat(e.target.value) }))}
+                  className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-sm text-gray-400">Unit</label>
+                <input
+                  type="text"
+                  value={newItem.unit}
+                  onChange={(e) => setNewItem(prev => ({ ...prev, unit: e.target.value }))}
+                  className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm text-gray-400">Category</label>
+              <input
+                type="text"
+                value={newItem.category}
+                onChange={(e) => setNewItem(prev => ({ ...prev, category: e.target.value }))}
+                className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm text-gray-400">Expiry Date</label>
+              <input
+                type="date"
+                value={newItem.expiry_date ? new Date(newItem.expiry_date).toISOString().split('T')[0] : ''}
+                onChange={(e) => setNewItem(prev => ({ ...prev, expiry_date: e.target.value ? new Date(e.target.value) : null }))}
+                className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm text-gray-400">Notes</label>
+              <textarea
+                value={newItem.notes || ''}
+                onChange={(e) => setNewItem(prev => ({ ...prev, notes: e.target.value }))}
+                className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 rounded-lg bg-gray-700/50 text-gray-300 hover:bg-gray-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => onAdd(newItem)}
+              className="px-4 py-2 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 transition-colors"
+            >
+              Add Item
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -394,9 +494,9 @@ export default function PantryTab({
       )}
 
       {showAddItemForm && (
-        <AddItemForm
-          onSubmit={handleAddItem}
-          onCancel={() => setShowAddItemForm(false)}
+        <AddItemModal
+          onAdd={handleAddItem}
+          onClose={() => setShowAddItemForm(false)}
         />
       )}
 
