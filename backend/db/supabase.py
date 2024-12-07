@@ -4,7 +4,10 @@ from typing import Optional
 from dotenv import load_dotenv
 from supabase import Client, create_client
 
+
 load_dotenv()
+api_url = getenv("SUPABASE_URL")
+api_key = getenv("SUPABASE_KEY")
 
 class SupabaseService:
     def __init__(self):
@@ -26,8 +29,6 @@ class SupabaseService:
 
     def table(self, table_name: str):
         """Get a table reference with initialized client"""
-        if self.client is None:
-            self.initialize()
         return self.client.table(table_name)
 
     def from_(self, table_name: str):

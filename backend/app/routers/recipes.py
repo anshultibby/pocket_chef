@@ -14,13 +14,13 @@ recipe_manager = get_recipe_manager()
 pantry_manager = get_pantry_manager()
 
 @router.post("/generate", response_model=List[Recipe])
-async def generate_recipes(request: RecipeCreate):
+def generate_recipes(request: RecipeCreate):
     try:
         # Get all available ingredients from both the request and pantry
         all_ingredients = set(request.ingredients)  # Convert to set to remove duplicates
         
         # Add pantry items to available ingredients
-        pantry_items = await pantry_manager.get_items()
+        pantry_items = pantry_manager.get_items()
         for item in pantry_items:
             all_ingredients.add(f"{item.name} ({item.quantity} {item.unit})")
         
@@ -35,7 +35,7 @@ async def generate_recipes(request: RecipeCreate):
         if request.preferences:
             prompt += f"Consider these preferences: {request.preferences}"
         
-        recipes_json = await claude_service.get_recipes(prompt)
+        recipes_json = claude_service.get_recipes(prompt)
         recipes_data = json.loads(recipes_json)
         
         # Convert the JSON data to Recipe objects
@@ -46,21 +46,21 @@ async def generate_recipes(request: RecipeCreate):
         raise HTTPException(status_code=400, detail=f"Failed to generate recipes: {str(e)}")
 
 @router.post("/save", response_model=Recipe)
-async def save_recipe(recipe: Recipe):
+def save_recipe(recipe: Recipe):
     try:
-        return await recipe_manager.save_recipe(recipe)
+        return recipe_manager.save_recipe(recipe)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to save recipe: {str(e)}")
 
 @router.get("/saved", response_model=List[Recipe])
-async def get_saved_recipes():
+def get_saved_recipes():
     try:
-        return await recipe_manager.get_saved_recipes()
+        return recipe_manager.get_saved_recipes()
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to fetch saved recipes: {str(e)}")
 
 @router.delete("/saved/{recipe_id}")
-async def delete_saved_recipe(recipe_id: str):
+def delete_saved_recipe(recipe_id: str):
     if not recipe_manager.remove_saved_recipe(recipe_id):
         raise HTTPException(status_code=404, detail="Recipe not found")
     return {"message": "Recipe deleted"}

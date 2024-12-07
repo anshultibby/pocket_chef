@@ -24,33 +24,33 @@ console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
 @router.post("/items", response_model=List[PantryItem])
-async def add_items(items: List[PantryItemCreate]):
+def add_items(items: List[PantryItemCreate]):
     new_items = []
     for item in items:
-        pantry_item = await pantry_manager.add_item(item)
+        pantry_item = pantry_manager.add_item(item)
         new_items.append(pantry_item)
     return new_items
 
 @router.get("/items", response_model=List[PantryItem])
-async def get_items():
-    return await pantry_manager.get_items()
+def get_items():
+    return pantry_manager.get_items()
 
 @router.put("/items/{item_id}", response_model=PantryItem)
-async def update_item(item_id: str, item_update: PantryItemUpdate):
-    current_item = await pantry_manager.get_item(item_id)
+def update_item(item_id: str, item_update: PantryItemUpdate):
+    current_item = pantry_manager.get_item(item_id)
     if not current_item:
         raise HTTPException(status_code=404, detail="Item not found")
     
-    updated_item = await pantry_manager.update_item(item_id, item_update)
+    updated_item = pantry_manager.update_item(item_id, item_update)
     return updated_item
 
 @router.delete("/items/{item_id}")
-async def delete_item(item_id: str):
-    current_item = await pantry_manager.get_item(item_id)
+def delete_item(item_id: str):
+    current_item = pantry_manager.get_item(item_id)
     if not current_item:
         raise HTTPException(status_code=404, detail="Item not found")
     
-    await pantry_manager.delete_item(item_id)
+    pantry_manager.delete_item(item_id)
     return {"message": "Item deleted"}
 
 @router.post("/upload", response_model=List[PantryItemCreate])
