@@ -43,6 +43,12 @@ class PantryManager:
         result = supabase.table(self.table).delete().eq("id", item_id).execute()
         return len(result.data) > 0  # Return True if we deleted something
 
+    def clear_pantry(self) -> bool:
+        supabase = get_supabase()
+        # Delete all rows by using a condition that's always true
+        result = supabase.table(self.table).delete().not_.is_("id", "null").execute()
+        return len(result.data) > 0
+
 # Create a singleton instance
 _pantry_manager = PantryManager()
 

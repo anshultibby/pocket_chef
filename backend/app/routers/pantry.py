@@ -68,3 +68,12 @@ async def upload_receipt(file: UploadFile = File(...)):
             status_code=500,
             detail=f"Error processing receipt: {str(e)}"
         )
+
+@router.delete("/items")
+def clear_pantry():
+    try:
+        pantry_manager.clear_pantry()
+        return {"message": "Pantry cleared"}
+    except Exception as e:
+        logger.error(f"Error clearing pantry: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to clear pantry")

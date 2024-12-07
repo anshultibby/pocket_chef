@@ -80,10 +80,14 @@ export const pantryApi = {
     return response.json();
   },
 
-  clearPantry: async (): Promise<void> => {
-    return fetchApi<void>('/pantry/clear', {
+  clearPantry: async () => {
+    const response = await fetch(`${API_BASE_URL}/pantry/items`, {
       method: 'DELETE',
     });
+    if (!response.ok) {
+      throw new Error('Failed to clear pantry');
+    }
+    return true;
   },
 };
 

@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { PantryItem } from '@/types';
 import { pantryApi } from '@/lib/api';
+import AddItemForm from '@/components/AddItemForm';
+import ReceiptConfirmation from '@/components/ReceiptConfirmation';
 
 interface PantryTabProps {
   pantryItems: PantryItem[];
@@ -19,6 +21,11 @@ export default function PantryTab({
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showAddItemForm, setShowAddItemForm] = useState(false);
+  const [pendingItems, setPendingItems] = useState<PantryItemCreate[]>([]);
+  const [showReceiptConfirmation, setShowReceiptConfirmation] = useState(false);
+  const [receiptImage, setReceiptImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (pantryItems.length === 0) {
@@ -45,51 +52,49 @@ export default function PantryTab({
     setError(null);
 
     try {
-      // Create FormData with the exact field name expected by FastAPI
-      const formData = new FormData();
-      formData.append('file', file, file.name); // Include filename
+      const imageUrl = URL.createObjectURL(file);
+      setReceiptImage(imageUrl);
 
-      // Upload the receipt using formData
+      const formData = new FormData();
+      formData.append('file', file, file.name);
+
+      console.log('Uploading file:', file.name);
       const parsedItems = await pantryApi.uploadReceipt(formData);
-      
-      // Then add the items to the pantry
-      const addedItems = await pantryApi.addItems(parsedItems);
-      onAddItems(addedItems);
+      console.log('Parsed items:', parsedItems);
+
+      setPendingItems(parsedItems);
+      setShowReceiptConfirmation(true);
     } catch (err) {
+      if (receiptImage) {
+        URL.revokeObjectURL(receiptImage);
+        setReceiptImage(null);
+      }
       const message = err instanceof Error ? err.message : 'Failed to process receipt';
       setError(message);
-      console.warn('Receipt upload error:', err);
+      console.error('Upload error:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleQuantityChange = async (item: PantryItem, change: number) => {
-    console.log('Updating quantity:', item.id, change);
-    const newQuantity = Math.max(0, item.quantity + change);
-    if (newQuantity === item.quantity) return;
-
+  const handleItemUpdate = async (item: PantryItem, updates: Partial<PantryItem>) => {
     try {
-      // First update the item in the backend
-      await pantryApi.updateItem(item.id, { quantity: newQuantity });
-      // Then update the UI
-      await onUpdateItem(item.id, { quantity: newQuantity });
+      await pantryApi.updateItem(item.id, updates);
+      await onUpdateItem(item.id, updates);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to update quantity';
+      const message = err instanceof Error ? err.message : 'Failed to update item';
       setError(message);
-      console.warn('Update quantity error:', err);
+      console.warn('Update item error:', err);
     }
   };
 
   const handleDeleteItem = async (itemId: string) => {
     console.log('Starting delete for item:', itemId);
     try {
-      // First delete the item in the backend
       console.log('Calling backend delete...');
       await pantryApi.deleteItem(itemId);
       console.log('Backend delete successful');
       
-      // Then update the UI
       console.log('Updating UI...');
       onDeleteItem(itemId);
       console.log('UI update complete');
@@ -107,7 +112,7 @@ export default function PantryTab({
 
     try {
       await pantryApi.clearPantry();
-      onAddItems([]); // Clear the items in the UI
+      onAddItems([]);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to clear pantry';
       setError(message);
@@ -115,7 +120,38 @@ export default function PantryTab({
     }
   };
 
-  // Group and filter items
+  const handleAddItem = async (item: PantryItemCreate) => {
+    try {
+      const addedItems = await pantryApi.addItems([item]);
+      onAddItems(addedItems);
+      setShowAddItemForm(false);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to add item';
+      setError(message);
+    }
+  };
+
+  const handleConfirmReceiptItems = async (confirmedItems: PantryItemCreate[]) => {
+    try {
+      const addedItems = await pantryApi.addItems(confirmedItems);
+      onAddItems(addedItems);
+      setShowReceiptConfirmation(false);
+      setPendingItems([]);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to add items';
+      setError(message);
+    }
+  };
+
+  const handleCloseConfirmation = () => {
+    if (receiptImage) {
+      URL.revokeObjectURL(receiptImage);
+      setReceiptImage(null);
+    }
+    setShowReceiptConfirmation(false);
+    setPendingItems([]);
+  };
+
   const groupedItems = pantryItems
     .filter(item => {
       const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -129,147 +165,134 @@ export default function PantryTab({
       return groups;
     }, {} as Record<string, PantryItem[]>);
 
-  // Get unique categories for filter
   const categories = Array.from(new Set(pantryItems.map(item => item.category)));
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
 
   return (
     <div className="space-y-6">
-      {/* Upload Section */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col gap-4">
         <h2 className="text-xl font-semibold text-white">My Pantry</h2>
-        <div className="flex gap-2">
+        
+        <div className="relative max-w-2xl mx-auto w-full">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+          <input
+            type="text"
+            placeholder="Search items..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="bg-gray-800/50 rounded-lg px-10 py-3 text-white w-full focus:ring-2 ring-blue-500 focus:outline-none"
+          />
+        </div>
+
+        <div className="flex justify-center gap-4">
+          <button
+            onClick={() => setShowAddItemForm(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600/20 hover:bg-green-600/30 text-green-400 transition-colors"
+          >
+            <span>+</span>
+            Add Item
+          </button>
+          
           <input
             type="file"
             accept="image/*"
             onChange={handleFileUpload}
             className="hidden"
-            id="receipt-upload"
-            disabled={loading}
+            ref={fileInputRef}
           />
-          <label
-            htmlFor="receipt-upload"
-            className={`px-4 py-2 rounded cursor-pointer flex items-center gap-2 ${
+          <button
+            onClick={handleUploadClick}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
               loading 
-                ? 'bg-gray-500 text-gray-300' 
-                : 'bg-blue-600 hover:bg-blue-700 text-white'
+                ? 'bg-gray-700/50 text-gray-400 cursor-not-allowed' 
+                : 'bg-blue-600/20 hover:bg-blue-600/30 text-blue-400'
             }`}
+            disabled={loading}
           >
             {loading ? (
               <>
-                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                  <circle 
-                    className="opacity-25" 
-                    cx="12" 
-                    cy="12" 
-                    r="10" 
-                    stroke="currentColor" 
-                    strokeWidth="4" 
-                    fill="none"
-                  />
-                  <path 
-                    className="opacity-75" 
-                    fill="currentColor" 
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
+                <span className="animate-spin">↻</span>
                 Processing...
               </>
             ) : (
-              'Upload Receipt'
+              <>
+                <span>📄</span>
+                Upload Receipt
+              </>
             )}
-          </label>
+          </button>
+
           <button
             onClick={handleClearPantry}
-            className="px-4 py-2 rounded bg-red-600 hover:bg-red-700 text-white"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 transition-colors"
             disabled={loading || pantryItems.length === 0}
           >
+            <span>🗑️</span>
             Clear Pantry
           </button>
         </div>
       </div>
 
-      {/* Error Display */}
-      {error && (
-        <div className="bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded">
-          {error}
-        </div>
-      )}
-
-      {/* Category Filters */}
-      <div className="flex gap-4 items-center">
-        <input
-          type="text"
-          placeholder="Search items..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="bg-gray-800 rounded px-3 py-2 text-sm text-white flex-grow"
-        />
-        <div className="flex gap-2 flex-wrap">
-          {categories.map(category => (
-            <button
-              key={category}
-              onClick={() => setSelectedCategory(
-                selectedCategory === category ? null : category
-              )}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors
-                ${selectedCategory === category
-                  ? 'bg-blue-600 text-white shadow-lg'
-                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                }`}
-            >
-              {category}
-              <span className="ml-2 bg-gray-700 px-2 py-0.5 rounded-full text-xs">
-                {pantryItems.filter(item => item.category === category).length}
-              </span>
-            </button>
-          ))}
-        </div>
+      <div className="flex gap-2 flex-wrap">
+        {categories.map(category => (
+          <button
+            key={category}
+            onClick={() => setSelectedCategory(
+              selectedCategory === category ? null : category
+            )}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors
+              ${selectedCategory === category
+                ? 'bg-blue-600/30 text-blue-400 ring-2 ring-blue-500/50'
+                : 'bg-gray-800/50 text-gray-400 hover:bg-gray-700/50'
+              }`}
+          >
+            {category}
+            <span className="ml-2 bg-gray-700/50 px-2 py-0.5 rounded-full text-xs">
+              {pantryItems.filter(item => item.category === category).length}
+            </span>
+          </button>
+        ))}
       </div>
 
-      {/* Grouped Items List */}
-      <div className="space-y-6">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         {Object.entries(groupedItems).map(([category, items]) => (
-          <div key={category} className="space-y-2">
-            <h3 className="text-gray-400 text-sm font-medium">{category}</h3>
-            <div className="divide-y divide-gray-700">
+          <div key={category} className="bg-gray-800/30 rounded-lg p-4 backdrop-blur-sm ring-1 ring-white/5">
+            <h3 className="text-gray-400 text-sm font-medium mb-3">
+              {category}
+            </h3>
+            <div className="space-y-2">
               {items.map((item) => (
-                <div key={item.id} className="py-3 flex items-center justify-between hover:bg-gray-800/50 rounded px-3 transition-colors">
+                <div key={item.id} 
+                  className="bg-gray-700/30 rounded-lg p-3 flex items-center justify-between hover:ring-1 ring-white/10 transition-all"
+                >
                   <div className="flex flex-col gap-1">
-                    <span className="text-white font-medium">{item.name}</span>
-                    <div className="flex gap-2 text-xs text-gray-400">
-                      <span>{item.quantity} {item.unit}</span>
+                    <input
+                      type="text"
+                      value={item.name}
+                      onChange={(e) => handleItemUpdate(item, { name: e.target.value })}
+                      className="bg-transparent text-white text-sm font-medium focus:outline-none focus:border-b border-gray-600"
+                    />
+                    <div className="flex items-center gap-2 text-xs text-gray-400">
+                      <span className="bg-gray-700/50 px-2 py-1 rounded-md">
+                        {item.quantity} {item.unit}
+                      </span>
                       {item.expiry_date && (
-                        <>
-                          <span>•</span>
-                          <span>Expires {new Date(item.expiry_date).toLocaleDateString()}</span>
-                        </>
+                        <span className="text-yellow-500/70">
+                          Expires {new Date(item.expiry_date).toLocaleDateString()}
+                        </span>
                       )}
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center bg-gray-700 rounded-lg shadow-inner">
-                      <button
-                        onClick={() => handleQuantityChange(item, -1)}
-                        className="px-3 py-1.5 text-gray-300 hover:text-white hover:bg-gray-600 rounded-l-lg transition-colors"
-                      >
-                        -
-                      </button>
-                      <span className="px-3 text-white font-medium">{item.quantity}</span>
-                      <button
-                        onClick={() => handleQuantityChange(item, 1)}
-                        className="px-3 py-1.5 text-gray-300 hover:text-white hover:bg-gray-600 rounded-r-lg transition-colors"
-                      >
-                        +
-                      </button>
-                    </div>
-                    <button
-                      onClick={() => handleDeleteItem(item.id)}
-                      className="text-sm text-red-400 hover:text-red-300 hover:underline"
-                    >
-                      Delete
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => handleDeleteItem(item.id)}
+                    className="p-1.5 rounded-md hover:bg-red-500/10 text-red-400/70 hover:text-red-400 transition-colors"
+                  >
+                    <span>🗑️</span>
+                  </button>
                 </div>
               ))}
             </div>
@@ -277,7 +300,6 @@ export default function PantryTab({
         ))}
       </div>
 
-      {/* Empty State */}
       {Object.keys(groupedItems).length === 0 && (
         <div className="text-center py-12 text-gray-400">
           <p>No items found.</p>
@@ -285,6 +307,22 @@ export default function PantryTab({
             <p className="text-sm">Upload a receipt to get started!</p>
           )}
         </div>
+      )}
+
+      {showAddItemForm && (
+        <AddItemForm
+          onSubmit={handleAddItem}
+          onCancel={() => setShowAddItemForm(false)}
+        />
+      )}
+
+      {showReceiptConfirmation && (
+        <ReceiptConfirmation
+          items={pendingItems}
+          receiptImage={receiptImage}
+          onConfirm={handleConfirmReceiptItems}
+          onCancel={handleCloseConfirmation}
+        />
       )}
     </div>
   );
