@@ -1,3 +1,6 @@
+import logging
+import uuid
+from datetime import datetime
 from typing import List, Optional
 
 from db.supabase import get_supabase
@@ -8,19 +11,33 @@ from ..models.recipes import Recipe, RecipeCreate, RecipeUpdate
 class RecipeManager:
     def __init__(self):
         self.table = "recipes"
-        self._generated_recipes = []
+        self._generated_recipes = {}  # Store by ID for quick lookup
 
     def store_generated_recipes(self, recipes: List[Recipe]) -> None:
-        self._generated_recipes = recipes
+        # Store recipes with their IDs as keys
+        self._generated_recipes = {str(recipe.id): recipe for recipe in recipes}
 
-    def get_generated_recipes(self) -> List[Recipe]:
-        return self._generated_recipes
+    def get_generated_recipe(self, recipe_id: str) -> Optional[Recipe]:
+        return self._generated_recipes.get(str(recipe_id))
 
-    def save_recipe(self, recipe: RecipeCreate) -> Recipe:
+    def save_recipe(self, recipe: Recipe) -> Recipe:
         supabase = get_supabase()
-        data = recipe.model_dump()
-        data['is_saved'] = True
-        result = supabase.table(self.table).insert(data).execute()
+        
+        # Create the recipe data matching our DB schema
+        recipe_data = {
+            "id": str(recipe.id),
+            "name": recipe.name,
+            "ingredients": recipe.ingredients,
+            "instructions": recipe.instructions,
+            "preparation_time": str(recipe.preparation_time) if recipe.preparation_time else None,
+            "difficulty": recipe.difficulty,
+            "nutritional_info": recipe.nutritional_info.model_dump() if recipe.nutritional_info else None,
+            "is_saved": True,
+            "created_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.utcnow().isoformat()
+        }
+        
+        result = supabase.table(self.table).insert(recipe_data).execute()
         return Recipe(**result.data[0])
 
     def get_saved_recipes(self) -> List[Recipe]:

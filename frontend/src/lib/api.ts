@@ -93,17 +93,19 @@ export const pantryApi = {
 
 // Recipe-related API calls
 export const recipeApi = {
-  generate: async (ingredients: string[]): Promise<Recipe[]> => {
+  generate: async (requestData: {
+    ingredients: string[],
+    preferences?: string
+  }): Promise<Recipe[]> => {
     return fetchApi<Recipe[]>('/recipes/generate', {
       method: 'POST',
-      body: JSON.stringify({ ingredients }),
+      body: JSON.stringify(requestData)
     });
   },
 
-  save: async (recipe: Recipe): Promise<void> => {
-    return fetchApi<void>('/recipes/save', {
-      method: 'POST',
-      body: JSON.stringify(recipe),
+  save: async (recipeId: string): Promise<Recipe> => {
+    return fetchApi<Recipe>(`/recipes/save/${recipeId}`, {
+      method: 'POST'
     });
   },
 
@@ -116,4 +118,8 @@ export const recipeApi = {
       method: 'DELETE',
     });
   },
+
+  getGenerated: async (recipeId: string): Promise<Recipe> => {
+    return fetchApi<Recipe>(`/recipes/generated/${recipeId}`);
+  }
 };

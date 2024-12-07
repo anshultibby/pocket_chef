@@ -1,7 +1,9 @@
 from datetime import datetime, timedelta
-from typing import Optional, List, Dict
+from typing import Any, Dict, List, Optional
 from uuid import UUID
+
 from pydantic import BaseModel, Field
+
 
 class NutritionalInfo(BaseModel):
     calories: int
@@ -11,15 +13,21 @@ class NutritionalInfo(BaseModel):
     
 class RecipeBase(BaseModel):
     name: str
-    ingredients: List[Dict[str, str]]  # [{"name": "flour", "amount": "2", "unit": "cups"}]
+    ingredients: List[str]
     instructions: List[str]
     preparation_time: Optional[timedelta] = None
     difficulty: Optional[str] = Field(None, pattern="^(easy|medium|hard)$")
     nutritional_info: Optional[NutritionalInfo] = None
     is_saved: bool = False
 
-class RecipeCreate(RecipeBase):
-    pass
+class RecipeCreate(BaseModel):
+    name: str
+    ingredients: List[str]
+    instructions: List[str]
+    preparation_time: Optional[str] = None
+    difficulty: Optional[str] = Field(None, pattern="^(easy|medium|hard)$")
+    nutritional_info: Optional[NutritionalInfo] = None
+    is_saved: bool = True
 
 class RecipeUpdate(BaseModel):
     name: Optional[str] = None
@@ -37,3 +45,25 @@ class Recipe(RecipeBase):
 
     class Config:
         from_attributes = True
+
+class RecipeGenerateRequest(BaseModel):
+    """Model for recipe generation request"""
+    ingredients: List[str]
+    preferences: Optional[str] = None
+
+class RecipeSave(BaseModel):
+    """Model for saving a recipe by ID"""
+    recipe_id: UUID
+
+class RecipeResponse(BaseModel):
+    """Model for recipe responses"""
+    id: UUID
+    name: str
+    ingredients: List[str]
+    instructions: List[str]
+    preparation_time: Optional[timedelta] = None
+    difficulty: Optional[str] = Field(None, pattern="^(easy|medium|hard)$")
+    nutritional_info: Optional[NutritionalInfo] = None
+    is_saved: bool = False
+    created_at: datetime
+    updated_at: datetime

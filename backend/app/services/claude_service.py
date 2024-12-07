@@ -37,7 +37,6 @@ Keep responses concise and ensure JSON is complete."""
 RECIPE_SYSTEM_PROMPT = """You are a helpful assistant that creates recipes from available ingredients. 
 Return recipes in JSON format as an array of objects with the following structure:
 {
-    "id": "unique-string-id",
     "name": "Recipe Name",
     "ingredients": ["ingredient 1", "ingredient 2"],
     "instructions": ["step 1", "step 2"],

@@ -24,6 +24,7 @@ export default function RecipesTab({
     cuisine_type: '',
     spice_level: ''
   });
+  const [activeTab, setActiveTab] = useState<'generated' | 'saved'>('generated');
 
   const handleGenerateRecipes = async () => {
     if (pantryItems.length === 0) {
@@ -35,15 +36,52 @@ export default function RecipesTab({
     setError(null);
 
     try {
-      const ingredients = pantryItems.map(item => item.name);
-      const recipes = await recipeApi.generate(ingredients);
+      const ingredients = pantryItems.map(item => 
+        `${item.name} (${item.quantity} ${item.unit})`
+      );
+      
+      // Combine preferences into a single string
+      const preferencesArray = [];
+      if (preferences.dietary_restrictions) {
+        preferencesArray.push(`dietary: ${preferences.dietary_restrictions}`);
+      }
+      if (preferences.cuisine_type) {
+        preferencesArray.push(`cuisine: ${preferences.cuisine_type}`);
+      }
+      if (preferences.spice_level) {
+        preferencesArray.push(`spice level: ${preferences.spice_level}`);
+      }
+      
+      const requestData = {
+        ingredients,
+        preferences: preferencesArray.length > 0 ? preferencesArray.join(', ') : undefined
+      };
+
+      const recipes = await recipeApi.generate(requestData);
       setGeneratedRecipes(recipes);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to generate recipes';
-      setError(`Failed to generate recipes: ${errorMessage}`);
-      console.error('Recipe generation error:', err);
+    } catch (err: unknown) {
+      let errorMessage = 'Failed to generate recipes';
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === 'object' && err !== null) {
+        const errorObj = err as any;
+        errorMessage = errorObj.response?.data?.detail || JSON.stringify(err);
+      }
+
+      setError(errorMessage);
+      console.error('Recipe generation error:', errorMessage);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveRecipe = async (recipe: Recipe) => {
+    try {
+      const savedRecipe = await recipeApi.save(recipe.id);
+      setSavedRecipes(prev => [...prev, savedRecipe]);
+    } catch (error) {
+      console.error('Failed to save recipe:', error);
+      setError('Failed to save recipe');
     }
   };
 
@@ -154,17 +192,27 @@ export default function RecipesTab({
         </div>
       )}
 
-      {/* Recipe Results Tabs */}
+      {/* Modified Recipe Results Tabs */}
       <div className="bg-gray-900 rounded-lg border border-gray-800">
         <div className="border-b border-gray-800">
           <nav className="flex">
             <button
-              className={`px-6 py-3 ${generatedRecipes.length > 0 ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-400'}`}
+              onClick={() => setActiveTab('generated')}
+              className={`px-6 py-3 ${
+                activeTab === 'generated' 
+                  ? 'text-blue-500 border-b-2 border-blue-500' 
+                  : 'text-gray-400'
+              }`}
             >
               Generated Recipes ({generatedRecipes.length})
             </button>
             <button
-              className={`px-6 py-3 ${savedRecipes.length > 0 ? 'text-green-500 border-b-2 border-green-500' : 'text-gray-400'}`}
+              onClick={() => setActiveTab('saved')}
+              className={`px-6 py-3 ${
+                activeTab === 'saved'
+                  ? 'text-green-500 border-b-2 border-green-500' 
+                  : 'text-gray-400'
+              }`}
             >
               Saved Recipes ({savedRecipes.length})
             </button>
@@ -172,39 +220,48 @@ export default function RecipesTab({
         </div>
 
         <div className="p-6">
-          {/* Generated Recipes */}
-          {generatedRecipes.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {generatedRecipes.map(recipe => (
-                <RecipeCard
-                  key={recipe.id}
-                  recipe={recipe}
-                  onSave={onSaveRecipe}
-                  onRemove={onRemoveRecipe}
-                />
-              ))}
-            </div>
+          {/* Generated Recipes Tab */}
+          {activeTab === 'generated' && (
+            <>
+              {generatedRecipes.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {generatedRecipes.map(recipe => (
+                    <RecipeCard
+                      key={recipe.id}
+                      recipe={recipe}
+                      onSave={onSaveRecipe}
+                      onRemove={onRemoveRecipe}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-gray-400">
+                  <p>No generated recipes yet. Use the form above to generate some recipes!</p>
+                </div>
+              )}
+            </>
           )}
 
-          {/* Saved Recipes */}
-          {savedRecipes.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {savedRecipes.map(recipe => (
-                <RecipeCard
-                  key={recipe.id}
-                  recipe={recipe}
-                  onSave={onSaveRecipe}
-                  onRemove={onRemoveRecipe}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Empty States */}
-          {generatedRecipes.length === 0 && savedRecipes.length === 0 && (
-            <div className="text-center py-12 text-gray-400">
-              <p>No recipes yet. Use the form above to generate some recipes!</p>
-            </div>
+          {/* Saved Recipes Tab */}
+          {activeTab === 'saved' && (
+            <>
+              {savedRecipes.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {savedRecipes.map(recipe => (
+                    <RecipeCard
+                      key={recipe.id}
+                      recipe={recipe}
+                      onSave={onSaveRecipe}
+                      onRemove={onRemoveRecipe}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-gray-400">
+                  <p>No saved recipes yet. Generate and save some recipes to see them here!</p>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

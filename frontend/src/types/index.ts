@@ -14,18 +14,22 @@ export interface Recipe {
   name: string;
   ingredients: string[];
   instructions: string[];
-  cooking_time?: number;
-  servings?: number;
-  is_saved?: boolean;
+  preparation_time: string | null;
+  difficulty: 'easy' | 'medium' | 'hard' | null;
+  nutritional_info: {
+    calories: number;
+    protein: number
+    carbs: number;
+    fat: number;
+  } | null;
+  is_saved: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface RecipeGenerateRequest {
   ingredients: string[];
-  preferences?: {
-    dietary?: string[];
-    cuisine?: string;
-    difficulty?: 'easy' | 'medium' | 'hard';
-  };
+  preferences?: string;
 }
 
 export interface ApiResponse<T> {
