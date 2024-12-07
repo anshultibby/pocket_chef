@@ -29,21 +29,19 @@ export default function PantryTab({
   const [selectedItem, setSelectedItem] = useState<PantryItem | null>(null);
 
   useEffect(() => {
-    if (pantryItems.length === 0) {
-      const fetchItems = async () => {
-        try {
-          const items = await pantryApi.getItems();
-          onAddItems(items);
-        } catch (err) {
-          const message = err instanceof Error ? err.message : 'Failed to fetch pantry items';
-          setError(message);
-          console.warn('Fetch items error:', err);
-        }
-      };
+    const fetchItems = async () => {
+      try {
+        const items = await pantryApi.getItems();
+        onAddItems(items);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to fetch pantry items';
+        setError(message);
+        console.warn('Fetch items error:', err);
+      }
+    };
 
-      fetchItems();
-    }
-  }, []);
+    fetchItems();
+  }, [onAddItems]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

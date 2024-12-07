@@ -6,8 +6,10 @@ import { recipeApi } from '@/lib/api';
 import RecipeCard from '@/components/RecipeCard';
 import PantryTab from '@/components/PantryTab';
 import PantryOverview from '@/components/PantryOverview';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'cook' | 'pantry'>('cook');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,6 +66,10 @@ export default function Home() {
     setPantryItems(prev => prev.filter(item => item.id !== id));
   };
 
+  const handleRecipeClick = (recipeId: string) => {
+    router.push(`/recipe/${recipeId}`);
+  };
+
   return (
     <main className="min-h-screen bg-gray-950 text-white">
       {/* Header */}
@@ -86,7 +92,7 @@ export default function Home() {
                   : 'text-gray-400 hover:text-gray-200'
               }`}
             >
-              What should I cook?
+              Recipe Suggestions
             </button>
             <button
               onClick={() => setActiveTab('pantry')}
@@ -96,7 +102,7 @@ export default function Home() {
                   : 'text-gray-400 hover:text-gray-200'
               }`}
             >
-              My Pantry
+              Pantry
             </button>
           </div>
         </div>
@@ -108,7 +114,7 @@ export default function Home() {
           <div className="bg-gradient-to-b from-gray-900 to-gray-950 py-12">
             <div className="max-w-4xl mx-auto px-4">
               <h2 className="text-3xl font-bold mb-6">
-                What should I cook right now?
+                Recipe Suggestions
               </h2>
 
               {/* Preferences Section */}
@@ -179,14 +185,22 @@ export default function Home() {
           {currentRecipes.length > 0 && (
             <div className="max-w-4xl mx-auto px-4 py-12">
               <h2 className="text-2xl font-bold mb-6">Recipe Suggestions</h2>
-              <div className="grid gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {currentRecipes.map(recipe => (
-                  <RecipeCard
+                  <div 
                     key={recipe.id}
-                    recipe={recipe}
-                    onSave={() => {/* Handle save */}}
-                    onRemove={() => {/* Handle remove */}}
-                  />
+                    className="bg-gray-800 rounded-lg p-4 cursor-pointer hover:bg-gray-700 transition-colors"
+                  >
+                    <div onClick={() => handleRecipeClick(recipe.id)}>
+                      <h3 className="text-xl font-semibold mb-2">{recipe.name}</h3>
+                    </div>
+                    <button
+                      onClick={() => {/* Handle save */}}
+                      className="mt-2 text-sm text-blue-400 hover:text-blue-300"
+                    >
+                      Save Recipe
+                    </button>
+                  </div>
                 ))}
               </div>
             </div>
