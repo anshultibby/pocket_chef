@@ -25,6 +25,7 @@ export default function ReceiptConfirmation({
         name: '',
         quantity: 1,
         category: '',
+        unit: 'units',
         isEditing: true,
       },
       ...editedItems,
@@ -45,7 +46,17 @@ export default function ReceiptConfirmation({
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      await onConfirm(editedItems.map(({ tempId, isEditing, ...item }) => item));
+      const validItems = editedItems
+        .filter(item => item.name.trim() && item.category.trim())
+        .map(({ tempId, isEditing, ...item }) => ({
+          ...item,
+          name: item.name.trim(),
+          category: item.category.trim(),
+          quantity: Math.max(1, Math.floor(item.quantity)),
+          unit: item.unit || 'units'
+        }));
+        
+      await onConfirm(validItems);
     } finally {
       setIsSubmitting(false);
     }
