@@ -16,6 +16,7 @@ export default function ReceiptConfirmation({
   const [editedItems, setEditedItems] = useState<(PantryItemCreate & { tempId: number; isEditing?: boolean })[]>(
     items.map((item, index) => ({ ...item, tempId: index, isEditing: false }))
   );
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const addNewItem = () => {
     setEditedItems([
@@ -40,6 +41,16 @@ export default function ReceiptConfirmation({
     );
   };
 
+  const handleConfirm = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      await onConfirm(editedItems.map(({ tempId, isEditing, ...item }) => item));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 shadow-lg 
                     transform transition-transform duration-300 ease-in-out">
@@ -54,10 +65,11 @@ export default function ReceiptConfirmation({
               Cancel
             </button>
             <button
-              onClick={() => onConfirm(editedItems.map(({ tempId, ...item }) => item))}
-              className="text-sm px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700"
+              onClick={handleConfirm}
+              disabled={isSubmitting}
+              className="text-sm px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Add {editedItems.length} Items
+              {isSubmitting ? 'Adding...' : `Add ${editedItems.length} Items`}
             </button>
           </div>
         </div>
