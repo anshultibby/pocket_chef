@@ -64,13 +64,13 @@ export const pantryApi = {
   },
 
   deleteItem: async (id: string): Promise<void> => {
-    try {
-      await fetchApi<void>(`/pantry/items/${id}`, {
-        method: 'DELETE',
-      });
-    } catch (error) {
-      console.error('Delete item error:', error);
-      throw error; // Re-throw to handle in the component
+    const response = await fetch(`${API_BASE_URL}/pantry/items/${id}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Failed to delete item' }));
+      throw new Error(error.detail || 'Failed to delete item');
     }
   },
 

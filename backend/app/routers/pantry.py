@@ -46,18 +46,16 @@ def update_item(item_id: str, item_update: PantryItemUpdate):
 
 @router.delete("/items/{item_id}")
 def delete_item(item_id: str):
-    current_item = pantry_manager.get_item(item_id)
-    if not current_item:
+    try:
+        pantry_manager.delete_item(item_id)
+        return {"message": "Item deleted"}
+    except Exception as e:
         raise HTTPException(status_code=404, detail="Item not found")
-    
-    pantry_manager.delete_item(item_id)
-    return {"message": "Item deleted"}
 
 @router.post("/upload", response_model=List[PantryItemCreate])
 async def upload_receipt(file: UploadFile = File(...)):
     try:
         logger.info(f"Received file: {file.filename}, content_type: {file.content_type}")
-        
         receipt_parser = ReceiptParser()
         items = await receipt_parser.parse_receipt(file)
         return items

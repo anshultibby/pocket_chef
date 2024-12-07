@@ -82,16 +82,21 @@ export default function PantryTab({
   };
 
   const handleDeleteItem = async (itemId: string) => {
-    console.log('Deleting item:', itemId);
+    console.log('Starting delete for item:', itemId);
     try {
       // First delete the item in the backend
+      console.log('Calling backend delete...');
       await pantryApi.deleteItem(itemId);
+      console.log('Backend delete successful');
+      
       // Then update the UI
+      console.log('Updating UI...');
       onDeleteItem(itemId);
+      console.log('UI update complete');
     } catch (err) {
+      console.error('Full delete error:', err);
       const message = err instanceof Error ? err.message : 'Failed to delete item';
       setError(message);
-      console.warn('Delete item error:', err);
     }
   };
 

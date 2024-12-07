@@ -34,8 +34,14 @@ class PantryManager:
 
     def delete_item(self, item_id: str) -> bool:
         supabase = get_supabase()
+        # First verify the item exists
+        existing = supabase.table(self.table).select("*").eq("id", item_id).execute()
+        if not existing.data:
+            return False
+        
+        # Then delete it
         result = supabase.table(self.table).delete().eq("id", item_id).execute()
-        return bool(result.data)
+        return len(result.data) > 0  # Return True if we deleted something
 
 # Create a singleton instance
 _pantry_manager = PantryManager()
