@@ -2,7 +2,7 @@ import { Recipe } from '@/types';
 
 interface RecipeCardProps {
   recipe: Recipe;
-  onSave: (recipe: Recipe) => void;
+  onSave?: (recipe: Recipe) => void;
   onRemove: (id: string) => void;
 }
 
@@ -49,7 +49,7 @@ export default function RecipeCard({ recipe, onSave, onRemove }: RecipeCardProps
           </div>
           
           <button
-            onClick={() => recipe.is_saved ? onRemove(recipe.id) : onSave(recipe)}
+            onClick={() => recipe.is_saved ? onRemove(recipe.id) : onSave?.(recipe)}
             className={`px-4 py-2 rounded ${
               recipe.is_saved 
                 ? 'bg-red-500 text-white hover:bg-red-600' 

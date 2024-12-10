@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { AuthGuard } from '@/components/AuthGuard';
@@ -36,14 +36,14 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <label className="text-sm text-gray-400">User ID</label>
-                <div className="text-lg font-mono text-sm">{user?.id}</div>
+                <label className="text-sm text-gray-400">Name</label>
+                <div className="text-lg">{user?.name || 'Not set'}</div>
               </div>
 
               <div>
-                <label className="text-sm text-gray-400">Last Sign In</label>
+                <label className="text-sm text-gray-400">Member Since</label>
                 <div className="text-lg">
-                  {user?.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString() : 'N/A'}
+                  {user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
                 </div>
               </div>
 

@@ -39,8 +39,10 @@ export default function PantryTab({
       }
     };
 
-    fetchItems();
-  }, [onAddItems]);
+    if (pantryItems.length === 0) {
+      fetchItems();
+    }
+  }, [onAddItems, pantryItems.length]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

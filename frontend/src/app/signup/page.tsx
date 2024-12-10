@@ -10,6 +10,7 @@ export default function SignupPage() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
   const { signUp } = useAuth();
   const router = useRouter();
 
@@ -17,7 +18,8 @@ export default function SignupPage() {
     e.preventDefault();
     try {
       await signUp(email, password, name);
-      // The router.push is handled in the AuthProvider after successful signup
+      setSuccess(true);
+      setError('');
     } catch (error) {
       setError('Failed to create account');
       console.error('Signup error:', error);
@@ -33,6 +35,11 @@ export default function SignupPage() {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
             <div className="text-red-500 text-center text-sm">{error}</div>
+          )}
+          {success && (
+            <div className="text-green-500 text-center text-sm">
+              Account created successfully! Please check your email to confirm your account.
+            </div>
           )}
           <div className="space-y-4">
             <div>
