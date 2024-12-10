@@ -5,6 +5,7 @@ import ReceiptConfirmation from '@/components/ReceiptConfirmation';
 
 interface PantryTabProps {
   pantryItems: PantryItem[];
+  loading: boolean;
   onAddItems: (items: PantryItem[]) => void;
   onUpdateItem: (id: string, updates: Partial<PantryItem>) => void;
   onDeleteItem: (id: string) => void;
@@ -12,11 +13,11 @@ interface PantryTabProps {
 
 export default function PantryTab({
   pantryItems,
+  loading,
   onAddItems,
   onUpdateItem,
   onDeleteItem
 }: PantryTabProps) {
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -26,29 +27,17 @@ export default function PantryTab({
   const [receiptImage, setReceiptImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedItem, setSelectedItem] = useState<PantryItem | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
-  useEffect(() => {
-    const fetchItems = async () => {
-      try {
-        const items = await pantryApi.getItems();
-        onAddItems(items);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to fetch pantry items';
-        setError(message);
-        console.warn('Fetch items error:', err);
-      }
-    };
-
-    if (pantryItems.length === 0) {
-      fetchItems();
-    }
-  }, [onAddItems, pantryItems.length]);
+  if (loading) {
+    return <div className="text-center py-8">Loading pantry...</div>;
+  }
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setLoading(true);
+    setIsUploading(true);
     setError(null);
 
     try {
@@ -56,7 +45,7 @@ export default function PantryTab({
       setReceiptImage(imageUrl);
 
       const formData = new FormData();
-      formData.append('file', file, file.name);
+      formData.append('file', file);
 
       console.log('Uploading file:', file.name);
       const parsedItems = await pantryApi.uploadReceipt(formData);
@@ -64,44 +53,43 @@ export default function PantryTab({
 
       setPendingItems(parsedItems);
       setShowReceiptConfirmation(true);
-    } catch (err) {
+    } catch (err: unknown) {
       if (receiptImage) {
         URL.revokeObjectURL(receiptImage);
         setReceiptImage(null);
       }
       const message = err instanceof Error ? err.message : 'Failed to process receipt';
       setError(message);
-      console.error('Upload error:', err);
+      
+      if (err instanceof Error) {
+        console.error('Upload error:', err.message);
+      } else {
+        console.error('Upload error: Unknown error occurred');
+      }
     } finally {
-      setLoading(false);
+      setIsUploading(false);
     }
   };
 
   const handleItemUpdate = async (item: PantryItem, updates: Partial<PantryItem>) => {
     try {
-      await pantryApi.updateItem(item.id, updates);
-      await onUpdateItem(item.id, updates);
+      const updatedItem = await pantryApi.updateItem(item.id, updates);
+      onUpdateItem(item.id, updatedItem);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to update item';
       setError(message);
-      console.warn('Update item error:', err);
+      console.error('Update item error:', err);
     }
   };
 
   const handleDeleteItem = async (itemId: string) => {
-    console.log('Starting delete for item:', itemId);
     try {
-      console.log('Calling backend delete...');
       await pantryApi.deleteItem(itemId);
-      console.log('Backend delete successful');
-      
-      console.log('Updating UI...');
       onDeleteItem(itemId);
-      console.log('UI update complete');
     } catch (err) {
-      console.error('Full delete error:', err);
       const message = err instanceof Error ? err.message : 'Failed to delete item';
       setError(message);
+      console.error('Delete error:', err);
     }
   };
 
@@ -122,8 +110,8 @@ export default function PantryTab({
 
   const handleAddItem = async (item: PantryItemCreate) => {
     try {
-      const addedItems = await pantryApi.addItems([item]);
-      onAddItems([...pantryItems, ...addedItems]);
+      const [addedItem] = await pantryApi.addItems([item]);
+      onAddItems([addedItem]);
       setShowAddItemForm(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to add item';
@@ -392,15 +380,15 @@ export default function PantryTab({
         <button
           onClick={handleUploadClick}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-            loading 
+            isUploading 
               ? 'bg-gray-700/50 text-gray-400 cursor-not-allowed' 
               : 'bg-blue-600/20 hover:bg-blue-600/30 text-blue-400'
           }`}
-          disabled={loading}
+          disabled={isUploading}
         >
-          {loading ? (
+          {isUploading ? (
             <>
-              <span className="animate-spin">���</span>
+              <span className="animate-spin">⟳</span>
               Processing...
             </>
           ) : (
@@ -414,7 +402,7 @@ export default function PantryTab({
         <button
           onClick={handleClearPantry}
           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 transition-colors"
-          disabled={loading || pantryItems.length === 0}
+          disabled={isUploading || pantryItems.length === 0}
         >
           <span>🗑️</span>
           Clear Pantry

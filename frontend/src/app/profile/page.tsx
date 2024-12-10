@@ -37,7 +37,7 @@ export default function ProfilePage() {
 
               <div>
                 <label className="text-sm text-gray-400">Name</label>
-                <div className="text-lg">{user?.name || 'Not set'}</div>
+                <div className="text-lg">{user?.user_metadata?.name || 'Not set'}</div>
               </div>
 
               <div>

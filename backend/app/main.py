@@ -3,8 +3,12 @@ import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import Depends, HTTPException, status
+from uuid import UUID
 
 from .routers import pantry, recipes
+from .services.auth import get_current_user
 
 # Add logging configuration
 logging.basicConfig(level=logging.INFO)
@@ -38,6 +42,10 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["*"]
 )
+
+# Add authentication dependency to all routes that need it
+async def auth_middleware(user_id: UUID = Depends(get_current_user)):
+    return user_id
 
 # Include routers
 app.include_router(pantry.router, prefix="/pantry", tags=["pantry"])

@@ -1,42 +1,61 @@
 import logging
-import uuid
-from datetime import datetime
 from typing import List
+from uuid import UUID
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from ..models.pantry import PantryItem, PantryItemCreate, PantryItemUpdate
+from ..services.auth import get_current_user
 from ..services.pantry import get_pantry_manager
 from ..services.receipt_parser import ReceiptParser
 
 router = APIRouter()
-receipt_parser = ReceiptParser()
-pantry_manager = get_pantry_manager()
-
-# Set up logger
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
-# Create console handler with formatting
-console_handler = logging.StreamHandler()
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-console_handler.setFormatter(formatter)
-logger.addHandler(console_handler)
 
 @router.post("/items", response_model=List[PantryItem])
-def add_items(items: List[PantryItemCreate]):
-    new_items = []
-    for item in items:
-        pantry_item = pantry_manager.add_item(item)
-        new_items.append(pantry_item)
-    return new_items
+async def add_items(
+    items: List[PantryItemCreate],
+    user_id: UUID = Depends(get_current_user),
+    # The security dependency provides the auth token needed for Supabase API calls
+    # This token is passed to pantry_manager.add_item() to authenticate requests
+    credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer())
+):
+    try:
+        logger.info(f"Adding items for user {user_id}")
+        pantry_manager = get_pantry_manager()
+        new_items = []
+        
+        for item in items:
+            try:
+                pantry_item = pantry_manager.add_item(item, user_id, credentials.credentials)
+                new_items.append(pantry_item)
+            except Exception as e:
+                logger.error(f"Error adding item: {str(e)}")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Failed to add item: {str(e)}"
+                )
+                
+        return new_items
+        
+    except Exception as e:
+        logger.error(f"Error in add_items: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 @router.get("/items", response_model=List[PantryItem])
-def get_items():
-    return pantry_manager.get_items()
+async def get_items(user_id: UUID = Depends(get_current_user)):
+    return pantry_manager.get_items(user_id)
 
 @router.put("/items/{item_id}", response_model=PantryItem)
-def update_item(item_id: str, item_update: PantryItemUpdate):
+async def update_item(
+    item_id: str, 
+    item_update: PantryItemUpdate,
+    user_id: UUID = Depends(get_current_user)
+):
     current_item = pantry_manager.get_item(item_id)
     if not current_item:
         raise HTTPException(status_code=404, detail="Item not found")
@@ -45,7 +64,10 @@ def update_item(item_id: str, item_update: PantryItemUpdate):
     return updated_item
 
 @router.delete("/items/{item_id}")
-def delete_item(item_id: str):
+async def delete_item(
+    item_id: str,
+    user_id: UUID = Depends(get_current_user)
+):
     try:
         pantry_manager.delete_item(item_id)
         return {"message": "Item deleted"}
@@ -53,27 +75,24 @@ def delete_item(item_id: str):
         raise HTTPException(status_code=404, detail="Item not found")
 
 @router.post("/upload", response_model=List[PantryItemCreate])
-async def upload_receipt(file: UploadFile = File(...)):
+async def upload_receipt(
+    file: UploadFile,
+    user_id: UUID = Depends(get_current_user)
+):
     try:
-        logger.info(f"Received file: {file.filename}, content_type: {file.content_type}")
         receipt_parser = ReceiptParser()
-        items = await receipt_parser.parse_receipt(file)
+        items = await receipt_parser.parse_receipt(file, user_id)
         return items
-    except HTTPException as e:
-        logger.error(f"HTTP Exception: {str(e)}")
-        raise e
     except Exception as e:
-        logger.error(f"Unexpected error: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail=f"Error processing receipt: {str(e)}"
         )
 
 @router.delete("/items")
-def clear_pantry():
+async def clear_pantry(user_id: UUID = Depends(get_current_user)):
     try:
         pantry_manager.clear_pantry()
         return {"message": "Pantry cleared"}
     except Exception as e:
-        logger.error(f"Error clearing pantry: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to clear pantry")
+        raise HTTPException(status_code=500, detail=str(e))

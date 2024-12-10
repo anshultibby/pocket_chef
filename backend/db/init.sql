@@ -1,8 +1,14 @@
 -- Enable necessary extensions
 create extension if not exists "uuid-ossp";
 
--- Create custom types if needed
-create type difficulty_level as enum ('easy', 'medium', 'hard');
+-- Create custom types if not exists (new safer version)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'difficulty_level') THEN
+        create type difficulty_level as enum ('easy', 'medium', 'hard');
+    END IF;
+END
+$$;
 
 -- Create pantry_items table
 create table if not exists public.pantry_items (
@@ -15,7 +21,7 @@ create table if not exists public.pantry_items (
     notes text,
     created_at timestamp with time zone default now(),
     updated_at timestamp with time zone default now(),
-    user_id uuid references public.users(id)
+    user_id uuid references auth.users(id)
 );
 
 -- Create recipes table
@@ -30,7 +36,7 @@ create table if not exists public.recipes (
     is_saved boolean default false,
     created_at timestamp with time zone default now(),
     updated_at timestamp with time zone default now(),
-    user_id uuid references public.users(id)
+    user_id uuid references auth.users(id)
 );
 
 -- Create function to automatically update updated_at timestamp
@@ -88,13 +94,3 @@ create index if not exists idx_pantry_items_name on pantry_items (name);
 create index if not exists idx_pantry_items_category on pantry_items (category);
 create index if not exists idx_recipes_name on recipes (name);
 create index if not exists idx_recipes_is_saved on recipes (is_saved);
-
--- Create users table
-create table if not exists public.users (
-    id uuid default uuid_generate_v4() primary key,
-    email text unique not null,
-    password_hash text not null,
-    name text,
-    created_at timestamp with time zone default now(),
-    updated_at timestamp with time zone default now()
-);

@@ -1,7 +1,9 @@
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
+
 from pydantic import BaseModel, Field
+
 
 class PantryItemBase(BaseModel):
     name: str
@@ -10,9 +12,16 @@ class PantryItemBase(BaseModel):
     category: Optional[str] = None
     expiry_date: Optional[datetime] = None
     notes: Optional[str] = None
+    user_id: UUID
 
-class PantryItemCreate(PantryItemBase):
-    pass
+class PantryItemCreate(BaseModel):
+    name: str
+    quantity: float
+    unit: str
+    category: Optional[str] = None
+    expiry_date: Optional[datetime] = None
+    notes: Optional[str] = None
+    user_id: Optional[UUID] = None
 
 class PantryItemUpdate(BaseModel):
     name: Optional[str] = None

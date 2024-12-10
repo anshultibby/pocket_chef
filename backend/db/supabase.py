@@ -1,45 +1,25 @@
-from os import getenv
+import os
 from typing import Optional
 
-from dotenv import load_dotenv
 from supabase import Client, create_client
 
 
-load_dotenv()
-api_url = getenv("SUPABASE_URL")
-api_key = getenv("SUPABASE_KEY")
-
-class SupabaseService:
-    def __init__(self):
-        self.supabase_url = getenv("SUPABASE_URL")
-        self.supabase_key = getenv("SUPABASE_KEY")
+def get_supabase(auth_token: Optional[str] = None) -> Client:
+    """
+    Get a Supabase client instance.
+    If auth_token is provided, it will be used for authenticated requests.
+    """
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_KEY")
+    
+    if not supabase_url or not supabase_key:
+        raise ValueError("Missing Supabase environment variables")
         
-        if not self.supabase_url or not self.supabase_key:
-            raise ValueError("Missing Supabase environment variables")
-            
-        self.client: Optional[Client] = None
+    client = create_client(supabase_url, supabase_key)
+    
+    # If an auth token is provided, set it for this request
+    if auth_token:
+        client.auth.set_session(access_token=auth_token)
+    
+    return client
 
-    def initialize(self):
-        """Initialization of the Supabase client"""
-        if self.client is None:
-            self.client = create_client(
-                self.supabase_url,
-                self.supabase_key
-            )
-
-    def table(self, table_name: str):
-        """Get a table reference with initialized client"""
-        return self.client.table(table_name)
-
-    def from_(self, table_name: str):
-        """Alias for table() to match Supabase syntax"""
-        return self.table(table_name)
-
-# Create a singleton instance
-_supabase_service = SupabaseService()
-
-def get_supabase() -> SupabaseService:
-    """Get the Supabase service instance"""
-    if _supabase_service.client is None:
-        _supabase_service.initialize()
-    return _supabase_service

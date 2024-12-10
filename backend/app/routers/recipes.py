@@ -24,7 +24,7 @@ async def generate_recipes(request: RecipeGenerateRequest):
         all_ingredients = set(request.ingredients)
         
         # Add pantry items to available ingredients
-        pantry_items = pantry_manager.get_items()
+        pantry_items = pantry_manager.get_items(user_id)
         for item in pantry_items:
             all_ingredients.add(f"{item.name} ({item.quantity} {item.unit})")
         
@@ -68,15 +68,13 @@ async def generate_recipes(request: RecipeGenerateRequest):
         raise HTTPException(status_code=400, detail=f"Failed to generate recipes: {str(e)}")
 
 @router.post("/save/{recipe_id}", response_model=RecipeResponse)
-async def save_recipe(recipe_id: UUID):
+async def save_recipe(recipe_id: UUID, user_id: UUID):
     try:
-        # Get the recipe from generated recipes
         recipe = recipe_manager.get_generated_recipe(recipe_id)
         if not recipe:
             raise HTTPException(status_code=404, detail="Recipe not found")
             
-        # Save it to the database
-        saved_recipe = recipe_manager.save_recipe(recipe)
+        saved_recipe = recipe_manager.save_recipe(recipe, user_id)
         return saved_recipe
         
     except Exception as e:
@@ -94,9 +92,9 @@ async def get_generated_recipe(recipe_id: UUID):
     return recipe
 
 @router.get("/saved", response_model=List[Recipe])
-def get_saved_recipes():
+def get_saved_recipes(user_id: UUID):
     try:
-        return recipe_manager.get_saved_recipes()
+        return recipe_manager.get_saved_recipes(user_id)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to fetch saved recipes: {str(e)}")
 

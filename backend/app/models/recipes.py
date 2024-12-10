@@ -19,6 +19,7 @@ class RecipeBase(BaseModel):
     difficulty: Optional[str] = Field(None, pattern="^(easy|medium|hard)$")
     nutritional_info: Optional[NutritionalInfo] = None
     is_saved: bool = False
+    user_id: UUID
 
 class RecipeCreate(BaseModel):
     name: str

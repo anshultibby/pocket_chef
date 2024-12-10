@@ -4,20 +4,24 @@ import RecipeCard from './RecipeCard';
 import { recipeApi } from '@/lib/api';
 
 interface RecipesTabProps {
-  onSaveRecipe: (recipe: Recipe) => void;
+  onSaveRecipe: (recipe: Recipe) => Promise<void>;
   onRemoveRecipe: (id: string) => void;
+  pantryItems: PantryItem[];
+  loading: boolean;
 }
 
 export default function RecipesTab({
   onSaveRecipe,
-  onRemoveRecipe
+  onRemoveRecipe,
+  pantryItems,
+  loading: parentLoading
 }: RecipesTabProps) {
   const [generatedRecipes, setGeneratedRecipes] = useState<Recipe[]>([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const handleGenerateRecipes = async () => {
-    setLoading(true);
+    setIsGenerating(true);
     setError(null);
 
     try {
@@ -33,7 +37,7 @@ export default function RecipesTab({
       setError(errorMessage);
       console.error('Recipe generation error:', err);
     } finally {
-      setLoading(false);
+      setIsGenerating(false);
     }
   };
 
@@ -51,10 +55,10 @@ export default function RecipesTab({
         <div className="p-6">
           <button
             onClick={handleGenerateRecipes}
-            disabled={loading}
+            disabled={isGenerating || parentLoading}
             className="w-full bg-blue-500 text-white p-3 rounded-lg disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
-            {loading ? 'Generating Recipes...' : 'Generate Recipes'}
+            {isGenerating ? 'Generating Recipes...' : 'Generate Recipes'}
           </button>
         </div>
       </div>

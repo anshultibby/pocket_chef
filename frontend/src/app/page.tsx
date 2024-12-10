@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Recipe, PantryItem } from '@/types';
-import { recipeApi } from '@/lib/api';
+import { recipeApi, pantryApi } from '@/lib/api';
 import RecipeCard from '@/components/RecipeCard';
 import PantryTab from '@/components/PantryTab';
 import PantryOverview from '@/components/PantryOverview';
@@ -11,6 +11,7 @@ import { AuthGuard } from '@/components/AuthGuard';
 import { useAuth } from '@/lib/auth-context';
 import CookbookTab from '@/components/CookbookTab';
 import RecipesTab from '@/components/RecipesTab';
+import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +19,7 @@ export default function Home() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'cook' | 'pantry' | 'cookbook'>('cook');
   const [currentRecipes, setCurrentRecipes] = useState<Recipe[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pantryItems, setPantryItems] = useState<PantryItem[]>([]);
   const { signOut } = useAuth();
@@ -36,6 +37,47 @@ export default function Home() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    const fetchPantryItems = async () => {
+      try {
+        // Get the current session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          throw new Error('Session error: ' + sessionError.message);
+        }
+
+        if (!session) {
+          router.push('/login');
+          return;
+        }
+
+        const { data: { session: refreshedSession }, error: refreshError } = 
+          await supabase.auth.refreshSession();
+
+        if (refreshError || !refreshedSession) {
+          router.push('/login');
+          return;
+        }
+
+        const items = await pantryApi.getItems();
+        setPantryItems(items);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to fetch pantry items';
+        setError(message);
+        console.error('Fetch items error:', err);
+        
+        if (message.includes('authentication') || message.includes('session')) {
+          router.push('/login');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPantryItems();
+  }, [router]);
 
   const handleRecipeClick = (recipeId: string) => {
     router.push(`/recipe/${recipeId}`);
@@ -193,6 +235,7 @@ export default function Home() {
               onAddItems={handleAddItems}
               onUpdateItem={handleUpdateItem}
               onDeleteItem={handleDeleteItem}
+              loading={loading}
             />
           </div>
         ) : (
@@ -200,7 +243,17 @@ export default function Home() {
             <RecipesTab
               onSaveRecipe={handleSaveRecipe}
               onRemoveRecipe={handleDeleteItem}
+              loading={loading}
+              pantryItems={pantryItems}
             />
+          </div>
+        )}
+
+        {error && (
+          <div className="max-w-4xl mx-auto px-4 mt-4">
+            <div className="bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded">
+              {error}
+            </div>
           </div>
         )}
       </main>

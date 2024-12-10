@@ -1,44 +1,82 @@
+import { supabase } from './supabase';
 import type { PantryItem, Recipe, PantryItemCreate } from '@/types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// Base Supabase CRUD operations
+const basePantryApi = {
+  async getItems(): Promise<PantryItem[]> {
+    const { data, error } = await supabase
+      .from('pantry_items')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return data;
+  },
 
-// Add this for debugging
-console.log('API Base URL:', API_BASE_URL);
+  async addItems(items: PantryItemCreate[]): Promise<PantryItem[]> {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Not authenticated');
 
-// Common error handling and request configuration
-async function fetchApi<T>(
-  endpoint: string, 
-  options: RequestInit = {}
-): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
-  
-  // Create headers with proper type assertion
-  const headers = new Headers(options.headers);
+    const itemsWithUserId = items.map(item => ({
+      ...item,
+      user_id: session.user.id
+    }));
 
-  // Set Content-Type if not FormData
-  if (!(options.body instanceof FormData)) {
-    headers.set('Content-Type', 'application/json');
+    const { data, error } = await supabase
+      .from('pantry_items')
+      .insert(itemsWithUserId)
+      .select();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async updateItem(id: string, updates: Partial<PantryItem>): Promise<PantryItem> {
+    const { data, error } = await supabase
+      .from('pantry_items')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async deleteItem(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('pantry_items')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+  },
+
+  async clearPantry(): Promise<void> {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Not authenticated');
+
+    const { error } = await supabase
+      .from('pantry_items')
+      .delete()
+      .eq('user_id', session.user.id);
+    
+    if (error) throw error;
   }
-  
-  const response = await fetch(url, {
-    ...options,
-    headers
-  });
+};
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.detail || `API request failed: ${url}`);
-  }
-
-  return response.json();
-}
-
-// Pantry-related API calls
-export const pantryApi = {
+// Complex operations through backend API
+const complexPantryApi = {
   uploadReceipt: async (formData: FormData): Promise<PantryItem[]> => {
-    const response = await fetch(`${API_BASE_URL}/pantry/upload`, {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Not authenticated');
+
+    const response = await fetch('/api/pantry/upload', {
       method: 'POST',
-      body: formData,
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`
+      },
+      body: formData
     });
 
     if (!response.ok) {
@@ -47,53 +85,13 @@ export const pantryApi = {
     }
 
     return response.json();
-  },
+  }
+};
 
-  addItems: async (items: PantryItemCreate[]): Promise<PantryItem[]> => {
-    return fetchApi<PantryItem[]>('/pantry/items', {
-      method: 'POST',
-      body: JSON.stringify(items),
-    });
-  },
-
-  updateItem: async (id: string, updates: Partial<PantryItem>): Promise<PantryItem> => {
-    try {
-      return await fetchApi<PantryItem>(`/pantry/items/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(updates),
-      });
-    } catch (error) {
-      console.error('Update item error:', error);
-      throw error; // Re-throw to handle in the component
-    }
-  },
-
-  deleteItem: async (id: string): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/pantry/items/${id}`, {
-      method: 'DELETE',
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Failed to delete item' }));
-      throw new Error(error.detail || 'Failed to delete item');
-    }
-  },
-
-  getItems: async () => {
-    const response = await fetch(`${API_BASE_URL}/pantry/items`);
-    if (!response.ok) throw new Error('Failed to fetch pantry items');
-    return response.json();
-  },
-
-  clearPantry: async () => {
-    const response = await fetch(`${API_BASE_URL}/pantry/items`, {
-      method: 'DELETE',
-    });
-    if (!response.ok) {
-      throw new Error('Failed to clear pantry');
-    }
-    return true;
-  },
+// Combine both APIs
+export const pantryApi = {
+  ...basePantryApi,
+  ...complexPantryApi
 };
 
 // Recipe-related API calls
@@ -102,15 +100,25 @@ export const recipeApi = {
     ingredients: string[],
     preferences?: string
   }): Promise<Recipe[]> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Not authenticated');
+
     return fetchApi<Recipe[]>('/recipes/generate', {
       method: 'POST',
-      body: JSON.stringify(requestData)
+      body: JSON.stringify({
+        ...requestData,
+        user_id: session.user.id
+      })
     });
   },
 
   save: async (recipeId: string): Promise<Recipe> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Not authenticated');
+
     return fetchApi<Recipe>(`/recipes/save/${recipeId}`, {
-      method: 'POST'
+      method: 'POST',
+      body: JSON.stringify({ user_id: session.user.id })
     });
   },
 
@@ -129,10 +137,6 @@ export const recipeApi = {
   },
 
   getRecipe: async (id: string): Promise<Recipe> => {
-    const response = await fetch(`/api/recipes/${id}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch recipe');
-    }
-    return response.json();
+    return fetchApi<Recipe>(`/recipes/${id}`);
   },
 };
