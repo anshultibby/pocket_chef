@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { PantryItem } from '@/types';
+import { PantryItem, PantryItemCreate } from '@/types';
 import { pantryApi } from '@/lib/api';
-import AddItemForm from '@/components/AddItemForm';
 import ReceiptConfirmation from '@/components/ReceiptConfirmation';
 
 interface PantryTabProps {
@@ -226,7 +225,9 @@ export default function PantryTab({
             <input
               type="date"
               value={item.expiry_date ? new Date(item.expiry_date).toISOString().split('T')[0] : ''}
-              onChange={(e) => onUpdate({ expiry_date: e.target.value ? new Date(e.target.value) : null })}
+              onChange={(e) => onUpdate({ 
+                expiry_date: e.target.value || undefined 
+              })}
               className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
             />
           </div>
@@ -319,7 +320,10 @@ export default function PantryTab({
               <input
                 type="date"
                 value={newItem.expiry_date ? new Date(newItem.expiry_date).toISOString().split('T')[0] : ''}
-                onChange={(e) => setNewItem(prev => ({ ...prev, expiry_date: e.target.value ? new Date(e.target.value) : null }))}
+                onChange={(e) => setNewItem(prev => ({ 
+                  ...prev, 
+                  expiry_date: e.target.value || null 
+                }))}
                 className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
               />
             </div>
@@ -394,7 +398,7 @@ export default function PantryTab({
         >
           {loading ? (
             <>
-              <span className="animate-spin">↻</span>
+              <span className="animate-spin">���</span>
               Processing...
             </>
           ) : (
@@ -416,9 +420,9 @@ export default function PantryTab({
       </div>
 
       <div className="flex gap-2 flex-wrap">
-        {categories.map(category => (
+        {categories.map((category, index) => (
           <button
-            key={category}
+            key={`category-button-${category}-${index}`}
             onClick={() => setSelectedCategory(
               selectedCategory === category ? null : category
             )}
@@ -438,13 +442,13 @@ export default function PantryTab({
 
       <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         {Object.entries(groupedItems).map(([category, items]) => (
-          <div key={category} className="bg-gray-800/30 rounded-lg p-4 backdrop-blur-sm ring-1 ring-white/5">
+          <div key={`category-${category}`} className="bg-gray-800/30 rounded-lg p-4 backdrop-blur-sm ring-1 ring-white/5">
             <h3 className="text-gray-400 text-sm font-medium mb-3">
               {category}
             </h3>
             <div className="space-y-2">
-              {items.map((item) => (
-                <div key={item.id} 
+              {items.map((item, index) => (
+                <div key={`${item.id}-${index}`} 
                   className="bg-gray-700/30 rounded-lg p-3 flex items-center justify-between hover:ring-1 ring-white/10 transition-all cursor-pointer"
                   onClick={() => setSelectedItem(item)}
                 >

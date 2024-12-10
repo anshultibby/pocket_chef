@@ -58,7 +58,7 @@ export default function RecipesTab({
   const handleSaveRecipe = async (recipe: Recipe) => {
     try {
       const savedRecipe = await recipeApi.save(recipe.id);
-      setSavedRecipes(prev => [...prev, savedRecipe]);
+      onSaveRecipe(savedRecipe);
     } catch (error) {
       console.error('Failed to save recipe:', error);
       setError('Failed to save recipe');

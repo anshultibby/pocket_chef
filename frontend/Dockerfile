@@ -5,14 +5,18 @@ WORKDIR /app
 # Copy package files first
 COPY package*.json ./
 
-# Install dependencies with legacy peer deps (might help with RC versions)
-RUN npm install --legacy-peer-deps
+# Clean npm cache and install dependencies
+RUN npm cache clean --force && \
+    npm install --no-cache
 
 # Copy the rest of the application
 COPY . .
 
+# Build the application
+RUN npm run build
+
 # Expose the port
 EXPOSE 3000
 
-# Use npx to ensure we're using the local installation
-CMD ["npx", "next", "dev", "-p", "3000"]
+# Start the application
+CMD ["npm", "run", "dev"]

@@ -1,25 +1,13 @@
 import { useState, useEffect } from 'react';
 import { PantryItem } from '@/types';
-import { pantryApi } from '@/lib/api';
 
-export default function PantryOverview() {
-  const [pantryItems, setPantryItems] = useState<PantryItem[]>([]);
-  const [loading, setLoading] = useState(true);
+interface PantryOverviewProps {
+  pantryItems: PantryItem[];
+  onManagePantry: () => void;
+}
 
-  useEffect(() => {
-    const loadPantry = async () => {
-      try {
-        const items = await pantryApi.getItems();
-        setPantryItems(items);
-      } catch (error) {
-        console.error('Failed to load pantry items:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadPantry();
-  }, []);
+export default function PantryOverview({ pantryItems, onManagePantry }: PantryOverviewProps) {
+  const [loading, setLoading] = useState(false);
 
   if (loading) {
     return <div className="text-center py-8">Loading pantry...</div>;
@@ -34,7 +22,7 @@ export default function PantryOverview() {
           <p>Your pantry is empty!</p>
           <button 
             className="mt-4 text-blue-400 hover:text-blue-300"
-            onClick={() => {/* Navigate to pantry management */}}
+            onClick={onManagePantry}
           >
             Add ingredients
           </button>

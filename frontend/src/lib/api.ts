@@ -1,4 +1,4 @@
-import type { PantryItem, Recipe} from '@/types';
+import type { PantryItem, Recipe, PantryItemCreate } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -12,12 +12,17 @@ async function fetchApi<T>(
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
   
+  // Create headers with proper type assertion
+  const headers = new Headers(options.headers);
+
+  // Set Content-Type if not FormData
+  if (!(options.body instanceof FormData)) {
+    headers.set('Content-Type', 'application/json');
+  }
+  
   const response = await fetch(url, {
     ...options,
-    headers: {
-      ...options.headers,
-      'Content-Type': options.body instanceof FormData ? undefined : 'application/json',
-    },
+    headers
   });
 
   if (!response.ok) {
@@ -44,7 +49,7 @@ export const pantryApi = {
     return response.json();
   },
 
-  addItems: async (items: Omit<PantryItem, 'id'>[]): Promise<PantryItem[]> => {
+  addItems: async (items: PantryItemCreate[]): Promise<PantryItem[]> => {
     return fetchApi<PantryItem[]>('/pantry/items', {
       method: 'POST',
       body: JSON.stringify(items),
@@ -121,5 +126,13 @@ export const recipeApi = {
 
   getGenerated: async (recipeId: string): Promise<Recipe> => {
     return fetchApi<Recipe>(`/recipes/generated/${recipeId}`);
-  }
+  },
+
+  getRecipe: async (id: string): Promise<Recipe> => {
+    const response = await fetch(`/api/recipes/${id}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch recipe');
+    }
+    return response.json();
+  },
 };

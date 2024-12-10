@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import Image from 'next/image';
+import { PantryItemCreate } from '@/types';
 
 interface ReceiptConfirmationProps {
   items: PantryItemCreate[];
@@ -25,7 +27,9 @@ export default function ReceiptConfirmation({
         name: '',
         quantity: 1,
         category: '',
-        unit: 'units',
+        unit: '',
+        expiry_date: null,
+        notes: '',
         isEditing: true,
       },
       ...editedItems,
@@ -90,10 +94,12 @@ export default function ReceiptConfirmation({
           <div className="w-1/3 bg-gray-900 rounded-lg overflow-hidden">
             {receiptImage ? (
               <div className="h-full overflow-auto">
-                <img 
+                <Image 
                   src={receiptImage} 
                   alt="Receipt" 
-                  className="w-full object-contain"
+                  width={400} 
+                  height={600} 
+                  className="max-w-full h-auto"
                 />
               </div>
             ) : (

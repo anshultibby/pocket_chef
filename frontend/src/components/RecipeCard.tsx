@@ -30,33 +30,33 @@ export default function RecipeCard({ recipe, onSave, onRemove }: RecipeCardProps
           </ol>
         </div>
 
-        {recipe.nutritionalInfo && (
+        {recipe.nutritional_info && (
           <div className="bg-gray-700 p-4 rounded">
             <h4 className="font-semibold mb-2 text-gray-200">Nutritional Information:</h4>
             <div className="grid grid-cols-2 gap-2 text-sm">
-              <p>Calories: {recipe.nutritionalInfo.calories}</p>
-              <p>Protein: {recipe.nutritionalInfo.protein}g</p>
-              <p>Carbs: {recipe.nutritionalInfo.carbs}g</p>
-              <p>Fat: {recipe.nutritionalInfo.fat}g</p>
+              <p>Calories: {recipe.nutritional_info.calories}</p>
+              <p>Protein: {recipe.nutritional_info.protein}g</p>
+              <p>Carbs: {recipe.nutritional_info.carbs}g</p>
+              <p>Fat: {recipe.nutritional_info.fat}g</p>
             </div>
           </div>
         )}
 
         <div className="flex justify-between items-center pt-4">
           <div className="text-sm text-gray-300">
-            {recipe.preparationTime && <span>Prep time: {recipe.preparationTime}</span>}
+            {recipe.preparation_time && <span>Prep time: {recipe.preparation_time}</span>}
             {recipe.difficulty && <span className="ml-4">Difficulty: {recipe.difficulty}</span>}
           </div>
           
           <button
-            onClick={() => recipe.isSaved ? onRemove(recipe.id) : onSave(recipe)}
+            onClick={() => recipe.is_saved ? onRemove(recipe.id) : onSave(recipe)}
             className={`px-4 py-2 rounded ${
-              recipe.isSaved 
+              recipe.is_saved 
                 ? 'bg-red-500 text-white hover:bg-red-600' 
                 : 'bg-green-500 text-white hover:bg-green-600'
             }`}
           >
-            {recipe.isSaved ? 'Remove' : 'Save Recipe'}
+            {recipe.is_saved ? 'Remove' : 'Save Recipe'}
           </button>
         </div>
       </div>

@@ -9,6 +9,15 @@ export interface PantryItem {
   notes?: string;
 }
 
+export interface PantryItemCreate {
+  name: string;
+  quantity: number;
+  unit: string;
+  category: string;
+  expiry_date: string | null;
+  notes?: string;
+}
+
 export interface Recipe {
   id: string;
   name: string;
