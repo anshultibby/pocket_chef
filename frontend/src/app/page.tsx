@@ -15,11 +15,6 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [currentRecipes, setCurrentRecipes] = useState<Recipe[]>([]);
   const [pantryItems, setPantryItems] = useState<PantryItem[]>([]);
-  const [preferences, setPreferences] = useState({
-    dietary_restrictions: '',
-    cuisine_type: '',
-    spice_level: ''
-  });
 
   const handleGenerateRecipe = async () => {
     setLoading(true);
@@ -28,7 +23,6 @@ export default function Home() {
     try {
       const recipes = await recipeApi.generate({
         ingredients: pantryItems.map(item => `${item.name} (${item.quantity} ${item.unit})`),
-        preferences: formatPreferences()
       });
       setCurrentRecipes(recipes);
     } catch (err) {
@@ -36,20 +30,6 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const formatPreferences = () => {
-    const prefs = [];
-    if (preferences.dietary_restrictions) {
-      prefs.push(`dietary: ${preferences.dietary_restrictions}`);
-    }
-    if (preferences.cuisine_type) {
-      prefs.push(`cuisine: ${preferences.cuisine_type}`);
-    }
-    if (preferences.spice_level) {
-      prefs.push(`spice level: ${preferences.spice_level}`);
-    }
-    return prefs.join(', ');
   };
 
   const handleAddItems = (items: PantryItem[]) => {
@@ -116,52 +96,6 @@ export default function Home() {
               <h2 className="text-3xl font-bold mb-6">
                 Recipe Suggestions
               </h2>
-
-              {/* Preferences Section */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                <select
-                  value={preferences.dietary_restrictions}
-                  onChange={(e) => setPreferences(prev => ({
-                    ...prev,
-                    dietary_restrictions: e.target.value
-                  }))}
-                  className="bg-gray-800 border border-gray-700 rounded-lg p-3 text-white"
-                >
-                  <option value="">Any dietary restrictions?</option>
-                  <option value="vegetarian">Vegetarian</option>
-                  <option value="vegan">Vegan</option>
-                  <option value="gluten-free">Gluten-free</option>
-                </select>
-
-                <select
-                  value={preferences.cuisine_type}
-                  onChange={(e) => setPreferences(prev => ({
-                    ...prev,
-                    cuisine_type: e.target.value
-                  }))}
-                  className="bg-gray-800 border border-gray-700 rounded-lg p-3 text-white"
-                >
-                  <option value="">Any cuisine preference?</option>
-                  <option value="italian">Italian</option>
-                  <option value="asian">Asian</option>
-                  <option value="mexican">Mexican</option>
-                  <option value="mediterranean">Mediterranean</option>
-                </select>
-
-                <select
-                  value={preferences.spice_level}
-                  onChange={(e) => setPreferences(prev => ({
-                    ...prev,
-                    spice_level: e.target.value
-                  }))}
-                  className="bg-gray-800 border border-gray-700 rounded-lg p-3 text-white"
-                >
-                  <option value="">Spice level?</option>
-                  <option value="mild">Mild</option>
-                  <option value="medium">Medium</option>
-                  <option value="spicy">Spicy</option>
-                </select>
-              </div>
 
               <button
                 onClick={handleGenerateRecipe}

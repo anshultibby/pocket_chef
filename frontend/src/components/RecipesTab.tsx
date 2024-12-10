@@ -19,11 +19,6 @@ export default function RecipesTab({
   const [generatedRecipes, setGeneratedRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [preferences, setPreferences] = useState({
-    dietary_restrictions: '',
-    cuisine_type: '',
-    spice_level: ''
-  });
   const [activeTab, setActiveTab] = useState<'generated' | 'saved'>('generated');
 
   const handleGenerateRecipes = async () => {
@@ -40,22 +35,7 @@ export default function RecipesTab({
         `${item.name} (${item.quantity} ${item.unit})`
       );
       
-      // Combine preferences into a single string
-      const preferencesArray = [];
-      if (preferences.dietary_restrictions) {
-        preferencesArray.push(`dietary: ${preferences.dietary_restrictions}`);
-      }
-      if (preferences.cuisine_type) {
-        preferencesArray.push(`cuisine: ${preferences.cuisine_type}`);
-      }
-      if (preferences.spice_level) {
-        preferencesArray.push(`spice level: ${preferences.spice_level}`);
-      }
-      
-      const requestData = {
-        ingredients,
-        preferences: preferencesArray.length > 0 ? preferencesArray.join(', ') : undefined
-      };
+      const requestData = { ingredients };
 
       const recipes = await recipeApi.generate(requestData);
       setGeneratedRecipes(recipes);
@@ -115,71 +95,10 @@ export default function RecipesTab({
 
         {/* Preferences Section */}
         <div className="p-6">
-          <h3 className="text-lg font-semibold mb-4 text-white">Recipe Preferences</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1 text-gray-300">
-                Dietary Restrictions
-              </label>
-              <select
-                value={preferences.dietary_restrictions}
-                onChange={(e) => setPreferences(prev => ({
-                  ...prev,
-                  dietary_restrictions: e.target.value
-                }))}
-                className="w-full border border-gray-800 rounded p-2 text-white bg-gray-800"
-              >
-                <option value="">None</option>
-                <option value="vegetarian">Vegetarian</option>
-                <option value="vegan">Vegan</option>
-                <option value="gluten-free">Gluten-free</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1 text-gray-300">
-                Cuisine Type
-              </label>
-              <select
-                value={preferences.cuisine_type}
-                onChange={(e) => setPreferences(prev => ({
-                  ...prev,
-                  cuisine_type: e.target.value
-                }))}
-                className="w-full border border-gray-800 rounded p-2 text-white bg-gray-800"
-              >
-                <option value="">Any</option>
-                <option value="italian">Italian</option>
-                <option value="asian">Asian</option>
-                <option value="mexican">Mexican</option>
-                <option value="mediterranean">Mediterranean</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1 text-gray-300">
-                Spice Level
-              </label>
-              <select
-                value={preferences.spice_level}
-                onChange={(e) => setPreferences(prev => ({
-                  ...prev,
-                  spice_level: e.target.value
-                }))}
-                className="w-full border border-gray-800 rounded p-2 text-white bg-gray-800"
-              >
-                <option value="">Any</option>
-                <option value="mild">Mild</option>
-                <option value="medium">Medium</option>
-                <option value="spicy">Spicy</option>
-              </select>
-            </div>
-          </div>
-
           <button
             onClick={handleGenerateRecipes}
             disabled={loading || pantryItems.length === 0}
-            className="mt-6 w-full bg-blue-500 text-white p-3 rounded-lg disabled:bg-gray-300 disabled:cursor-not-allowed"
+            className="w-full bg-blue-500 text-white p-3 rounded-lg disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
             {loading ? 'Generating Recipes...' : 'Generate Recipes'}
           </button>
