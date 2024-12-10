@@ -71,17 +71,17 @@ const complexPantryApi = {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) throw new Error('Not authenticated');
 
-    const response = await fetch('/api/pantry/upload', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${session.access_token}`
-      },
-      body: formData
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pantry/upload`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${session.access_token}`
+        },
+        body: formData
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || 'Failed to upload receipt');
+        const error = await response.json();
+        throw new Error(error.detail || 'Failed to upload receipt');
     }
 
     return response.json();
