@@ -1,40 +1,51 @@
+# Standard library imports
 import logging
-from typing import Optional
-from uuid import UUID
+import os
+from typing import Dict
 
-from db.supabase import get_supabase
-from fastapi import Depends, HTTPException, status
+from jose import jwt, JWTError
+
+# Third-party imports
+from fastapi import HTTPException, Security
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from supabase.client import Client
 
 logger = logging.getLogger(__name__)
 security = HTTPBearer()
 
+def decode_jwt(token: str) -> Dict:
+    try:
+        # Use your Supabase JWT secret to verify tokens
+        jwt_secret = os.getenv('SUPABASE_JWT_SECRET')
+        if not jwt_secret:
+            raise ValueError("JWT secret not configured")
+            
+        decoded = jwt.decode(
+            token,
+            jwt_secret,
+            algorithms=["HS256"],
+            audience="authenticated"
+        )
+        return decoded
+    except JWTError as e:
+        raise HTTPException(
+            status_code=401,
+            detail=f"Invalid token: {str(e)}"
+        )
+
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
-) -> UUID:
-    """Validate the JWT token and return the user ID."""
+    credentials: HTTPAuthorizationCredentials = Security(security)
+) -> dict:
     try:
         token = credentials.credentials
-        supabase: Client = get_supabase()
+        claims = decode_jwt(token)
         
-        # Validate the token and extract user information
-        response = supabase.auth.get_user(token)
-        user = response.user
-        
-        if not user:
-            logger.error("No user found in token")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authentication credentials"
-            )
-        
-        return UUID(user.id)
+        user_id = claims.get('sub')
+        if not user_id:
+            raise ValueError("No user ID in token")
+            
+        return {"id": user_id}
         
     except Exception as e:
-        logger.error(f"Token validation error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token"
-        )
+        logger.error(f"Authentication error: {str(e)}")
+        raise HTTPException(status_code=401, detail=str(e))
 

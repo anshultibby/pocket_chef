@@ -1,90 +1,79 @@
 import { supabase } from './supabase';
+import { fetchApi } from './fetch';
 import type { PantryItem, Recipe, PantryItemCreate } from '@/types';
 
-// Base Supabase CRUD operations
+// Helper function to get auth token
+const getAuthToken = async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Not authenticated');
+  return session.access_token;
+};
+
+// Base pantry operations through backend API
 const basePantryApi = {
   async getItems(): Promise<PantryItem[]> {
-    const { data, error } = await supabase
-      .from('pantry_items')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    return data;
+    const token = await getAuthToken();
+    return fetchApi<PantryItem[]>('/pantry/items', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
   },
 
   async addItems(items: PantryItemCreate[]): Promise<PantryItem[]> {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error('Not authenticated');
-
-    const itemsWithUserId = items.map(item => ({
-      ...item,
-      user_id: session.user.id
-    }));
-
-    const { data, error } = await supabase
-      .from('pantry_items')
-      .insert(itemsWithUserId)
-      .select();
-
-    if (error) throw error;
-    return data;
+    const token = await getAuthToken();
+    return fetchApi<PantryItem[]>('/pantry/items', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ items })
+    });
   },
 
   async updateItem(id: string, updates: Partial<PantryItem>): Promise<PantryItem> {
-    const { data, error } = await supabase
-      .from('pantry_items')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
+    const token = await getAuthToken();
+    return fetchApi<PantryItem>(`/pantry/items/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(updates)
+    });
   },
 
   async deleteItem(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('pantry_items')
-      .delete()
-      .eq('id', id);
-    
-    if (error) throw error;
+    const token = await getAuthToken();
+    return fetchApi<void>(`/pantry/items/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
   },
 
   async clearPantry(): Promise<void> {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error('Not authenticated');
-
-    const { error } = await supabase
-      .from('pantry_items')
-      .delete()
-      .eq('user_id', session.user.id);
-    
-    if (error) throw error;
+    const token = await getAuthToken();
+    return fetchApi<void>('/pantry/clear', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
   }
 };
 
 // Complex operations through backend API
 const complexPantryApi = {
   uploadReceipt: async (formData: FormData): Promise<PantryItem[]> => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error('Not authenticated');
-
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pantry/upload`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${session.access_token}`
-        },
-        body: formData
+    const token = await getAuthToken();
+    return fetchApi<PantryItem[]>('/pantry/upload', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
     });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || 'Failed to upload receipt');
-    }
-
-    return response.json();
   }
 };
 
@@ -100,15 +89,13 @@ export const recipeApi = {
     ingredients: string[],
     preferences?: string
   }): Promise<Recipe[]> => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error('Not authenticated');
-
+    const token = await getAuthToken();
     return fetchApi<Recipe[]>('/recipes/generate', {
       method: 'POST',
-      body: JSON.stringify({
-        ...requestData,
-        user_id: session.user.id
-      })
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(requestData)
     });
   },
 

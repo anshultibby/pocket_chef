@@ -1,25 +1,16 @@
 import os
 from typing import Optional
-
 from supabase import Client, create_client
 
-
-def get_supabase(auth_token: Optional[str] = None) -> Client:
+def get_supabase() -> Client:
     """
-    Get a Supabase client instance.
-    If auth_token is provided, it will be used for authenticated requests.
+    Get a Supabase client instance with service role.
     """
     supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_KEY")
+    service_role_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")  # Use service role key
     
-    if not supabase_url or not supabase_key:
+    if not supabase_url or not service_role_key:
         raise ValueError("Missing Supabase environment variables")
         
-    client = create_client(supabase_url, supabase_key)
-    
-    # If an auth token is provided, set it for this request
-    if auth_token:
-        client.auth.set_session(access_token=auth_token)
-    
-    return client
+    return create_client(supabase_url, service_role_key)
 

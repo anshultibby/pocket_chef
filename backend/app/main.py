@@ -1,11 +1,10 @@
 import logging
 import os
-
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi import Depends, HTTPException, status
 from uuid import UUID
+
+from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from .routers import pantry, recipes
 from .services.auth import get_current_user
@@ -23,7 +22,6 @@ CORS_ORIGINS = [
     "http://localhost:3000",
     "http://frontend:3000",
     "http://127.0.0.1:3000",
-    # Add the Docker network URL
     f"http://frontend:{PORT}"
 ]
 
@@ -43,13 +41,9 @@ app.add_middleware(
     expose_headers=["*"]
 )
 
-# Add authentication dependency to all routes that need it
-async def auth_middleware(user_id: UUID = Depends(get_current_user)):
-    return user_id
-
 # Include routers
-app.include_router(pantry.router, prefix="/pantry", tags=["pantry"])
-app.include_router(recipes.router, prefix="/recipes", tags=["recipes"])
+app.include_router(pantry.router)
+app.include_router(recipes.router)
 
 @app.get("/health", tags=["health"])
 async def health_check():

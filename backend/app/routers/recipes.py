@@ -5,9 +5,10 @@ from datetime import datetime
 from typing import Dict, List
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from ..models.recipes import Recipe, RecipeCreate, RecipeGenerateRequest, RecipeResponse
+from ..services.auth import get_current_user
 from ..services.claude_service import ClaudeService
 from ..services.pantry import get_pantry_manager
 from ..services.recipe_manager import get_recipe_manager
@@ -19,87 +20,75 @@ recipe_manager = get_recipe_manager()
 pantry_manager = get_pantry_manager()
 
 @router.post("/generate", response_model=List[Recipe])
-async def generate_recipes(request: RecipeGenerateRequest):
+async def generate_recipes(
+    request: RecipeGenerateRequest,
+    current_user: dict = Depends(get_current_user)
+):
     try:
-        all_ingredients = set(request.ingredients)
+        recipes = await claude_service.generate_recipes(
+            ingredients=request.ingredients,
+            preferences=request.preferences
+        )
         
-        # Add pantry items to available ingredients
-        pantry_items = pantry_manager.get_items(user_id)
-        for item in pantry_items:
-            all_ingredients.add(f"{item.name} ({item.quantity} {item.unit})")
+        recipe_manager.store_generated_recipes(
+            recipes=recipes,
+            user_id=UUID(current_user['id'])
+        )
         
-        # Create a prompt with simpler preferences format
-        prompt = f"""Create recipes using these ingredients:\n
-        Available ingredients: {", ".join(all_ingredients)}\n"""
-        
-        if request.preferences:
-            prompt += f"\nPreferences: {request.preferences}\n"
-            
-        return_type_prompt = """\nReturn recipes in JSON format with the following structure for each recipe:\n
-        {
-          'id': 'uuid',
-          'name': 'string',
-          'ingredients': ['string'],
-          'instructions': ['string'],
-          'preparation_time': 'number in minutes',
-          'difficulty': 'easy|medium|hard'
-        }"""
-        prompt += return_type_prompt
-        
-        recipes_json = await claude_service.get_recipes(prompt)
-        recipes_data = json.loads(recipes_json)
-        
-        # Convert the JSON data to Recipe objects
-        recipes = []
-        for recipe_data in recipes_data:
-            # Replace the AI-generated ID with a proper UUID
-            recipe_data['id'] = str(uuid.uuid4())
-            # Add required fields if missing
-            recipe_data['created_at'] = datetime.now()
-            recipe_data['updated_at'] = datetime.now()
-            recipe_data['is_saved'] = False
-            recipes.append(Recipe(**recipe_data))
-            
-        recipe_manager.store_generated_recipes(recipes)
         return recipes
-        
     except Exception as e:
-        logger.error(f"Recipe generation error: {str(e)}")
-        raise HTTPException(status_code=400, detail=f"Failed to generate recipes: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
 
-@router.post("/save/{recipe_id}", response_model=RecipeResponse)
-async def save_recipe(recipe_id: UUID, user_id: UUID):
+@router.get("/generated/{recipe_id}", response_model=Recipe)
+async def get_generated_recipe(
+    recipe_id: str,
+    current_user: dict = Depends(get_current_user)
+):
     try:
-        recipe = recipe_manager.get_generated_recipe(recipe_id)
+        recipe = recipe_manager.get_generated_recipe(
+            recipe_id=recipe_id,
+            user_id=UUID(current_user['id'])
+        )
         if not recipe:
             raise HTTPException(status_code=404, detail="Recipe not found")
-            
-        saved_recipe = recipe_manager.save_recipe(recipe, user_id)
-        return saved_recipe
-        
+        return recipe
     except Exception as e:
-        logger.error(f"Recipe save error: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to save recipe: {str(e)}"
-        )
+        raise HTTPException(status_code=400, detail=str(e))
 
-@router.get("/generated/{recipe_id}", response_model=RecipeResponse)
-async def get_generated_recipe(recipe_id: UUID):
-    recipe = recipe_manager.get_generated_recipe(recipe_id)
-    if not recipe:
-        raise HTTPException(status_code=404, detail="Recipe not found")
-    return recipe
+@router.post("/save/{recipe_id}", response_model=Recipe)
+async def save_recipe(
+    recipe_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    try:
+        return recipe_manager.save_recipe(
+            recipe_id=recipe_id,
+            user_id=UUID(current_user['id'])
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/saved", response_model=List[Recipe])
-def get_saved_recipes(user_id: UUID):
+async def get_saved_recipes(current_user: dict = Depends(get_current_user)):
     try:
-        return recipe_manager.get_saved_recipes(user_id)
+        return recipe_manager.get_saved_recipes(
+            user_id=UUID(current_user['id'])
+        )
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to fetch saved recipes: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.delete("/saved/{recipe_id}")
-def delete_saved_recipe(recipe_id: str):
-    if not recipe_manager.remove_saved_recipe(recipe_id):
-        raise HTTPException(status_code=404, detail="Recipe not found")
-    return {"message": "Recipe deleted"}
+async def delete_saved_recipe(
+    recipe_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    try:
+        if not recipe_manager.delete_saved_recipe(
+            recipe_id=recipe_id,
+            user_id=UUID(current_user['id'])
+        ):
+            raise HTTPException(status_code=404, detail="Recipe not found")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

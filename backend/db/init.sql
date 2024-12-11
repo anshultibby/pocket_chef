@@ -34,6 +34,7 @@ create table if not exists public.recipes (
     difficulty difficulty_level default 'medium',
     nutritional_info jsonb,
     is_saved boolean default false,
+    meal_category text CHECK (meal_category IN ('breakfast', 'lunch', 'dinner', 'snack')),
     created_at timestamp with time zone default now(),
     updated_at timestamp with time zone default now(),
     user_id uuid references auth.users(id)

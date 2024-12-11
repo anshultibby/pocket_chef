@@ -1,9 +1,16 @@
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 from uuid import UUID
+from enum import Enum
 
 from pydantic import BaseModel, Field
 
+
+class MealCategory(str, Enum):
+    BREAKFAST = "breakfast"
+    LUNCH = "lunch"
+    DINNER = "dinner"
+    SNACK = "snack"
 
 class NutritionalInfo(BaseModel):
     calories: int
@@ -19,6 +26,7 @@ class RecipeBase(BaseModel):
     difficulty: Optional[str] = Field(None, pattern="^(easy|medium|hard)$")
     nutritional_info: Optional[NutritionalInfo] = None
     is_saved: bool = False
+    meal_category: MealCategory
     user_id: UUID
 
 class RecipeCreate(BaseModel):
@@ -29,6 +37,7 @@ class RecipeCreate(BaseModel):
     difficulty: Optional[str] = Field(None, pattern="^(easy|medium|hard)$")
     nutritional_info: Optional[NutritionalInfo] = None
     is_saved: bool = True
+    meal_category: MealCategory
 
 class RecipeUpdate(BaseModel):
     name: Optional[str] = None
