@@ -2,7 +2,7 @@ import logging
 from typing import List
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, Body
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from ..models.pantry import PantryItem, PantryItemCreate, PantryItemUpdate
@@ -26,22 +26,24 @@ async def get_items(current_user: dict = Depends(get_current_user)):
 
 @router.post("/items", response_model=List[PantryItem])
 async def add_items(
-    request: dict,
+    items: List[PantryItemCreate] = Body(...),
     current_user: dict = Depends(get_current_user)
 ):
     try:
-        items = request.get('items', [])
-        if not items:
-            raise HTTPException(status_code=400, detail="No items provided")
-            
-        return [
+        logger.info(f"Received items: {items}")
+        
+        added_items = [
             pantry_manager.add_item(
-                item=PantryItemCreate(**item),
+                item=item,
                 user_id=UUID(current_user['id'])
             )
             for item in items
         ]
+        
+        logger.info(f"Successfully added {len(added_items)} items")
+        return added_items
     except Exception as e:
+        logger.error(f"Error adding items: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.patch("/items/{item_id}", response_model=PantryItem)

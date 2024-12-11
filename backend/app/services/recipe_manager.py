@@ -65,9 +65,6 @@ class RecipeManager:
             .execute()
         return len(result.data) > 0
 
-    def clear(self):
-        self._generated_recipes.clear()
-
     def cleanup_old_recipes(self, user_id: UUID, keep_days: int = 7):
         """Remove old generated recipes that aren't saved"""
         cutoff_date = datetime.now() - timedelta(days=keep_days)
@@ -113,26 +110,26 @@ class RecipeManager:
             recipes = []
             
             for recipe_data in recipes_data:
-                # Parse nutritional info
+                # Handle both camelCase and snake_case keys
                 nutritional_info = None
-                if 'nutritionalInfo' in recipe_data:
+                if 'nutritional_info' in recipe_data or 'nutritionalInfo' in recipe_data:
+                    info_data = recipe_data.get('nutritional_info') or recipe_data.get('nutritionalInfo')
                     nutritional_info = NutritionalInfo(
-                        calories=int(recipe_data['nutritionalInfo']['calories']),
-                        protein=float(recipe_data['nutritionalInfo']['protein']),
-                        carbs=float(recipe_data['nutritionalInfo']['carbs']),
-                        fat=float(recipe_data['nutritionalInfo']['fat'])
+                        calories=int(info_data['calories']),
+                        protein=float(info_data['protein']),
+                        carbs=float(info_data['carbs']),
+                        fat=float(info_data['fat'])
                     )
 
-                # Create RecipeCreate object (without id/user_id/timestamps)
                 recipe = RecipeCreate(
                     name=recipe_data['name'],
                     ingredients=recipe_data['ingredients'],
                     instructions=recipe_data['instructions'],
-                    preparation_time=recipe_data.get('preparationTime'),
-                    difficulty=recipe_data.get('difficulty', 'medium').lower(),
+                    preparation_time=recipe_data.get('preparation_time') or recipe_data.get('preparationTime'),
+                    difficulty=(recipe_data.get('difficulty') or 'medium').lower(),
                     nutritional_info=nutritional_info,
                     is_saved=False,
-                    meal_category='dinner'
+                    meal_category=(recipe_data.get('meal_category') or recipe_data.get('mealCategory', 'dinner')).lower()
                 )
                 recipes.append(recipe)
             
@@ -141,6 +138,43 @@ class RecipeManager:
         except Exception as e:
             self.logger.error(f"Error parsing recipe response: {str(e)}")
             raise ValueError(f"Failed to parse recipes: {str(e)}")
+
+    async def generate_recipes_for_categories(
+        self,
+        user_id: UUID,
+        categories_to_generate: List[Dict[str, int]],
+        ingredients: List[str]
+    ) -> Dict[str, List[RecipeResponse]]:
+        """Generate recipes for specific categories and store them"""
+        
+        # Format preferences for Claude
+        preferences = "Generate exactly these recipes:\n" + "\n".join(
+            f"- {cat['count']} {cat['category']} recipes" 
+            for cat in categories_to_generate
+        )
+        
+        # Get raw response from Claude
+        raw_response = await claude_service.generate_recipes(
+            ingredients=ingredients,
+            preferences=preferences
+        )
+        
+        # Parse and store recipes
+        recipe_creates = self.parse_recipe_response(raw_response)
+        stored_recipes = self.store_generated_recipes(
+            recipes=recipe_creates, 
+            user_id=user_id
+        )
+        
+        # Group by category
+        recipes_by_category: Dict[str, List[RecipeResponse]] = {}
+        for recipe in stored_recipes:
+            category = recipe.meal_category
+            if category not in recipes_by_category:
+                recipes_by_category[category] = []
+            recipes_by_category[category].append(recipe)
+        
+        return recipes_by_category
 
 # Create a single instance at module level
 _recipe_manager = RecipeManager()

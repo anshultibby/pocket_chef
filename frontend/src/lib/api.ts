@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import { fetchApi } from './fetch';
-import type { PantryItem, Recipe, PantryItemCreate } from '@/types';
+import type { PantryItem, Recipe, PantryItemCreate, MealCategory, RecipeGenerateRequest } from '@/types';
 
 // Helper function to get auth token
 const getAuthToken = async () => {
@@ -22,12 +22,15 @@ const basePantryApi = {
 
   async addItems(items: PantryItemCreate[]): Promise<PantryItem[]> {
     const token = await getAuthToken();
+    console.log('Sending request with items:', items); // Debug log
+    
     return fetchApi<PantryItem[]>('/pantry/items', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ items })
+      body: JSON.stringify(items) // Send items array directly
     });
   },
 
@@ -85,17 +88,19 @@ export const pantryApi = {
 
 // Recipe-related API calls
 export const recipeApi = {
-  generate: async (requestData: {
-    ingredients: string[],
-    preferences?: string
-  }): Promise<Recipe[]> => {
+  getByCategory: async (): Promise<Record<MealCategory, Recipe[]>> => {
     const token = await getAuthToken();
-    return fetchApi<Recipe[]>('/recipes/generate', {
-      method: 'POST',
+    return fetchApi<Record<MealCategory, Recipe[]>>('/recipes/by-category', {
       headers: {
         'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(requestData)
+      }
+    });
+  },
+
+  generate: async (request: RecipeGenerateRequest): Promise<Recipe[]> => {
+    return fetchApi<Recipe[]>('/recipes/generate', {
+      method: 'POST',
+      body: JSON.stringify(request)
     });
   },
 
@@ -125,5 +130,5 @@ export const recipeApi = {
 
   getRecipe: async (id: string): Promise<Recipe> => {
     return fetchApi<Recipe>(`/recipes/${id}`);
-  },
+  }
 };

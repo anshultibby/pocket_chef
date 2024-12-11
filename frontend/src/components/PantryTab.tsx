@@ -40,23 +40,26 @@ export default function PantryTab({
     setIsUploading(true);
     setError(null);
 
+    // Create URL for receipt image preview
+    const imageUrl = URL.createObjectURL(file);
+    setReceiptImage(imageUrl);
+
     const formData = new FormData();
     formData.append('file', file);
 
     try {
-      const items = await pantryApi.uploadReceipt(formData);
-      onAddItems(items);
+      const parsedItems = await pantryApi.uploadReceipt(formData);
+      setPendingItems(parsedItems);
+      setShowReceiptConfirmation(true);
     } catch (err) {
       let errorMessage = 'Failed to process receipt';
-      
       if (err instanceof Error) {
         errorMessage = err.message;
-      } else if (typeof err === 'object' && err && 'message' in err) {
-        errorMessage = String((err as { message: unknown }).message);
       }
-
-      console.error('Upload error:', err);
       setError(errorMessage);
+      // Clean up the created URL if there's an error
+      URL.revokeObjectURL(imageUrl);
+      setReceiptImage(null);
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
@@ -133,45 +136,26 @@ export default function PantryTab({
 
   const handleConfirmReceiptItems = async (confirmedItems: PantryItemCreate[]) => {
     try {
-      const itemsToAdd: PantryItemCreate[] = [];
-      const itemsToUpdate: { id: string; updates: Partial<PantryItem> }[] = [];
+      const formattedItems = confirmedItems.map(item => ({
+        name: item.name,
+        quantity: Number(item.quantity),
+        unit: item.unit || 'units',
+        category: item.category || 'other',
+        expiry_date: item.expiry_date ? new Date(item.expiry_date).toISOString() : null,
+        notes: item.notes || ''
+      }));
 
-      // Process each confirmed item
-      for (const item of confirmedItems) {
-        const existingItem = pantryItems.find(
-          existing => 
-            normalizeString(existing.name) === normalizeString(item.name) &&
-            normalizeString(existing.unit) === normalizeString(item.unit)
-        );
+      console.log('Sending items to backend:', formattedItems);
 
-        if (existingItem) {
-          itemsToUpdate.push({
-            id: existingItem.id,
-            updates: { quantity: existingItem.quantity + item.quantity }
-          });
-        } else {
-          itemsToAdd.push(item);
-        }
-      }
-
-      // Perform updates
-      const updatePromises = itemsToUpdate.map(({ id, updates }) => 
-        pantryApi.updateItem(id, updates)
-      );
-      const updatedItems = await Promise.all(updatePromises);
-      updatedItems.forEach(item => onUpdateItem(item.id, item));
-
-      // Add new items
-      if (itemsToAdd.length > 0) {
-        const addedItems = await pantryApi.addItems(itemsToAdd);
-        onAddItems(addedItems);
-      }
-
+      const savedItems = await pantryApi.addItems(formattedItems);
+      onAddItems(savedItems);
+      
       setShowReceiptConfirmation(false);
       setPendingItems([]);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to add items';
       setError(message);
+      console.error('Error saving items:', err);
     }
   };
 

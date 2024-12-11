@@ -26,19 +26,26 @@ async def generate_recipes(
 ):
     logger.info(f"Received generate request: {request}")
     try:
+        user_id = UUID(current_user['id'])
+        
+        # Get user's pantry ingredients
+        pantry_items = pantry_manager.get_items(user_id)
+        ingredients = [item.name for item in pantry_items]
+        
+        # Generate preferences string based on categories
+        preferences = "Generate exactly these recipes:\n" + "\n".join(
+            f"- {req.count} {req.category} recipes" 
+            for req in request.categories
+        )
+        
         # Get raw response from Claude
         raw_response = await claude_service.generate_recipes(
-            ingredients=request.ingredients,
-            preferences=request.preferences
+            ingredients=ingredients,
+            preferences=preferences
         )
-        logger.info(f"Claude service response: {raw_response}")
         
-        # Parse response and create recipes
-        user_id = UUID(current_user['id'])
+        # Parse and store recipes
         recipe_creates = recipe_manager.parse_recipe_response(raw_response)
-        logger.info(f"Parsed recipes: {recipe_creates}")
-        
-        # Store the generated recipes and return the stored versions
         stored_recipes = recipe_manager.store_generated_recipes(
             recipes=recipe_creates, 
             user_id=user_id
@@ -101,5 +108,77 @@ async def delete_saved_recipe(
             user_id=UUID(current_user['id'])
         ):
             raise HTTPException(status_code=404, detail="Recipe not found")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/by-category", response_model=Dict[str, List[RecipeResponse]])
+async def get_recipes_by_category(
+    current_user: dict = Depends(get_current_user)
+):
+    try:
+        # Define minimum required recipes per category
+        min_requirements = {
+            "breakfast": 3,
+            "lunch": 3,
+            "dinner": 3,
+            "snack": 2
+        }
+        
+        user_id = UUID(current_user['id'])
+        
+        # Get existing recipes by category
+        existing_recipes = recipe_manager.get_recipes_by_categories(
+            user_id=user_id,
+            min_per_category=min_requirements
+        )
+        
+        # Check which categories need more recipes
+        categories_to_generate = []
+        for category, min_count in min_requirements.items():
+            current_count = len(existing_recipes.get(category, []))
+            if current_count < min_count:
+                categories_to_generate.append({
+                    "category": category,
+                    "count": min_count - current_count
+                })
+        
+        # Generate additional recipes if needed
+        if categories_to_generate:
+            # Get user's pantry items for recipe generation
+            pantry_items = pantry_manager.get_items(user_id)
+            ingredients = [item.name for item in pantry_items]
+            
+            # Generate new recipes
+            new_recipes = await recipe_manager.generate_recipes_for_categories(
+                user_id=user_id,
+                categories_to_generate=categories_to_generate,
+                ingredients=ingredients
+            )
+            
+            # Merge new recipes with existing ones
+            for category, recipes in new_recipes.items():
+                if category in existing_recipes:
+                    existing_recipes[category].extend(recipes)
+                else:
+                    existing_recipes[category] = recipes
+        
+        return existing_recipes
+        
+    except Exception as e:
+        logger.error(f"Error getting recipes by category: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/existing", response_model=Dict[str, List[RecipeResponse]])
+async def get_existing_recipes(current_user: dict = Depends(get_current_user)):
+    try:
+        return recipe_manager.get_recipes_by_categories(
+            user_id=UUID(current_user['id']),
+            min_per_category={
+                "breakfast": 3,
+                "lunch": 3,
+                "dinner": 3,
+                "snack": 2
+            }
+        )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

@@ -39,9 +39,13 @@ export interface Recipe {
   updated_at?: string;
 }
 
+interface CategoryRecipeRequest {
+  category: MealCategory;
+  count: number;
+}
+
 export interface RecipeGenerateRequest {
-  ingredients: string[];
-  preferences?: string;
+  categories: CategoryRecipeRequest[];
 }
 
 export interface ApiResponse<T> {

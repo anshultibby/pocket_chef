@@ -65,10 +65,12 @@ class RecipeResponse(BaseModel):
             datetime: lambda v: v.isoformat()
         }
 
+class CategoryRecipeRequest(BaseModel):
+    category: MealCategory
+    count: int
+
 class RecipeGenerateRequest(BaseModel):
-    """Model for recipe generation request"""
-    ingredients: List[str]
-    preferences: Optional[str] = None
+    categories: List[CategoryRecipeRequest]
 
 class RecipeSave(BaseModel):
     """Model for saving a recipe by ID"""

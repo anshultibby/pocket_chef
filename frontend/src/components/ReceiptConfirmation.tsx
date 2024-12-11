@@ -67,58 +67,35 @@ export default function ReceiptConfirmation({
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 shadow-lg 
-                    transform transition-transform duration-300 ease-in-out">
-      <div className="max-w-6xl mx-auto p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-medium text-gray-300">Review Receipt Items</h3>
-          <div className="flex gap-2">
-            <button
-              onClick={onCancel}
-              className="text-sm px-3 py-1 rounded bg-gray-700 text-gray-300 hover:bg-gray-600"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleConfirm}
-              disabled={isSubmitting}
-              className="text-sm px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? 'Adding...' : `Add ${editedItems.length} Items`}
-            </button>
-          </div>
-        </div>
-
-        <div className="flex gap-4 h-[400px]">
-          {/* Receipt Image Panel */}
-          <div className="w-1/3 bg-gray-900 rounded-lg overflow-hidden">
-            {receiptImage ? (
-              <div className="h-full overflow-auto">
-                <Image 
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      <div className="bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6">
+        <div className="flex gap-6">
+          {/* Receipt Image Preview */}
+          {receiptImage && (
+            <div className="w-1/2">
+              <h3 className="text-lg font-semibold mb-4">Receipt Image</h3>
+              <div className="relative aspect-[3/4] bg-gray-900 rounded-lg overflow-hidden">
+                <img 
                   src={receiptImage} 
-                  alt="Receipt" 
-                  width={400} 
-                  height={600} 
-                  className="max-w-full h-auto"
+                  alt="Receipt"
+                  className="absolute inset-0 w-full h-full object-contain"
                 />
               </div>
-            ) : (
-              <div className="h-full flex items-center justify-center text-gray-500">
-                No receipt image available
-              </div>
-            )}
-          </div>
-
-          {/* Items Panel */}
-          <div className="flex-1 overflow-hidden flex flex-col">
-            <div className="flex justify-end mb-2">
+            </div>
+          )}
+          
+          {/* Items List */}
+          <div className={receiptImage ? 'w-1/2' : 'w-full'}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Confirm Items</h3>
               <button
                 onClick={addNewItem}
-                className="text-sm px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700"
+                className="px-3 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-lg text-sm"
               >
                 Add Item
               </button>
             </div>
+            
             <div className="flex-1 overflow-auto">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 {editedItems.map(item => (
@@ -209,6 +186,23 @@ export default function ReceiptConfirmation({
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex justify-end gap-4 mt-6">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 bg-gray-700/50 hover:bg-gray-700 rounded-lg"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleConfirm}
+            disabled={isSubmitting}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg disabled:opacity-50"
+          >
+            {isSubmitting ? 'Saving...' : 'Save Items'}
+          </button>
         </div>
       </div>
     </div>

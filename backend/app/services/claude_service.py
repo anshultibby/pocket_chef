@@ -41,9 +41,10 @@ Return recipes in JSON format as an array of objects with the following structur
     "name": "Recipe Name",
     "ingredients": ["ingredient 1", "ingredient 2"],
     "instructions": ["step 1", "step 2"],
-    "preparationTime": "30 minutes",
-    "difficulty": "Easy",
-    "nutritionalInfo": {
+    "preparation_time": "30 minutes",
+    "difficulty": "easy|medium|hard",
+    "meal_category": "breakfast|lunch|dinner|snack",
+    "nutritional_info": {
         "calories": 500,
         "protein": 20.5,
         "carbs": 30.5,
@@ -52,11 +53,15 @@ Return recipes in JSON format as an array of objects with the following structur
 }
 
 Important:
-- All fields are required
-- nutritionalInfo must always be included with realistic values
-- Use camelCase for all field names
+- All fields are required except difficulty which can be null
+- nutritional_info must always be included with realistic values
+- Use snake_case for all field names
 - Calories should be whole numbers
-- Protein, carbs, and fat should be in grams with up to 1 decimal place"""
+- Protein, carbs, and fat should be in grams with up to 1 decimal place
+- meal_category must be one of: breakfast, lunch, dinner, snack
+- difficulty when provided must be one of: easy, medium, hard
+- When generating multiple recipes, ensure the exact number requested per meal category is returned
+"""
 
 class ClaudeService:
     def __init__(self):
@@ -154,16 +159,14 @@ class ClaudeService:
     async def generate_recipes(self, ingredients: List[str], preferences: Optional[str] = None) -> str:
         """Generate recipes based on available ingredients and optional preferences"""
         try:
-            # Construct the prompt
             ingredients_list = "\n".join(f"- {item}" for item in ingredients)
             prompt = f"""Create recipes using these ingredients:
 {ingredients_list}
 
 {preferences if preferences else ''}
 
-Return recipes that maximize the use of a few available ingredients while being practical and tasty."""
+Important: Return recipes in the exact format specified in the system prompt, using snake_case for all field names."""
 
-            # Get the raw JSON response from Claude
             return await self.chat(
                 prompt=prompt,
                 system_prompt=RECIPE_SYSTEM_PROMPT
