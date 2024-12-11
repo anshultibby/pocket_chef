@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
-from uuid import UUID
 from enum import Enum
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -22,12 +21,11 @@ class RecipeBase(BaseModel):
     name: str
     ingredients: List[str]
     instructions: List[str]
-    preparation_time: Optional[timedelta] = None
+    preparation_time: Optional[str] = None
     difficulty: Optional[str] = Field(None, pattern="^(easy|medium|hard)$")
     nutritional_info: Optional[NutritionalInfo] = None
     is_saved: bool = False
     meal_category: MealCategory
-    user_id: UUID
 
 class RecipeCreate(BaseModel):
     name: str
@@ -48,13 +46,24 @@ class RecipeUpdate(BaseModel):
     nutritional_info: Optional[NutritionalInfo] = None
     is_saved: Optional[bool] = None
 
-class Recipe(RecipeBase):
-    id: UUID
+class RecipeResponse(BaseModel):
+    """API response model"""
+    id: str
+    name: str
+    ingredients: List[str]
+    instructions: List[str]
+    preparation_time: Optional[str] = None
+    difficulty: Optional[str] = Field(None, pattern="^(easy|medium|hard)$")
+    nutritional_info: Optional[NutritionalInfo] = None
+    is_saved: bool = False
     created_at: datetime
     updated_at: datetime
 
     class Config:
         from_attributes = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
 
 class RecipeGenerateRequest(BaseModel):
     """Model for recipe generation request"""
@@ -63,17 +72,4 @@ class RecipeGenerateRequest(BaseModel):
 
 class RecipeSave(BaseModel):
     """Model for saving a recipe by ID"""
-    recipe_id: UUID
-
-class RecipeResponse(BaseModel):
-    """Model for recipe responses"""
-    id: UUID
-    name: str
-    ingredients: List[str]
-    instructions: List[str]
-    preparation_time: Optional[timedelta] = None
-    difficulty: Optional[str] = Field(None, pattern="^(easy|medium|hard)$")
-    nutritional_info: Optional[NutritionalInfo] = None
-    is_saved: bool = False
-    created_at: datetime
-    updated_at: datetime
+    recipe_id: str

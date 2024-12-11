@@ -91,10 +91,47 @@ async def upload_receipt(
     current_user: dict = Depends(get_current_user)
 ):
     try:
+        # Log incoming file details
+        logger.info(f"Received file upload: name={file.filename}, content_type={file.content_type}")
+        
+        # Validate file type
+        valid_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
+        if file.content_type not in valid_types:
+            logger.warning(f"Invalid content type: {file.content_type}")
+            raise HTTPException(
+                status_code=422,
+                detail=f"Invalid file type. Must be one of: {', '.join(valid_types)}"
+            )
+        
+        # Validate file size (5MB max)
+        max_size = 5 * 1024 * 1024  # 5MB in bytes
+        file_size = 0
+        chunk_size = 1024  # 1KB chunks
+        
+        # Read file in chunks to get size
+        contents = await file.read()
+        file_size = len(contents)
+        logger.info(f"File size: {file_size} bytes")
+        
+        if file_size > max_size:
+            logger.warning(f"File too large: {file_size} bytes")
+            raise HTTPException(
+                status_code=422,
+                detail="File size must be less than 5MB"
+            )
+        
+        # Reset file content
+        await file.seek(0)
+            
         receipt_parser = ReceiptParser()
         items = await receipt_parser.parse_receipt(file, UUID(current_user['id']))
         return items
+        
+    except HTTPException as he:
+        logger.error(f"HTTP Exception: {str(he.detail)}")
+        raise
     except Exception as e:
+        logger.error(f"Error processing receipt: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"Error processing receipt: {str(e)}"

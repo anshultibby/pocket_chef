@@ -1,38 +1,34 @@
-export async function fetchApi<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-  if (!apiUrl) {
-    throw new Error('API URL not configured');
-  }
+export const fetchApi = async <T>(path: string, options?: RequestInit): Promise<T> => {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  const url = `${baseUrl}${path}`;
+  
+  const isFormData = options?.body instanceof FormData;
+  
+  console.log('Fetch request:', {
+    url,
+    method: options?.method,
+    headers: options?.headers,
+    bodyType: options?.body ? typeof options.body : null,
+    isFormData
+  });
 
-  const defaultHeaders = {
-    'Content-Type': 'application/json',
-    ...(options.headers || {})
-  };
-
-  const response = await fetch(`${apiUrl}${endpoint}`, {
+  const response = await fetch(url, {
     ...options,
-    headers: defaultHeaders
+    headers: {
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+      ...options?.headers,
+    },
   });
 
   if (!response.ok) {
-    let errorMessage = 'API request failed';
-    try {
-      const errorData = await response.json();
-      errorMessage = errorData.detail || errorMessage;
-    } catch {
-      // If parsing JSON fails, use status text
-      errorMessage = response.statusText;
-    }
-    throw new Error(errorMessage);
-  }
-
-  // Return null for 204 No Content
-  if (response.status === 204) {
-    return null as T;
+    const errorText = await response.text();
+    console.error('API Error:', {
+      status: response.status,
+      statusText: response.statusText,
+      error: errorText
+    });
+    throw new Error(errorText);
   }
 
   return response.json();
-}
+};

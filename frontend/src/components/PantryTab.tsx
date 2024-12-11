@@ -40,34 +40,28 @@ export default function PantryTab({
     setIsUploading(true);
     setError(null);
 
+    const formData = new FormData();
+    formData.append('file', file);
+
     try {
-      const imageUrl = URL.createObjectURL(file);
-      setReceiptImage(imageUrl);
-
-      const formData = new FormData();
-      formData.append('file', file);
-
-      console.log('Uploading file:', file.name);
-      const parsedItems = await pantryApi.uploadReceipt(formData);
-      console.log('Parsed items:', parsedItems);
-
-      setPendingItems(parsedItems);
-      setShowReceiptConfirmation(true);
-    } catch (err: unknown) {
-      if (receiptImage) {
-        URL.revokeObjectURL(receiptImage);
-        setReceiptImage(null);
-      }
-      const message = err instanceof Error ? err.message : 'Failed to process receipt';
-      setError(message);
+      const items = await pantryApi.uploadReceipt(formData);
+      onAddItems(items);
+    } catch (err) {
+      let errorMessage = 'Failed to process receipt';
       
       if (err instanceof Error) {
-        console.error('Upload error:', err.message);
-      } else {
-        console.error('Upload error: Unknown error occurred');
+        errorMessage = err.message;
+      } else if (typeof err === 'object' && err && 'message' in err) {
+        errorMessage = String((err as { message: unknown }).message);
       }
+
+      console.error('Upload error:', err);
+      setError(errorMessage);
     } finally {
       setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -101,6 +95,8 @@ export default function PantryTab({
     try {
       await pantryApi.clearPantry();
       onAddItems([]);
+      setSelectedCategory(null);
+      setSearchTerm('');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to clear pantry';
       setError(message);
@@ -110,8 +106,24 @@ export default function PantryTab({
 
   const handleAddItem = async (item: PantryItemCreate) => {
     try {
-      const [addedItem] = await pantryApi.addItems([item]);
-      onAddItems([addedItem]);
+      // Check if item with same name and unit already exists
+      const existingItem = pantryItems.find(
+        existing => 
+          normalizeString(existing.name) === normalizeString(item.name) &&
+          normalizeString(existing.unit) === normalizeString(item.unit)
+      );
+
+      if (existingItem) {
+        // Update existing item's quantity
+        const updatedItem = await pantryApi.updateItem(existingItem.id, {
+          quantity: existingItem.quantity + item.quantity
+        });
+        onUpdateItem(existingItem.id, updatedItem);
+      } else {
+        // Add new item
+        const [addedItem] = await pantryApi.addItems([item]);
+        onAddItems([addedItem]);
+      }
       setShowAddItemForm(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to add item';
@@ -121,8 +133,40 @@ export default function PantryTab({
 
   const handleConfirmReceiptItems = async (confirmedItems: PantryItemCreate[]) => {
     try {
-      const addedItems = await pantryApi.addItems(confirmedItems);
-      onAddItems(addedItems);
+      const itemsToAdd: PantryItemCreate[] = [];
+      const itemsToUpdate: { id: string; updates: Partial<PantryItem> }[] = [];
+
+      // Process each confirmed item
+      for (const item of confirmedItems) {
+        const existingItem = pantryItems.find(
+          existing => 
+            normalizeString(existing.name) === normalizeString(item.name) &&
+            normalizeString(existing.unit) === normalizeString(item.unit)
+        );
+
+        if (existingItem) {
+          itemsToUpdate.push({
+            id: existingItem.id,
+            updates: { quantity: existingItem.quantity + item.quantity }
+          });
+        } else {
+          itemsToAdd.push(item);
+        }
+      }
+
+      // Perform updates
+      const updatePromises = itemsToUpdate.map(({ id, updates }) => 
+        pantryApi.updateItem(id, updates)
+      );
+      const updatedItems = await Promise.all(updatePromises);
+      updatedItems.forEach(item => onUpdateItem(item.id, item));
+
+      // Add new items
+      if (itemsToAdd.length > 0) {
+        const addedItems = await pantryApi.addItems(itemsToAdd);
+        onAddItems(addedItems);
+      }
+
       setShowReceiptConfirmation(false);
       setPendingItems([]);
     } catch (err) {
@@ -346,6 +390,11 @@ export default function PantryTab({
         </div>
       </div>
     );
+  };
+
+  // Helper function for consistent comparison
+  const normalizeString = (str: string) => {
+    return str.toLowerCase().trim();
   };
 
   return (

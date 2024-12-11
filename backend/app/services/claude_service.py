@@ -2,11 +2,12 @@ import base64
 import json
 import logging
 import os
+from typing import List, Optional
 
 from anthropic import Anthropic
 from fastapi import UploadFile
 
-from ..models.pantry import PantryItem, PantryItemCreate
+from ..models.pantry import PantryItemCreate
 
 # Constants
 MODEL = "claude-3-5-sonnet-20240620"
@@ -98,8 +99,14 @@ class ClaudeService:
                 params["system"] = system_prompt
 
             response = self.anthropic.messages.create(**params)
+            raw_response = response.content[0].text
             
-            return self._clean_response(response.content[0].text)
+            self.logger.info(f"Claude raw response: {raw_response}")
+            
+            cleaned_response = self._clean_response(raw_response)
+            self.logger.info(f"Claude cleaned response: {cleaned_response}")
+            
+            return cleaned_response
             
         except Exception as e:
             self.logger.error(f"Error in chat: {str(e)}")
@@ -144,9 +151,24 @@ class ClaudeService:
             self.logger.error(f"Error parsing items: {str(e)}")
             return []
 
-    async def get_recipes(self, prompt: str) -> str:
-        full_prompt = prompt + "\n\nEnsure each recipe has a unique ID and ingredients are simple strings, not objects."
-        return await self.chat(
-            prompt=full_prompt,
-            system_prompt=RECIPE_SYSTEM_PROMPT
-        )
+    async def generate_recipes(self, ingredients: List[str], preferences: Optional[str] = None) -> str:
+        """Generate recipes based on available ingredients and optional preferences"""
+        try:
+            # Construct the prompt
+            ingredients_list = "\n".join(f"- {item}" for item in ingredients)
+            prompt = f"""Create recipes using these ingredients:
+{ingredients_list}
+
+{preferences if preferences else ''}
+
+Return recipes that maximize the use of a few available ingredients while being practical and tasty."""
+
+            # Get the raw JSON response from Claude
+            return await self.chat(
+                prompt=prompt,
+                system_prompt=RECIPE_SYSTEM_PROMPT
+            )
+            
+        except Exception as e:
+            self.logger.error(f"Error generating recipes: {str(e)}")
+            raise ValueError(f"Failed to generate recipes: {str(e)}")
