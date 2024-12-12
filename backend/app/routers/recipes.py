@@ -39,7 +39,7 @@ async def generate_recipes(
         )
         
         # Get raw response from Claude
-        raw_response = await claude_service.generate_recipes(
+        raw_response = await recipe_manager.claude_service.generate_recipes(
             ingredients=ingredients,
             preferences=preferences
         )
@@ -131,36 +131,6 @@ async def get_recipes_by_category(
             user_id=user_id,
             min_per_category=min_requirements
         )
-        
-        # Check which categories need more recipes
-        categories_to_generate = []
-        for category, min_count in min_requirements.items():
-            current_count = len(existing_recipes.get(category, []))
-            if current_count < min_count:
-                categories_to_generate.append({
-                    "category": category,
-                    "count": min_count - current_count
-                })
-        
-        # Generate additional recipes if needed
-        if categories_to_generate:
-            # Get user's pantry items for recipe generation
-            pantry_items = pantry_manager.get_items(user_id)
-            ingredients = [item.name for item in pantry_items]
-            
-            # Generate new recipes
-            new_recipes = await recipe_manager.generate_recipes_for_categories(
-                user_id=user_id,
-                categories_to_generate=categories_to_generate,
-                ingredients=ingredients
-            )
-            
-            # Merge new recipes with existing ones
-            for category, recipes in new_recipes.items():
-                if category in existing_recipes:
-                    existing_recipes[category].extend(recipes)
-                else:
-                    existing_recipes[category] = recipes
         
         return existing_recipes
         

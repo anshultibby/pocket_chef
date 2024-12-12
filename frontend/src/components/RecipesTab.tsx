@@ -31,15 +31,44 @@ export default function RecipesTab({
     setError(null);
 
     try {
+      // First try to get existing recipes
       const recipesByCategory = await recipeApi.getByCategory();
-      setRecipes(recipesByCategory);
-      const isGenerating = Object.values(recipesByCategory).some(
-        recipes => recipes.length === 0
-      );
-      setIsGenerating(isGenerating);
       
-      if (isGenerating) {
-        pollForRecipes();
+      // Check if we have enough recipes for each category
+      const requiredCounts = {
+        breakfast: 3,
+        lunch: 3,
+        dinner: 3,
+        snack: 2
+      };
+
+      const needsGeneration = Object.entries(requiredCounts).some(
+        ([category, count]) => 
+          !recipesByCategory[category] || 
+          recipesByCategory[category].length < count
+      );
+
+      if (needsGeneration) {
+        // Only generate what we need
+        const categoriesToGenerate = Object.entries(requiredCounts)
+          .filter(([category, count]) => 
+            !recipesByCategory[category] || 
+            recipesByCategory[category].length < count
+          )
+          .map(([category, count]) => ({
+            category,
+            count: count - (recipesByCategory[category]?.length || 0)
+          }));
+
+        await recipeApi.generate({ categories: categoriesToGenerate });
+        
+        // Fetch again to get the complete set
+        const updatedRecipes = await recipeApi.getByCategory();
+        setRecipes(updatedRecipes);
+        setIsGenerating(false);
+      } else {
+        setRecipes(recipesByCategory);
+        setIsGenerating(false);
       }
     } catch (err) {
       handleError(err);
@@ -134,7 +163,7 @@ export default function RecipesTab({
             className={`px-4 py-2 rounded-lg ${pantryItems.length === 0 ? 'rounded-t-none' : ''} transition-colors ${
               isLoading || isGenerating || pantryItems.length === 0
                 ? 'bg-red-900/20 text-red-400 border border-red-700/50 cursor-not-allowed'
-                : 'bg-green-600/20 hover:bg-green-600/30 text-green-400 border border-green-700/50'
+                : 'bg-green-500 hover:bg-green-600 text-white border border-green-600'
             }`}
           >
             {isLoading || isGenerating ? (

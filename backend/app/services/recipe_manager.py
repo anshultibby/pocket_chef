@@ -8,12 +8,15 @@ from uuid import UUID
 from db.supabase import get_supabase
 
 from ..models.recipes import NutritionalInfo, RecipeCreate, RecipeResponse, RecipeUpdate
+from ..services.claude_service import ClaudeService
 
 
 class RecipeManager:
     def __init__(self):
         self.table = "recipes"
         self.supabase = get_supabase()  # Use service role client
+        self.claude_service = ClaudeService()
+        self.logger = logging.getLogger(__name__)
 
     def store_generated_recipes(self, recipes: List[RecipeCreate], user_id: UUID) -> List[RecipeResponse]:
         """Store recipes in database, returning full RecipeResponse objects"""
@@ -98,8 +101,11 @@ class RecipeManager:
         
         for row in result.data:
             recipe = RecipeResponse(**row)
-            if recipe.meal_category in recipes_by_category:
-                recipes_by_category[recipe.meal_category].append(recipe)
+            category = recipe.meal_category
+            if category in recipes_by_category:
+                # Only add up to the minimum required for each category
+                if len(recipes_by_category[category]) < min_per_category[category]:
+                    recipes_by_category[category].append(recipe)
 
         return recipes_by_category
 
@@ -154,7 +160,7 @@ class RecipeManager:
         )
         
         # Get raw response from Claude
-        raw_response = await claude_service.generate_recipes(
+        raw_response = await self.claude_service.generate_recipes(
             ingredients=ingredients,
             preferences=preferences
         )

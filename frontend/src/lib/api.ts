@@ -98,9 +98,14 @@ export const recipeApi = {
   },
 
   generate: async (request: RecipeGenerateRequest): Promise<Recipe[]> => {
+    const token = await getAuthToken();
     return fetchApi<Recipe[]>('/recipes/generate', {
-      method: 'POST',
-      body: JSON.stringify(request)
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(request)
     });
   },
 
