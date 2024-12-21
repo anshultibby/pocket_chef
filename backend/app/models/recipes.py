@@ -5,7 +5,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from ..models.pantry import MeasurementUnit, NutritionalInfo
+from ..models.pantry import NutritionalInfo
 
 
 class DifficultyLevel(str, Enum):
@@ -17,7 +17,7 @@ class DifficultyLevel(str, Enum):
 class RecipeIngredient(BaseModel):
     ingredient_id: UUID
     quantity: float
-    unit: MeasurementUnit
+    unit: str
     notes: Optional[str] = None
 
 

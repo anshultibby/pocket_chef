@@ -1,4 +1,3 @@
-import { MEASUREMENT_UNITS, MeasurementUnit } from '@/types';
 import { ItemEditModalProps } from '@/types/pantry';
 
 export default function ItemEditModal({ item, onClose, onUpdate }: ItemEditModalProps) {
@@ -35,17 +34,15 @@ export default function ItemEditModal({ item, onClose, onUpdate }: ItemEditModal
             </div>
             <div>
               <label className="text-sm text-gray-400">Unit</label>
-              <select
+              <input
+                type="text"
                 value={item.data.unit}
                 onChange={(e) => onUpdate({ 
-                  data: { ...item.data, unit: e.target.value as MeasurementUnit }
+                  data: { ...item.data, unit: e.target.value }
                 })}
                 className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
-              >
-                {MEASUREMENT_UNITS.map(unit => (
-                  <option key={unit} value={unit}>{unit}</option>
-                ))}
-              </select>
+                placeholder="e.g., grams, cups, pieces"
+              />
             </div>
           </div>
   

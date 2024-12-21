@@ -1,14 +1,19 @@
 import { FormInput } from '../shared/FormInput';
-import { FormSelect } from '../shared/FormSelect';
 import { AddItemModalProps } from '@/types/pantry';
 import { useItemForm } from '@/hooks/useItemForm';
 import { PantryItemCreate } from '@/types';
 
-const UNIT_OPTIONS = [
-  { value: 'units', label: 'Units' },
-  { value: 'grams', label: 'Grams' },
-  { value: 'milliliters', label: 'Milliliters' },
-  { value: 'pinch', label: 'Pinch' },
+const SUGGESTED_UNITS = [
+  'grams',
+  'milliliters',
+  'units',
+  'pieces',
+  'cups',
+  'tablespoons',
+  'teaspoons',
+  'ounces',
+  'pounds',
+  'pinch'
 ];
 
 export default function AddItemModal({ onAdd, onClose }: AddItemModalProps) {
@@ -54,14 +59,22 @@ export default function AddItemModal({ onAdd, onClose }: AddItemModalProps) {
               required
             />
             
-            <FormSelect
-              label="Unit"
-              value={values.unit}
-              onChange={(e) => handleChange('unit', e.target.value)}
-              options={UNIT_OPTIONS}
-              error={errors.unit}
-              required
-            />
+            <div>
+              <label className="text-sm text-gray-400">Unit</label>
+              <input
+                list="unit-suggestions"
+                type="text"
+                value={values.unit}
+                onChange={(e) => handleChange('unit', e.target.value)}
+                className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
+                placeholder="Enter or select a unit"
+              />
+              <datalist id="unit-suggestions">
+                {SUGGESTED_UNITS.map(unit => (
+                  <option key={unit} value={unit} />
+                ))}
+              </datalist>
+            </div>
           </div>
 
           <div>

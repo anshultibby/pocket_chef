@@ -1,4 +1,4 @@
-import { MeasurementUnit, MEASUREMENT_UNITS } from '@/types';
+import { MeasurementUnit} from '@/types';
 
 // Define the shape of the form values
 export interface ItemFormValues {
@@ -28,8 +28,9 @@ export const useValidationRules = (): Partial<ValidationRules> => {
       return undefined;
     },
     
-    unit: (value: MeasurementUnit) => {
-      if (!MEASUREMENT_UNITS.includes(value)) return 'Invalid unit';
+    unit: (value: string) => {
+      if (!value.trim()) return 'Unit is required';
+      if (value.length > 30) return 'Unit must be less than 30 characters';
       return undefined;
     },
     

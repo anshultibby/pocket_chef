@@ -6,13 +6,6 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 
-class MeasurementUnit(str, Enum):
-    GRAMS = "grams"
-    MILLILITERS = "milliliters"
-    UNITS = "units"
-    PINCH = "pinch"
-
-
 class NutritionalInfo(BaseModel):
     calories: float = 0
     protein: float = 0
@@ -22,7 +15,7 @@ class NutritionalInfo(BaseModel):
 
 
 class IngredientMeasurement(BaseModel):
-    standard_unit: MeasurementUnit
+    standard_unit: str
     conversion_factor: float = 1.0
     serving_size: float = 1
 
@@ -49,7 +42,7 @@ class Ingredient(BaseModel):
 class PantryItemData(BaseModel):
     display_name: str
     quantity: float
-    unit: MeasurementUnit
+    unit: str
     category: Optional[str] = None
     notes: Optional[str] = None
     expiry_date: Optional[datetime] = None
@@ -70,14 +63,14 @@ class PantryItem(BaseModel):
 class PantryItemCreate(BaseModel):
     display_name: str
     quantity: float
-    unit: MeasurementUnit
+    unit: str
     notes: Optional[str] = None
     expiry_date: Optional[datetime] = None
 
 
 class PantryItemUpdate(BaseModel):
     quantity: Optional[float] = None
-    unit: Optional[MeasurementUnit] = None
+    unit: Optional[str] = None
     notes: Optional[str] = None
     expiry_date: Optional[datetime] = None
 

@@ -1,5 +1,4 @@
-export const MEASUREMENT_UNITS = ['grams', 'milliliters', 'units', 'pinch'] as const;
-export type MeasurementUnit = typeof MEASUREMENT_UNITS[number];
+export type MeasurementUnit = string;
 export type DifficultyLevel = 'easy' | 'medium' | 'hard';
 export type RecipeType = 'generated' | 'user_created' | 'saved';
 export type MealCategory = 'breakfast' | 'lunch' | 'dinner' | 'snack';
