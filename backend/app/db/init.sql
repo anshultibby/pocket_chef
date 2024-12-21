@@ -33,7 +33,6 @@ create table if not exists public.ingredients (
             "conversion_factor": 1.0,
             "serving_size": 1
         },
-        "category": null,
         "nutrition": {
             "per_standard_unit": {
                 "calories": 0,
@@ -57,6 +56,7 @@ create table if not exists public.pantry_items (
         "display_name": null,
         "quantity": null,
         "unit": null,
+        "category": null,
         "notes": null
     }'::jsonb,
     expiry_date timestamp with time zone,
@@ -126,6 +126,8 @@ create table if not exists public.recipes (
 
 create index if not exists idx_pantry_items_user on pantry_items (user_id);
 create index if not exists idx_pantry_items_ingredient on pantry_items (ingredient_id);
+create index if not exists idx_pantry_items_category 
+    on pantry_items using gin ((data ->> 'category'));
 
 create index if not exists idx_recipes_user on recipes (user_id);
 create index if not exists idx_recipes_type on recipes (recipe_type);
@@ -199,7 +201,6 @@ COMMENT ON TABLE ingredients IS 'Example ingredient:
         "conversion_factor": 1.0,
         "serving_size": 1
     },
-    "category": "dairy",
     "nutrition": {
         "per_standard_unit": {
             "calories": 70,

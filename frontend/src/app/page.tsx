@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Recipe, PantryItem } from '@/types';
+import { Recipe, PantryItem, PantryItemWithIngredient } from '@/types';
 import { recipeApi, pantryApi } from '@/lib/api';
 import RecipeCard from '@/components/RecipeCard';
 import PantryTab from '@/components/PantryTab';
@@ -21,7 +21,7 @@ export default function Home() {
   const [currentRecipes, setCurrentRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [pantryItems, setPantryItems] = useState<PantryItem[]>([]);
+  const [pantryItems, setPantryItems] = useState<PantryItemWithIngredient[]>([]);
   const { signOut } = useAuth();
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
 
@@ -88,7 +88,12 @@ export default function Home() {
     setError(null);
     try {
       const recipes = await recipeApi.generate({
-        ingredients: pantryItems.map(item => item.name)
+        categories: [
+          { category: 'breakfast', count: 3 },
+          { category: 'lunch', count: 3 },
+          { category: 'dinner', count: 3 },
+          { category: 'snack', count: 2 }
+        ]
       });
       setCurrentRecipes(recipes);
     } catch (err) {
@@ -99,11 +104,11 @@ export default function Home() {
     }
   };
 
-  const handleAddItems = (items: PantryItem[]) => {
+  const handleAddItems = (items: PantryItemWithIngredient[]) => {
     setPantryItems(prev => [...prev, ...items]);
   };
 
-  const handleUpdateItem = (id: string, updates: Partial<PantryItem>) => {
+  const handleUpdateItem = (id: string, updates: Partial<PantryItemWithIngredient>) => {
     setPantryItems(prev => 
       prev.map(item => item.id === id ? { ...item, ...updates } : item)
     );

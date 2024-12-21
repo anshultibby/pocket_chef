@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Recipe, PantryItem, MealCategory, CategoryRecipeRequest } from '@/types';
+import { Recipe, PantryItem, MealCategory, RecipeGenerateRequest } from '@/types';
 import RecipeCard from './RecipeCard';
 import { recipeApi } from '@/lib/api';
 
@@ -28,6 +28,7 @@ export default function RecipesTab({
 
   const fetchRecipes = async () => {
     setIsLoading(true);
+    setIsGenerating(true);
     setError(null);
 
     try {
@@ -35,7 +36,7 @@ export default function RecipesTab({
       const recipesByCategory = await recipeApi.getByCategory();
       
       // Check if we have enough recipes for each category
-      const requiredCounts = {
+      const requiredCounts: Record<MealCategory, number> = {
         breakfast: 3,
         lunch: 3,
         dinner: 3,
@@ -44,20 +45,20 @@ export default function RecipesTab({
 
       const needsGeneration = Object.entries(requiredCounts).some(
         ([category, count]) => 
-          !recipesByCategory[category] || 
-          recipesByCategory[category].length < count
+          !recipesByCategory[category as MealCategory] || 
+          recipesByCategory[category as MealCategory].length < count
       );
 
       if (needsGeneration) {
         // Only generate what we need
-        const categoriesToGenerate = Object.entries(requiredCounts)
+        const categoriesToGenerate: RecipeGenerateRequest['categories'] = Object.entries(requiredCounts)
           .filter(([category, count]) => 
-            !recipesByCategory[category] || 
-            recipesByCategory[category].length < count
+            !recipesByCategory[category as MealCategory] || 
+            recipesByCategory[category as MealCategory].length < count
           )
           .map(([category, count]) => ({
-            category,
-            count: count - (recipesByCategory[category]?.length || 0)
+            category: category as MealCategory,
+            count: count - (recipesByCategory[category as MealCategory]?.length || 0)
           }));
 
         await recipeApi.generate({ categories: categoriesToGenerate });
@@ -80,7 +81,7 @@ export default function RecipesTab({
   const pollForRecipes = async () => {
     let attempts = 0;
     const maxAttempts = 10;
-    const pollInterval = 2000; // 2 seconds
+    const pollInterval = 20000; // 20 seconds
 
     const poll = async () => {
       if (attempts >= maxAttempts) {
@@ -123,28 +124,32 @@ export default function RecipesTab({
     else if (typeof err === 'string') message = err;
     setError(message);
     console.error('Recipe error:', err);
+    setIsGenerating(false);
+    setIsLoading(false);
   };
 
   const handleGenerateRecipes = async () => {
     setIsLoading(true);
+    setIsGenerating(true);
     setError(null);
 
     try {
-      const request = {
+      const request: RecipeGenerateRequest = {
         categories: [
-          { category: 'breakfast', count: 3 },
-          { category: 'lunch', count: 3 },
-          { category: 'dinner', count: 3 },
-          { category: 'snack', count: 2 }
+          { category: 'breakfast' as MealCategory, count: 3 },
+          { category: 'lunch' as MealCategory, count: 3 },
+          { category: 'dinner' as MealCategory, count: 3 },
+          { category: 'snack' as MealCategory, count: 2 }
         ]
       };
       
       await recipeApi.generate(request);
-      fetchRecipes();
+      await fetchRecipes();
     } catch (err) {
       handleError(err);
     } finally {
       setIsLoading(false);
+      setIsGenerating(false);
     }
   };
 
@@ -193,7 +198,7 @@ export default function RecipesTab({
         </div>
       )}
 
-      {!isLoading && !isGenerating && Object.entries(recipes).map(([category, categoryRecipes]) => (
+      {!isLoading && !isGenerating && (Object.entries(recipes) as [MealCategory, Recipe[]][]).map(([category, categoryRecipes]) => (
         <div key={category} className="space-y-4">
           <h2 className="text-xl font-bold text-white capitalize">{category}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

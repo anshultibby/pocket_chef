@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { PantryItemCreate } from '@/types';
+import { MeasurementUnit, PantryItemCreate } from '@/types';
 
 interface ReceiptConfirmationProps {
   items: PantryItemCreate[];
@@ -24,12 +24,13 @@ export default function ReceiptConfirmation({
     setEditedItems([
       {
         tempId: editedItems.length,
-        name: '',
-        quantity: 1,
-        category: '',
-        unit: '',
-        expiry_date: null,
-        notes: '',
+        data: {
+          display_name: '',
+          quantity: 1,
+          unit: 'units' as MeasurementUnit,
+          notes: '',
+          expiry_date: undefined
+        },
         isEditing: true,
       },
       ...editedItems,
@@ -51,13 +52,16 @@ export default function ReceiptConfirmation({
     setIsSubmitting(true);
     try {
       const validItems = editedItems
-        .filter(item => item.name.trim() && item.category.trim())
+        .filter(item => item.data.display_name.trim() && item.data.category?.trim())
         .map(({ tempId, isEditing, ...item }) => ({
           ...item,
-          name: item.name.trim(),
-          category: item.category.trim(),
-          quantity: Math.max(1, Math.floor(item.quantity)),
-          unit: item.unit || 'units'
+          data: {
+            ...item.data,
+            display_name: item.data.display_name.trim(),
+            category: item.data.category?.trim() || 'Other',
+            quantity: Math.max(1, Math.floor(item.data.quantity)),
+            unit: item.data.unit || 'units'
+          }
         }));
         
       await onConfirm(validItems);
@@ -107,13 +111,16 @@ export default function ReceiptConfirmation({
                       {item.isEditing ? (
                         <input
                           type="text"
-                          value={item.name}
+                          value={item.data.display_name}
                           onChange={(e) => {
                             const newItems = [...editedItems];
                             const itemIndex = newItems.findIndex(i => i.tempId === item.tempId);
                             newItems[itemIndex] = {
                               ...item,
-                              name: e.target.value
+                              data: {
+                                ...item.data,
+                                display_name: e.target.value
+                              }
                             };
                             setEditedItems(newItems);
                           }}
@@ -121,7 +128,7 @@ export default function ReceiptConfirmation({
                           placeholder="Item name"
                         />
                       ) : (
-                        <span className="flex-grow text-sm text-white p-1">{item.name}</span>
+                        <span className="flex-grow text-sm text-white p-1">{item.data.display_name}</span>
                       )}
                       <div className="flex gap-2">
                         <button
@@ -145,13 +152,16 @@ export default function ReceiptConfirmation({
                         <>
                           <input
                             type="text"
-                            value={item.category}
+                            value={item.data.category || ''}
                             onChange={(e) => {
                               const newItems = [...editedItems];
                               const itemIndex = newItems.findIndex(i => i.tempId === item.tempId);
                               newItems[itemIndex] = {
                                 ...item,
-                                category: e.target.value
+                                data: {
+                                  ...item.data,
+                                  category: e.target.value
+                                }
                               };
                               setEditedItems(newItems);
                             }}
@@ -160,13 +170,16 @@ export default function ReceiptConfirmation({
                           />
                           <input
                             type="number"
-                            value={item.quantity}
+                            value={item.data.quantity}
                             onChange={(e) => {
                               const newItems = [...editedItems];
                               const itemIndex = newItems.findIndex(i => i.tempId === item.tempId);
                               newItems[itemIndex] = {
                                 ...item,
-                                quantity: Number(e.target.value)
+                                data: {
+                                  ...item.data,
+                                  quantity: Number(e.target.value)
+                                }
                               };
                               setEditedItems(newItems);
                             }}
@@ -176,8 +189,8 @@ export default function ReceiptConfirmation({
                         </>
                       ) : (
                         <>
-                          <span className="flex-grow text-sm text-white p-1">{item.category}</span>
-                          <span className="w-16 text-sm text-center text-white p-1">{item.quantity}</span>
+                          <span className="flex-grow text-sm text-white p-1">{item.data.category}</span>
+                          <span className="w-16 text-sm text-center text-white p-1">{item.data.quantity}</span>
                         </>
                       )}
                     </div>

@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import { fetchApi } from './fetch';
-import type { PantryItem, Recipe, PantryItemCreate, MealCategory, RecipeGenerateRequest } from '@/types';
+import type { Recipe, PantryItemCreate, MealCategory, RecipeGenerateRequest, PantryItemWithIngredient, PantryItemUpdate } from '@/types';
 
 // Helper function to get auth token
 const getAuthToken = async () => {
@@ -11,35 +11,34 @@ const getAuthToken = async () => {
 
 // Base pantry operations through backend API
 const basePantryApi = {
-  async getItems(): Promise<PantryItem[]> {
+  async getItems(): Promise<PantryItemWithIngredient[]> {
     const token = await getAuthToken();
-    return fetchApi<PantryItem[]>('/pantry/items', {
+    return fetchApi<PantryItemWithIngredient[]>('/pantry/items', {
       headers: {
         'Authorization': `Bearer ${token}`
       }
     });
   },
 
-  async addItems(items: PantryItemCreate[]): Promise<PantryItem[]> {
+  async addItems(items: PantryItemCreate[]): Promise<PantryItemWithIngredient[]> {
     const token = await getAuthToken();
-    console.log('Sending request with items:', items); // Debug log
-    
-    return fetchApi<PantryItem[]>('/pantry/items', {
+    return fetchApi<PantryItemWithIngredient[]>('/pantry/items', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(items) // Send items array directly
+      body: JSON.stringify(items)
     });
   },
 
-  async updateItem(id: string, updates: Partial<PantryItem>): Promise<PantryItem> {
+  async updateItem(id: string, updates: PantryItemUpdate): Promise<PantryItemWithIngredient> {
     const token = await getAuthToken();
-    return fetchApi<PantryItem>(`/pantry/items/${id}`, {
+    return fetchApi<PantryItemWithIngredient>(`/pantry/items/${id}`, {
       method: 'PATCH',
       headers: {
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(updates)
     });
@@ -68,9 +67,9 @@ const basePantryApi = {
 
 // Complex operations through backend API
 const complexPantryApi = {
-  uploadReceipt: async (formData: FormData): Promise<PantryItem[]> => {
+  uploadReceipt: async (formData: FormData): Promise<PantryItemWithIngredient[]> => {
     const token = await getAuthToken();
-    return fetchApi<PantryItem[]>('/pantry/upload', {
+    return fetchApi<PantryItemWithIngredient[]>('/pantry/upload', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -91,12 +90,13 @@ export const recipeApi = {
   // Get recipes by category with auto-generation if needed
   getByCategory: async (includeGenerated: boolean = false): Promise<Record<MealCategory, Recipe[]>> => {
     const token = await getAuthToken();
-    return fetchApi<Record<MealCategory, Recipe[]>>('/recipes/by-category', {
+    const searchParams = new URLSearchParams({
+      include_suggestions: includeGenerated.toString()
+    });
+    
+    return fetchApi<Record<MealCategory, Recipe[]>>(`/recipes/by-category?${searchParams}`, {
       headers: {
         'Authorization': `Bearer ${token}`
-      },
-      params: {
-        include_suggestions: includeGenerated
       }
     });
   },
@@ -127,6 +127,32 @@ export const recipeApi = {
   // Get detailed recipe with nutritional info and availability
   getRecipeDetails: async (id: string): Promise<Recipe> => {
     const token = await getAuthToken();
-    return fetchApi<Recipe>(`/recipes/${id}`);
+    return fetchApi<Recipe>(`/recipes/${id}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  },
+
+  // Save a recipe
+  save: async (recipeId: string): Promise<Recipe> => {
+    const token = await getAuthToken();
+    return fetchApi<Recipe>(`/recipes/save/${recipeId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  },
+
+  // Delete a saved recipe
+  deleteSaved: async (recipeId: string): Promise<void> => {
+    const token = await getAuthToken();
+    return fetchApi<void>(`/recipes/saved/${recipeId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
   }
 };

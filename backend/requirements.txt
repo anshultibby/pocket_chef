@@ -12,3 +12,4 @@ psycopg2-binary==2.9.9
 httpx>=0.26.0
 httpcore>=0.16.0
 python-jose[cryptography]
+google-cloud-vision>=3.5.0

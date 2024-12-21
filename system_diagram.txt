@@ -20,6 +20,12 @@ src/
 │   ├── RecipesTab.tsx     # Recipe management component
 │   ├── PantryOverview.tsx # Simplified pantry view
 │   └── ReceiptConfirmation.tsx # Receipt processing UI
+├── hooks/
+│   ├── useItemForm.ts     # Item form state management
+│   ├── useFileUpload.ts   # File upload handling
+│   ├── useErrorHandler.ts # Error handling
+│   ├── useFormValidation.ts  # NEW: Form validation hook
+│   └── useValidationRules.ts # NEW: Validation rules
 ├── lib/
 │   ├── api.ts            # API client functions
 │   ├── auth.ts           # Auth utilities
@@ -50,6 +56,6 @@ backend/
 │   │   ├── receipt_parser.py
 │   │   ├── recipe_generator.py
 │   │   └── auth.py
-│   └── db/
+│   ���── db/
 │       └── init.sql          # Database initialization
 └── requirements.txt      # Python dependencies

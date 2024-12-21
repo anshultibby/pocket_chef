@@ -1,6 +1,8 @@
-export type MeasurementUnit = 'grams' | 'milliliters' | 'units' | 'pinch';
+export const MEASUREMENT_UNITS = ['grams', 'milliliters', 'units', 'pinch'] as const;
+export type MeasurementUnit = typeof MEASUREMENT_UNITS[number];
 export type DifficultyLevel = 'easy' | 'medium' | 'hard';
 export type RecipeType = 'generated' | 'user_created' | 'saved';
+export type MealCategory = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
 export interface NutritionalInfo {
   calories: number;
@@ -47,17 +49,18 @@ export interface PantryItemData {
   display_name: string;
   quantity: number;
   unit: MeasurementUnit;
+  category?: string;
   notes?: string;
+  expiry_date?: string;
 }
 
 export interface PantryItem {
   id: string;
   ingredient_id: string;
   data: PantryItemData;
-  expiry_date?: string;
+  user_id: string;
   created_at: string;
   updated_at: string;
-  user_id: string;
 }
 
 // Request types
@@ -69,7 +72,45 @@ export interface RecipeGenerateRequest {
 }
 
 export interface PantryItemCreate {
-  ingredient_id: string;
   data: PantryItemData;
-  expiry_date?: string;
+}
+
+export interface IngredientMeasurement {
+  standard_unit: MeasurementUnit;
+  conversion_factor: number;
+  serving_size: number;
+}
+
+export interface IngredientNames {
+  canonical: string;
+  aliases: string[];
+}
+
+export interface IngredientData {
+  names: IngredientNames;
+  measurement: IngredientMeasurement;
+  nutrition: {
+    per_standard_unit: NutritionalInfo;
+  };
+}
+
+export interface Ingredient {
+  id: string;
+  data: IngredientData;
+  created_at: string;
+}
+
+// Add this new interface to match backend
+export interface PantryItemUpdate {
+  data: Partial<PantryItemData>;
+}
+
+export interface PantryItemWithIngredient {
+  id: string;
+  ingredient_id: string;
+  ingredient: IngredientData;
+  data: PantryItemData;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
 }

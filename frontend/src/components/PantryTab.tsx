@@ -1,13 +1,28 @@
-import { useState, useEffect, useRef } from 'react';
-import { PantryItem, PantryItemCreate } from '@/types';
+import { useState, useRef } from 'react';
+import { 
+  PantryItemWithIngredient, 
+  PantryItemCreate, 
+  PantryItemUpdate 
+} from '@/types';
 import { pantryApi } from '@/lib/api';
 import ReceiptConfirmation from '@/components/ReceiptConfirmation';
+import CategoryFilters from './pantry/CategoryFilters';
+import PantryControls from './pantry/PantryControls';
+import PantryGrid from './pantry/PantryGrid';
+import AddItemModal from './modals/AddItemModal';
+import ItemEditModal from './modals/ItemEditModal';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
+import { useFileUpload } from '@/hooks/useFileUpload';
+import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
+import { ErrorMessage } from '@/components/shared/ErrorMessage';
+import { ERROR_MESSAGES } from '@/constants/messages';
+import { normalizeString } from '@/utils/pantry';
 
 interface PantryTabProps {
-  pantryItems: PantryItem[];
+  pantryItems: PantryItemWithIngredient[];
   loading: boolean;
-  onAddItems: (items: PantryItem[]) => void;
-  onUpdateItem: (id: string, updates: Partial<PantryItem>) => void;
+  onAddItems: (items: PantryItemWithIngredient[]) => void;
+  onUpdateItem: (id: string, updates: Partial<PantryItemWithIngredient>) => void;
   onDeleteItem: (id: string) => void;
 }
 
@@ -18,65 +33,44 @@ export default function PantryTab({
   onUpdateItem,
   onDeleteItem
 }: PantryTabProps) {
-  const [error, setError] = useState<string | null>(null);
+  const { error, handleError, clearError } = useErrorHandler();
+  const {
+    isUploading,
+    receiptImage,
+    pendingItems,
+    error: uploadError,
+    handleFileUpload,
+    clearUpload,
+  } = useFileUpload();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddItemForm, setShowAddItemForm] = useState(false);
-  const [pendingItems, setPendingItems] = useState<PantryItemCreate[]>([]);
   const [showReceiptConfirmation, setShowReceiptConfirmation] = useState(false);
-  const [receiptImage, setReceiptImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [selectedItem, setSelectedItem] = useState<PantryItem | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<PantryItemWithIngredient | null>(null);
 
   if (loading) {
-    return <div className="text-center py-8">Loading pantry...</div>;
+    return <LoadingSpinner message="Loading pantry items..." />;
   }
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setIsUploading(true);
-    setError(null);
-
-    // Create URL for receipt image preview
-    const imageUrl = URL.createObjectURL(file);
-    setReceiptImage(imageUrl);
-
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const parsedItems = await pantryApi.uploadReceipt(formData);
-      setPendingItems(parsedItems);
-      setShowReceiptConfirmation(true);
-    } catch (err) {
-      let errorMessage = 'Failed to process receipt';
-      if (err instanceof Error) {
-        errorMessage = err.message;
-      }
-      setError(errorMessage);
-      // Clean up the created URL if there's an error
-      URL.revokeObjectURL(imageUrl);
-      setReceiptImage(null);
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  };
-
-  const handleItemUpdate = async (item: PantryItem, updates: Partial<PantryItem>) => {
+  const handleItemUpdate = async (
+    item: PantryItemWithIngredient, 
+    updates: PantryItemUpdate
+  ) => {
     try {
       const updatedItem = await pantryApi.updateItem(item.id, updates);
       onUpdateItem(item.id, updatedItem);
+      setSelectedItem(updatedItem);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to update item';
-      setError(message);
-      console.error('Update item error:', err);
+      handleError(err);
     }
+  };
+
+  const handleModalUpdate = (updates: Partial<PantryItemUpdate>) => {
+    if (!selectedItem) return;
+    handleItemUpdate(selectedItem, {
+      data: updates.data || {}
+    });
   };
 
   const handleDeleteItem = async (itemId: string) => {
@@ -84,9 +78,7 @@ export default function PantryTab({
       await pantryApi.deleteItem(itemId);
       onDeleteItem(itemId);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to delete item';
-      setError(message);
-      console.error('Delete error:', err);
+      handleError(err);
     }
   };
 
@@ -101,419 +93,122 @@ export default function PantryTab({
       setSelectedCategory(null);
       setSearchTerm('');
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to clear pantry';
-      setError(message);
-      console.warn('Clear pantry error:', err);
+      handleError(err);
     }
   };
 
   const handleAddItem = async (item: PantryItemCreate) => {
     try {
-      // Check if item with same name and unit already exists
       const existingItem = pantryItems.find(
         existing => 
-          normalizeString(existing.name) === normalizeString(item.name) &&
-          normalizeString(existing.unit) === normalizeString(item.unit)
+          normalizeString(existing.data.display_name) === normalizeString(item.data.display_name) &&
+          normalizeString(existing.data.unit) === normalizeString(item.data.unit)
       );
 
       if (existingItem) {
-        // Update existing item's quantity
         const updatedItem = await pantryApi.updateItem(existingItem.id, {
-          quantity: existingItem.quantity + item.quantity
+          data: {
+            ...existingItem.data,
+            quantity: existingItem.data.quantity + item.data.quantity
+          }
         });
         onUpdateItem(existingItem.id, updatedItem);
       } else {
-        // Add new item
         const [addedItem] = await pantryApi.addItems([item]);
         onAddItems([addedItem]);
       }
       setShowAddItemForm(false);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to add item';
-      setError(message);
+      handleError(err);
     }
   };
 
   const handleConfirmReceiptItems = async (confirmedItems: PantryItemCreate[]) => {
     try {
       const formattedItems = confirmedItems.map(item => ({
-        name: item.name,
-        quantity: Number(item.quantity),
-        unit: item.unit || 'units',
-        category: item.category || 'other',
-        expiry_date: item.expiry_date ? new Date(item.expiry_date).toISOString() : null,
-        notes: item.notes || ''
+        data: {
+          display_name: item.data.display_name,
+          quantity: Number(item.data.quantity),
+          unit: item.data.unit || 'units',
+          notes: item.data.notes || '',
+          expiry_date: item.data.expiry_date || undefined,
+        }
       }));
-
-      console.log('Sending items to backend:', formattedItems);
 
       const savedItems = await pantryApi.addItems(formattedItems);
       onAddItems(savedItems);
       
       setShowReceiptConfirmation(false);
-      setPendingItems([]);
+      clearUpload();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to add items';
-      setError(message);
-      console.error('Error saving items:', err);
+      handleError(err);
     }
   };
 
   const handleCloseConfirmation = () => {
     if (receiptImage) {
       URL.revokeObjectURL(receiptImage);
-      setReceiptImage(null);
+      clearUpload();
     }
     setShowReceiptConfirmation(false);
-    setPendingItems([]);
+  };
+
+  const handleUploadReceipt = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const success = await handleFileUpload(event);
+    if (success) {
+      setShowReceiptConfirmation(true);
+    }
   };
 
   const groupedItems = pantryItems
     .filter(item => {
-      const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = !selectedCategory || item.category === selectedCategory;
+      const matchesSearch = item.data.display_name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = !selectedCategory || item.data.category === selectedCategory;
       return matchesSearch && matchesCategory;
     })
     .reduce((groups, item) => {
-      const category = item.category;
+      const category = item.data.category || 'Other';
       if (!groups[category]) groups[category] = [];
       groups[category].push(item);
       return groups;
-    }, {} as Record<string, PantryItem[]>);
+    }, {} as Record<string, PantryItemWithIngredient[]>);
 
-  const categories = Array.from(new Set(pantryItems.map(item => item.category)));
-
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const ItemEditModal = ({ item, onClose, onUpdate }: {
-    item: PantryItem;
-    onClose: () => void;
-    onUpdate: (updates: Partial<PantryItem>) => void;
-  }) => (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md space-y-4">
-        <h3 className="text-lg font-medium text-white">Edit Item</h3>
-        
-        <div className="space-y-4">
-          <div>
-            <label className="text-sm text-gray-400">Name</label>
-            <input
-              type="text"
-              value={item.name}
-              onChange={(e) => onUpdate({ name: e.target.value })}
-              className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm text-gray-400">Quantity</label>
-              <input
-                type="number"
-                value={item.quantity}
-                onChange={(e) => onUpdate({ quantity: parseFloat(e.target.value) })}
-                className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="text-sm text-gray-400">Unit</label>
-              <input
-                type="text"
-                value={item.unit}
-                onChange={(e) => onUpdate({ unit: e.target.value })}
-                className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="text-sm text-gray-400">Category</label>
-            <input
-              type="text"
-              value={item.category || ''}
-              onChange={(e) => onUpdate({ category: e.target.value })}
-              className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm text-gray-400">Expiry Date</label>
-            <input
-              type="date"
-              value={item.expiry_date ? new Date(item.expiry_date).toISOString().split('T')[0] : ''}
-              onChange={(e) => onUpdate({ 
-                expiry_date: e.target.value || undefined 
-              })}
-              className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm text-gray-400">Notes</label>
-            <textarea
-              value={item.notes || ''}
-              onChange={(e) => onUpdate({ notes: e.target.value })}
-              className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
-              rows={3}
-            />
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-3 pt-4">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-lg bg-gray-700/50 text-gray-300 hover:bg-gray-700 transition-colors"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  const AddItemModal = ({ onClose, onAdd }: {
-    onClose: () => void;
-    onAdd: (item: PantryItemCreate) => void;
-  }) => {
-    const [newItem, setNewItem] = useState<PantryItemCreate>({
-      name: '',
-      quantity: 1,
-      unit: '',
-      category: '',
-      expiry_date: null,
-      notes: ''
-    });
-
-    return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-        <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md space-y-4">
-          <h3 className="text-lg font-medium text-white">Add New Item</h3>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm text-gray-400">Name</label>
-              <input
-                type="text"
-                value={newItem.name}
-                onChange={(e) => setNewItem(prev => ({ ...prev, name: e.target.value }))}
-                className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm text-gray-400">Quantity</label>
-                <input
-                  type="number"
-                  value={newItem.quantity}
-                  onChange={(e) => setNewItem(prev => ({ ...prev, quantity: parseFloat(e.target.value) }))}
-                  className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="text-sm text-gray-400">Unit</label>
-                <input
-                  type="text"
-                  value={newItem.unit}
-                  onChange={(e) => setNewItem(prev => ({ ...prev, unit: e.target.value }))}
-                  className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-sm text-gray-400">Category</label>
-              <input
-                type="text"
-                value={newItem.category}
-                onChange={(e) => setNewItem(prev => ({ ...prev, category: e.target.value }))}
-                className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm text-gray-400">Expiry Date</label>
-              <input
-                type="date"
-                value={newItem.expiry_date ? new Date(newItem.expiry_date).toISOString().split('T')[0] : ''}
-                onChange={(e) => setNewItem(prev => ({ 
-                  ...prev, 
-                  expiry_date: e.target.value || null 
-                }))}
-                className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm text-gray-400">Notes</label>
-              <textarea
-                value={newItem.notes || ''}
-                onChange={(e) => setNewItem(prev => ({ ...prev, notes: e.target.value }))}
-                className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
-                rows={3}
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-3 pt-4">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 rounded-lg bg-gray-700/50 text-gray-300 hover:bg-gray-700 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => onAdd(newItem)}
-              className="px-4 py-2 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 transition-colors"
-            >
-              Add Item
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Helper function for consistent comparison
-  const normalizeString = (str: string) => {
-    return str.toLowerCase().trim();
-  };
+  const categories = Array.from(new Set(pantryItems.map(item => item.data.category || 'Other')));
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-center gap-4">
-        <div className="relative w-64">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
-          <input
-            type="text"
-            placeholder="Search items..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-gray-800/50 rounded-lg px-10 py-2 text-white w-full focus:ring-2 ring-blue-500 focus:outline-none text-sm"
-          />
-        </div>
-
-        <button
-          onClick={() => setShowAddItemForm(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600/20 hover:bg-green-600/30 text-green-400 transition-colors"
-        >
-          <span>+</span>
-          Add Item
-        </button>
-        
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handleFileUpload}
-          className="hidden"
-          ref={fileInputRef}
+      {(error || uploadError) && (
+        <ErrorMessage 
+          message={error || uploadError || ERROR_MESSAGES.GENERIC} 
+          onDismiss={clearError}
         />
-        <button
-          onClick={handleUploadClick}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-            isUploading 
-              ? 'bg-gray-700/50 text-gray-400 cursor-not-allowed' 
-              : 'bg-blue-600/20 hover:bg-blue-600/30 text-blue-400'
-          }`}
-          disabled={isUploading}
-        >
-          {isUploading ? (
-            <>
-              <span className="animate-spin">⟳</span>
-              Processing...
-            </>
-          ) : (
-            <>
-              <span>📄</span>
-              Upload Receipt
-            </>
-          )}
-        </button>
-
-        <button
-          onClick={handleClearPantry}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 transition-colors"
-          disabled={isUploading || pantryItems.length === 0}
-        >
-          <span>🗑️</span>
-          Clear Pantry
-        </button>
-      </div>
-
-      <div className="flex gap-2 flex-wrap">
-        {categories.map((category, index) => (
-          <button
-            key={`category-button-${category}-${index}`}
-            onClick={() => setSelectedCategory(
-              selectedCategory === category ? null : category
-            )}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors
-              ${selectedCategory === category
-                ? 'bg-blue-600/30 text-blue-400 ring-2 ring-blue-500/50'
-                : 'bg-gray-800/50 text-gray-400 hover:bg-gray-700/50'
-              }`}
-          >
-            {category}
-            <span className="ml-2 bg-gray-700/50 px-2 py-0.5 rounded-full text-xs">
-              {pantryItems.filter(item => item.category === category).length}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-        {Object.entries(groupedItems).map(([category, items]) => (
-          <div key={`category-${category}`} className="bg-gray-800/30 rounded-lg p-4 backdrop-blur-sm ring-1 ring-white/5">
-            <h3 className="text-gray-400 text-sm font-medium mb-3">
-              {category}
-            </h3>
-            <div className="space-y-2">
-              {items.map((item, index) => (
-                <div key={`${item.id}-${index}`} 
-                  className="bg-gray-700/30 rounded-lg p-3 flex items-center justify-between hover:ring-1 ring-white/10 transition-all cursor-pointer"
-                  onClick={() => setSelectedItem(item)}
-                >
-                  <div className="flex flex-col gap-1">
-                    <span className="text-white text-sm font-medium">{item.name}</span>
-                    <div className="flex items-center gap-2 text-xs text-gray-400">
-                      <span className="bg-gray-700/50 px-2 py-1 rounded-md">
-                        {item.quantity} {item.unit}
-                      </span>
-                      {item.expiry_date && (
-                        <span className="text-yellow-500/70">
-                          Expires {new Date(item.expiry_date).toLocaleDateString()}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteItem(item.id);
-                    }}
-                    className="p-1.5 rounded-md hover:bg-red-500/10 text-red-400/70 hover:text-red-400 transition-colors"
-                  >
-                    <span>🗑️</span>
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {Object.keys(groupedItems).length === 0 && (
-        <div className="text-center py-12 text-gray-400">
-          <p>No items found.</p>
-          {pantryItems.length === 0 && (
-            <p className="text-sm">Upload a receipt to get started!</p>
-          )}
-        </div>
       )}
 
+      <PantryControls
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        onAddItem={() => setShowAddItemForm(true)}
+        onUploadReceipt={handleUploadReceipt}
+        onClearPantry={handleClearPantry}
+        isUploading={isUploading}
+        fileInputRef={fileInputRef}
+        pantryItemsCount={pantryItems.length}
+      />
+
+      <CategoryFilters
+        categories={categories}
+        selectedCategory={selectedCategory}
+        onSelectCategory={setSelectedCategory}
+        pantryItems={pantryItems}
+      />
+
+      <PantryGrid
+        groupedItems={groupedItems}
+        onSelectItem={setSelectedItem}
+        onDeleteItem={handleDeleteItem}
+      />
+
+      {/* Modals */}
       {showAddItemForm && (
         <AddItemModal
           onAdd={handleAddItem}
@@ -534,10 +229,7 @@ export default function PantryTab({
         <ItemEditModal
           item={selectedItem}
           onClose={() => setSelectedItem(null)}
-          onUpdate={(updates) => {
-            handleItemUpdate(selectedItem, updates);
-            setSelectedItem(prev => prev ? { ...prev, ...updates } : null);
-          }}
+          onUpdate={handleModalUpdate}
         />
       )}
     </div>

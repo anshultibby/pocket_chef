@@ -11,7 +11,7 @@ export default function CookbookTab() {
   useEffect(() => {
     const fetchSavedRecipes = async () => {
       try {
-        const recipes = await recipeApi.getSaved();
+        const recipes = await recipeApi.getSavedWithAvailability();
         setSavedRecipes(recipes);
       } catch (err) {
         setError('Failed to load saved recipes');
