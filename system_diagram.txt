@@ -40,11 +40,16 @@ backend/
 │   │   ├── recipe.py     # Recipe data models
 │   │   ├── user.py       # User models
 │   │   └── schemas.py    # Shared schemas
-│   └── services/
-│       ├── receipt_parser.py    # Receipt processing service
-│       ├── recipe_generator.py  # Recipe generation service
-│       ├── claude_service.py    # Claude API integration
-│       └── auth.py             # Auth service
-├── db/
-│   └── init.sql          # Database initialization
+│   ├── services/
+│   │   ├── claude/
+│   │   │   ├── __init__.py
+│   │   │   ├── base.py           # Base handler class
+│   │   │   ├── handlers.py       # Specific handlers
+│   │   │   ├── service.py        # Main Claude service
+│   │   │   └── prompts.py        # System prompts and constants
+│   │   ├── receipt_parser.py
+│   │   ├── recipe_generator.py
+│   │   └── auth.py
+│   └── db/
+│       └── init.sql          # Database initialization
 └── requirements.txt      # Python dependencies

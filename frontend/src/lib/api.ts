@@ -88,52 +88,45 @@ export const pantryApi = {
 
 // Recipe-related API calls
 export const recipeApi = {
-  getByCategory: async (): Promise<Record<MealCategory, Recipe[]>> => {
+  // Get recipes by category with auto-generation if needed
+  getByCategory: async (includeGenerated: boolean = false): Promise<Record<MealCategory, Recipe[]>> => {
     const token = await getAuthToken();
     return fetchApi<Record<MealCategory, Recipe[]>>('/recipes/by-category', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      params: {
+        include_suggestions: includeGenerated
+      }
+    });
+  },
+
+  // Get saved recipes with availability information
+  getSavedWithAvailability: async (): Promise<Recipe[]> => {
+    const token = await getAuthToken();
+    return fetchApi<Recipe[]>('/recipes/saved', {
       headers: {
         'Authorization': `Bearer ${token}`
       }
     });
   },
 
+  // Generate new recipes based on pantry
   generate: async (request: RecipeGenerateRequest): Promise<Recipe[]> => {
     const token = await getAuthToken();
     return fetchApi<Recipe[]>('/recipes/generate', {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(request)
-    });
-  },
-
-  save: async (recipeId: string): Promise<Recipe> => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error('Not authenticated');
-
-    return fetchApi<Recipe>(`/recipes/save/${recipeId}`, {
       method: 'POST',
-      body: JSON.stringify({ user_id: session.user.id })
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(request)
     });
   },
 
-  getSaved: async (): Promise<Recipe[]> => {
-    return fetchApi<Recipe[]>('/recipes/saved');
-  },
-
-  deleteSaved: async (id: string): Promise<void> => {
-    return fetchApi<void>(`/recipes/saved/${id}`, {
-      method: 'DELETE',
-    });
-  },
-
-  getGenerated: async (recipeId: string): Promise<Recipe> => {
-    return fetchApi<Recipe>(`/recipes/generated/${recipeId}`);
-  },
-
-  getRecipe: async (id: string): Promise<Recipe> => {
+  // Get detailed recipe with nutritional info and availability
+  getRecipeDetails: async (id: string): Promise<Recipe> => {
+    const token = await getAuthToken();
     return fetchApi<Recipe>(`/recipes/${id}`);
   }
 };

@@ -1,40 +1,72 @@
 from datetime import datetime
-from typing import Optional
+from enum import Enum
+from typing import Dict, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 
-class PantryItemBase(BaseModel):
-    name: str
-    quantity: float
-    unit: str
-    category: Optional[str] = None
-    expiry_date: Optional[datetime] = None
-    notes: Optional[str] = None
-    user_id: UUID
+class MeasurementUnit(str, Enum):
+    GRAMS = 'grams'
+    MILLILITERS = 'milliliters'
+    UNITS = 'units'
+    PINCH = 'pinch'
 
-class PantryItemCreate(BaseModel):
-    name: str
-    quantity: float
-    unit: str
-    category: Optional[str] = None
-    expiry_date: Optional[datetime] = None
-    notes: Optional[str] = None
-    user_id: Optional[UUID] = None
+class NutritionalInfo(BaseModel):
+    calories: float = 0
+    protein: float = 0
+    carbs: float = 0
+    fat: float = 0
+    fiber: float = 0
 
-class PantryItemUpdate(BaseModel):
-    name: Optional[str] = None
-    quantity: Optional[float] = None
-    unit: Optional[str] = None
-    category: Optional[str] = None
-    expiry_date: Optional[datetime] = None
-    notes: Optional[str] = None
+class IngredientMeasurement(BaseModel):
+    standard_unit: MeasurementUnit
+    conversion_factor: float = 1.0
+    serving_size: float = 1
 
-class PantryItem(PantryItemBase):
+class IngredientNames(BaseModel):
+    canonical: str
+    aliases: List[str] = []
+
+class IngredientData(BaseModel):
+    names: IngredientNames
+    measurement: IngredientMeasurement
+    category: Optional[str] = None
+    nutrition: Dict[str, NutritionalInfo] = Field(default_factory=lambda: {"per_standard_unit": NutritionalInfo()})
+
+class Ingredient(BaseModel):
     id: UUID
+    data: IngredientData
+    created_at: datetime
+
+class PantryItemData(BaseModel):
+    display_name: str
+    quantity: float
+    unit: MeasurementUnit
+    notes: Optional[str] = None
+    expiry_date: Optional[datetime] = None
+
+
+class PantryItem(BaseModel):
+    id: UUID
+    ingredient_id: UUID
+    data: PantryItemData
+    user_id: UUID
     created_at: datetime
     updated_at: datetime
 
     class Config:
         from_attributes = True
+
+class PantryItemCreate(BaseModel):
+    name: str
+    quantity: float
+    unit: MeasurementUnit
+    notes: Optional[str] = None
+    expiry_date: Optional[datetime] = None
+
+class PantryItemUpdate(BaseModel):
+    quantity: Optional[float] = None
+    unit: Optional[MeasurementUnit] = None
+    notes: Optional[str] = None
+    expiry_date: Optional[datetime] = None

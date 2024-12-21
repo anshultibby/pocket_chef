@@ -1,189 +1,126 @@
-import json
 import logging
-import uuid
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional
+from typing import Dict, List
 from uuid import UUID
 
-from db.supabase import get_supabase
+from ..db.crud import RecipeCRUD
+from ..models.pantry import NutritionalInfo
+from ..models.recipes import RecipeCreate, RecipeResponse
+from .claude import ClaudeService
+from .pantry import get_pantry_manager
 
-from ..models.recipes import NutritionalInfo, RecipeCreate, RecipeResponse, RecipeUpdate
-from ..services.claude_service import ClaudeService
+logger = logging.getLogger(__name__)
 
 
 class RecipeManager:
-    def __init__(self):
-        self.table = "recipes"
-        self.supabase = get_supabase()  # Use service role client
-        self.claude_service = ClaudeService()
-        self.logger = logging.getLogger(__name__)
+    def __init__(self, claude_service: ClaudeService):
+        self.claude = claude_service
+        self.recipe_crud = RecipeCRUD()
+        self.pantry_manager = get_pantry_manager()
 
-    def store_generated_recipes(self, recipes: List[RecipeCreate], user_id: UUID) -> List[RecipeResponse]:
-        """Store recipes in database, returning full RecipeResponse objects"""
-        stored_recipes = []
-        for recipe in recipes:
-            recipe_data = {
-                **recipe.model_dump(),
-                "user_id": str(user_id)
-            }
-            result = self.supabase.table(self.table).insert(recipe_data).execute()
-            stored_recipes.append(RecipeResponse(**result.data[0]))
-        return stored_recipes
 
-    def get_generated_recipe(self, recipe_id: str, user_id: UUID) -> Optional[RecipeResponse]:
-        result = self.supabase.table(self.table)\
-            .select("*")\
-            .eq("id", recipe_id)\
-            .eq("user_id", str(user_id))\
-            .eq("is_generated", True)\
-            .execute()
-        return RecipeResponse(**result.data[0]) if result.data else None
+# Create a singleton instance
+_recipe_manager = None
 
-    def save_recipe(self, recipe_id: str, user_id: UUID) -> RecipeResponse:
-        result = self.supabase.table(self.table)\
-            .update({"is_saved": True, "is_generated": False})\
-            .eq("id", recipe_id)\
-            .eq("user_id", str(user_id))\
-            .execute()
-            
-        if not result.data:
-            raise ValueError("Recipe not found")
-            
-        return RecipeResponse(**result.data[0])
 
-    def get_saved_recipes(self, user_id: UUID) -> List[RecipeResponse]:
-        result = self.supabase.table(self.table)\
-            .select("*")\
-            .eq("user_id", str(user_id))\
-            .eq("is_saved", True)\
-            .execute()
-        return [RecipeResponse(**item) for item in result.data]
-
-    def delete_saved_recipe(self, recipe_id: str, user_id: UUID) -> bool:
-        result = self.supabase.table(self.table)\
-            .delete()\
-            .eq("id", recipe_id)\
-            .eq("user_id", str(user_id))\
-            .eq("is_saved", True)\
-            .execute()
-        return len(result.data) > 0
-
-    def cleanup_old_recipes(self, user_id: UUID, keep_days: int = 7):
-        """Remove old generated recipes that aren't saved"""
-        cutoff_date = datetime.now() - timedelta(days=keep_days)
-        
-        self.supabase.table(self.table)\
-            .delete()\
-            .eq("user_id", str(user_id))\
-            .eq("is_saved", False)\
-            .lt("created_at", cutoff_date.isoformat())\
-            .execute()
-
-    def get_recipes_by_categories(
-        self, 
-        user_id: UUID,
-        min_per_category: Dict[str, int]
-    ) -> Dict[str, List[RecipeResponse]]:
-        """Get existing recipes grouped by category"""
-        
-        # Get recently generated recipes
-        result = self.supabase.table(self.table)\
-            .select("*")\
-            .eq("user_id", str(user_id))\
-            .eq("is_saved", False)\
-            .order("created_at", desc=True)\
-            .execute()
-
-        # Group by category
-        recipes_by_category: Dict[str, List[RecipeResponse]] = {
-            category: [] for category in min_per_category.keys()
-        }
-        
-        for row in result.data:
-            recipe = RecipeResponse(**row)
-            category = recipe.meal_category
-            if category in recipes_by_category:
-                # Only add up to the minimum required for each category
-                if len(recipes_by_category[category]) < min_per_category[category]:
-                    recipes_by_category[category].append(recipe)
-
-        return recipes_by_category
-
-    def parse_recipe_response(self, content: str) -> List[RecipeCreate]:
-        """Parse Claude's JSON response into RecipeCreate objects"""
-        try:
-            recipes_data = json.loads(content)
-            recipes = []
-            
-            for recipe_data in recipes_data:
-                # Handle both camelCase and snake_case keys
-                nutritional_info = None
-                if 'nutritional_info' in recipe_data or 'nutritionalInfo' in recipe_data:
-                    info_data = recipe_data.get('nutritional_info') or recipe_data.get('nutritionalInfo')
-                    nutritional_info = NutritionalInfo(
-                        calories=int(info_data['calories']),
-                        protein=float(info_data['protein']),
-                        carbs=float(info_data['carbs']),
-                        fat=float(info_data['fat'])
-                    )
-
-                recipe = RecipeCreate(
-                    name=recipe_data['name'],
-                    ingredients=recipe_data['ingredients'],
-                    instructions=recipe_data['instructions'],
-                    preparation_time=recipe_data.get('preparation_time') or recipe_data.get('preparationTime'),
-                    difficulty=(recipe_data.get('difficulty') or 'medium').lower(),
-                    nutritional_info=nutritional_info,
-                    is_saved=False,
-                    meal_category=(recipe_data.get('meal_category') or recipe_data.get('mealCategory', 'dinner')).lower()
-                )
-                recipes.append(recipe)
-            
-            return recipes
-            
-        except Exception as e:
-            self.logger.error(f"Error parsing recipe response: {str(e)}")
-            raise ValueError(f"Failed to parse recipes: {str(e)}")
+def get_recipe_manager() -> RecipeManager:
+    """
+    Returns a singleton instance of RecipeManager.
+    Initializes the instance if it doesn't exist.
+    """
+    global _recipe_manager
+    if _recipe_manager is None:
+        claude_service = ClaudeService()  # Create ClaudeService instance
+        _recipe_manager = RecipeManager(claude_service)
+    return _recipe_manager
 
     async def generate_recipes_for_categories(
-        self,
-        user_id: UUID,
-        categories_to_generate: List[Dict[str, int]],
-        ingredients: List[str]
-    ) -> Dict[str, List[RecipeResponse]]:
-        """Generate recipes for specific categories and store them"""
-        
-        # Format preferences for Claude
-        preferences = "Generate exactly these recipes:\n" + "\n".join(
-            f"- {cat['count']} {cat['category']} recipes" 
-            for cat in categories_to_generate
-        )
-        
-        # Get raw response from Claude
-        raw_response = await self.claude_service.generate_recipes(
-            ingredients=ingredients,
-            preferences=preferences
-        )
-        
-        # Parse and store recipes
-        recipe_creates = self.parse_recipe_response(raw_response)
-        stored_recipes = self.store_generated_recipes(
-            recipes=recipe_creates, 
-            user_id=user_id
-        )
-        
-        # Group by category
-        recipes_by_category: Dict[str, List[RecipeResponse]] = {}
-        for recipe in stored_recipes:
-            category = recipe.meal_category
-            if category not in recipes_by_category:
-                recipes_by_category[category] = []
-            recipes_by_category[category].append(recipe)
-        
-        return recipes_by_category
+        self, user_id: UUID, categories_to_generate: List[Dict], ingredients: List[str]
+    ) -> List[RecipeResponse]:
+        recipes = []
 
-# Create a single instance at module level
-_recipe_manager = RecipeManager()
+        for category in categories_to_generate:
+            prompt = self._build_recipe_prompt(
+                category=category["category"],
+                count=category["count"],
+                ingredients=ingredients,
+            )
 
-def get_recipe_manager():
-    return _recipe_manager
+            raw_response = await self.claude.generate_recipes(prompt)
+            recipe_creates = self.parse_recipe_response(raw_response)
+
+            # Analyze nutritional info for each recipe
+            for recipe in recipe_creates:
+                nutrition = await self.analyze_recipe_nutrition(recipe)
+                recipe.data.calculated_nutrition = nutrition
+
+            stored_recipes = await self.recipe_crud.create_recipes(
+                recipes=recipe_creates, user_id=user_id
+            )
+            recipes.extend(stored_recipes)
+
+        return recipes
+
+    async def check_recipe_availability(
+        self, recipe_id: UUID, user_id: UUID
+    ) -> Dict[str, any]:
+        recipe = await self.recipe_crud.get_recipe(recipe_id)
+        pantry_items = self.pantry_manager.get_items(user_id)
+
+        missing = []
+        available = {}
+
+        for ingredient in recipe.data.ingredients:
+            pantry_item = next(
+                (
+                    item
+                    for item in pantry_items
+                    if item.ingredient_id == ingredient.ingredient_id
+                ),
+                None,
+            )
+
+            if not pantry_item or pantry_item.data.quantity < ingredient.quantity:
+                missing.append(ingredient.ingredient_id)
+            else:
+                available[ingredient.ingredient_id] = pantry_item.data.quantity
+
+        return {
+            "can_cook": len(missing) == 0,
+            "missing_ingredients": missing,
+            "available_quantities": available,
+        }
+
+    async def analyze_recipe_nutrition(
+        self, recipe: RecipeCreate
+    ) -> Dict[str, NutritionalInfo]:
+        total = NutritionalInfo()
+        per_serving = NutritionalInfo()
+
+        for ingredient in recipe.data.ingredients:
+            ingredient_data = await self.recipe_crud.get_ingredient_nutrition(
+                ingredient.ingredient_id
+            )
+            factor = ingredient.quantity / ingredient_data.measurement.serving_size
+
+            # Update total nutrition
+            total.calories += (
+                ingredient_data.nutrition.per_standard_unit.calories * factor
+            )
+            total.protein += (
+                ingredient_data.nutrition.per_standard_unit.protein * factor
+            )
+            total.carbs += ingredient_data.nutrition.per_standard_unit.carbs * factor
+            total.fat += ingredient_data.nutrition.per_standard_unit.fat * factor
+            total.fiber += ingredient_data.nutrition.per_standard_unit.fiber * factor
+
+        # Calculate per serving
+        servings = recipe.data.servings
+        per_serving.calories = total.calories / servings
+        per_serving.protein = total.protein / servings
+        per_serving.carbs = total.carbs / servings
+        per_serving.fat = total.fat / servings
+        per_serving.fiber = total.fiber / servings
+
+        return {"total": total, "per_serving": per_serving}
+
+    # ... rest of helper methods ...

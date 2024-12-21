@@ -1,77 +1,67 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
 from typing import Dict, List, Optional
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from ..models.pantry import MeasurementUnit, NutritionalInfo
 
-class MealCategory(str, Enum):
-    BREAKFAST = "breakfast"
-    LUNCH = "lunch"
-    DINNER = "dinner"
-    SNACK = "snack"
 
-class NutritionalInfo(BaseModel):
-    calories: int
-    protein: float
-    carbs: float
-    fat: float
-    
-class RecipeBase(BaseModel):
+class DifficultyLevel(str, Enum):
+    EASY = "easy"
+    MEDIUM = "medium"
+    HARD = "hard"
+
+
+class RecipeIngredient(BaseModel):
+    ingredient_id: UUID
+    quantity: float
+    unit: MeasurementUnit
+    notes: Optional[str] = None
+
+
+class RecipeData(BaseModel):
     name: str
-    ingredients: List[str]
+    ingredients: List[RecipeIngredient]
     instructions: List[str]
-    preparation_time: Optional[str] = None
-    difficulty: Optional[str] = Field(None, pattern="^(easy|medium|hard)$")
-    nutritional_info: Optional[NutritionalInfo] = None
-    is_saved: bool = False
-    meal_category: MealCategory
+    preparation_time: int
+    difficulty: DifficultyLevel = DifficultyLevel.MEDIUM
+    calculated_nutrition: Dict[str, NutritionalInfo] = {
+        "total": NutritionalInfo(),
+        "per_serving": NutritionalInfo(),
+    }
+    servings: int = 1
+    category: str
+
 
 class RecipeCreate(BaseModel):
-    name: str
-    ingredients: List[str]
-    instructions: List[str]
-    preparation_time: Optional[str] = None
-    difficulty: Optional[str] = Field(None, pattern="^(easy|medium|hard)$")
-    nutritional_info: Optional[NutritionalInfo] = None
-    is_saved: bool = True
-    meal_category: MealCategory
+    data: RecipeData
+    is_public: bool = False
 
-class RecipeUpdate(BaseModel):
-    name: Optional[str] = None
-    ingredients: Optional[List[Dict[str, str]]] = None
-    instructions: Optional[List[str]] = None
-    preparation_time: Optional[timedelta] = None
-    difficulty: Optional[str] = Field(None, pattern="^(easy|medium|hard)$")
-    nutritional_info: Optional[NutritionalInfo] = None
-    is_saved: Optional[bool] = None
 
 class RecipeResponse(BaseModel):
-    """API response model"""
-    id: str
-    name: str
-    ingredients: List[str]
-    instructions: List[str]
-    preparation_time: Optional[str] = None
-    difficulty: Optional[str] = Field(None, pattern="^(easy|medium|hard)$")
-    nutritional_info: Optional[NutritionalInfo] = None
-    is_saved: bool = False
+    id: UUID
+    data: RecipeData
+    recipe_type: str
+    is_public: bool
+    original_recipe_id: Optional[UUID] = None
     created_at: datetime
     updated_at: datetime
+    user_id: UUID
 
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
 
-class CategoryRecipeRequest(BaseModel):
-    category: MealCategory
+class CategoryRequest(BaseModel):
+    category: str
     count: int
 
-class RecipeGenerateRequest(BaseModel):
-    categories: List[CategoryRecipeRequest]
 
-class RecipeSave(BaseModel):
-    """Model for saving a recipe by ID"""
-    recipe_id: str
+class RecipeGenerateRequest(BaseModel):
+    categories: List[CategoryRequest]
+
+
+class RecipeWithAvailability(BaseModel):
+    recipe: RecipeResponse
+    available_ingredients: List[UUID]
+    missing_ingredients: List[UUID]
+    availability_percentage: float
