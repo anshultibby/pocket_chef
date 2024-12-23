@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PantryItemCreate } from '@/types';
 
 const defaultValues: PantryItemCreate = {
@@ -22,13 +22,25 @@ const formatDateForBackend = (dateString: string | null): string | null => {
   return new Date(dateString).toISOString().split('T')[0];
 };
 
-export function useItemForm({ onSubmit, onClose }: {
+export function useItemForm({ 
+  initialValues,
+  onSubmit, 
+  onClose 
+}: {
+  initialValues?: PantryItemCreate;
   onSubmit: (values: PantryItemCreate) => Promise<void>;
   onClose: () => void;
 }) {
-  const [values, setValues] = useState<PantryItemCreate>(defaultValues);
+  const [values, setValues] = useState<PantryItemCreate>(initialValues || defaultValues);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Initialize values when initialValues changes
+  useEffect(() => {
+    if (initialValues) {
+      setValues(initialValues);
+    }
+  }, [initialValues]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};

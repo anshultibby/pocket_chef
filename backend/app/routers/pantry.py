@@ -72,7 +72,7 @@ async def update_item(
     current_user: dict = Depends(get_current_user),
 ):
     try:
-        result = pantry_manager.update_item(
+        result = await pantry_manager.update_item(
             item_id=item_id, update_data=update_data, user_id=UUID(current_user["id"])
         )
         if not result:

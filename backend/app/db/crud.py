@@ -96,6 +96,23 @@ class PantryCRUD(BaseCRUD):
             logger.error(f"Error clearing pantry: {str(e)}")
             raise
 
+    async def get_item(
+        self, item_id: UUID, user_id: Optional[UUID] = None
+    ) -> Optional[PantryItem]:
+        try:
+            query = self.supabase.table(self.table).select("*").eq("id", str(item_id))
+
+            # If user_id is provided, add it to the query
+            if user_id:
+                query = query.eq("user_id", str(user_id))
+
+            result = query.execute()
+
+            return PantryItem(**result.data[0]) if result.data else None
+        except Exception as e:
+            logger.error(f"Error getting pantry item: {str(e)}")
+            raise
+
 
 class RecipeCRUD(BaseCRUD):
     def __init__(self):

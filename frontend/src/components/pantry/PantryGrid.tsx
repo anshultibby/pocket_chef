@@ -1,4 +1,5 @@
 import { PantryGridProps } from '@/types/pantry';
+import { TrashIcon } from '@heroicons/react/24/outline';
 
 export default function PantryGrid({ groupedItems, onSelectItem, onDeleteItem }: PantryGridProps) {
   return (
@@ -12,7 +13,8 @@ export default function PantryGrid({ groupedItems, onSelectItem, onDeleteItem }:
             {items.map(item => (
               <div 
                 key={item.id}
-                className="bg-gray-800 rounded-lg p-4 space-y-2"
+                className="bg-gray-800 rounded-lg p-4 space-y-2 group hover:bg-gray-700/80 transition-colors cursor-pointer relative"
+                onClick={() => onSelectItem(item)}
               >
                 <div className="flex justify-between items-start">
                   <div className="space-y-1">
@@ -28,20 +30,16 @@ export default function PantryGrid({ groupedItems, onSelectItem, onDeleteItem }:
                       {item.data.quantity} {item.data.unit}
                     </p>
                   </div>
-                  <div className="space-x-2">
-                    <button
-                      onClick={() => onSelectItem(item)}
-                      className="text-blue-400 hover:text-blue-300"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => onDeleteItem(item.id)}
-                      className="text-red-400 hover:text-red-300"
-                    >
-                      Delete
-                    </button>
-                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent item selection when clicking delete
+                      onDeleteItem(item.id);
+                    }}
+                    className="text-red-400 hover:text-red-300 p-2 opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2"
+                    title="Delete item"
+                  >
+                    <TrashIcon className="h-5 w-5" />
+                  </button>
                 </div>
               </div>
             ))}

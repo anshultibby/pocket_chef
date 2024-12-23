@@ -8,8 +8,10 @@ from fastapi import UploadFile
 from ..db.crud import PantryCRUD
 from ..models.pantry import (
     ListOfPantryItemsCreate,
+    Nutrition,
     PantryItem,
     PantryItemCreate,
+    PantryItemData,
     PantryItemUpdate,
 )
 from .claude.service import ClaudeService
@@ -139,21 +141,23 @@ class PantryManager:
 
         if updates.data:
             # Create new PantryItemData with merged values
-            processed.data = current_item.data.copy()
-            processed.data = processed.data.model_dump()
+            current_data = current_item.data.model_dump()
             updates_dict = updates.data.model_dump(exclude_unset=True)
-            processed.data.update(updates_dict)
+            merged_data = current_data | updates_dict
 
             # Validate quantity
             if "quantity" in updates_dict:
-                processed.data["quantity"] = max(0, float(processed.data["quantity"]))
+                merged_data["quantity"] = max(0, float(merged_data["quantity"]))
+
+            processed.data = PantryItemData(**merged_data)
 
         if updates.nutrition:
             # Create new Nutrition with merged values
-            processed.nutrition = current_item.nutrition.copy()
-            processed.nutrition = processed.nutrition.model_dump()
+            current_nutrition = current_item.nutrition.model_dump()
             updates_dict = updates.nutrition.model_dump(exclude_unset=True)
-            processed.nutrition.update(updates_dict)
+            merged_nutrition = current_nutrition | updates_dict
+
+            processed.nutrition = Nutrition(**merged_nutrition)
 
         return processed
 

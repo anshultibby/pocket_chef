@@ -10,7 +10,6 @@ import CategoryFilters from './pantry/CategoryFilters';
 import PantryControls from './pantry/PantryControls';
 import PantryGrid from './pantry/PantryGrid';
 import AddItemModal from './modals/AddItemModal';
-import ItemEditModal from './modals/ItemEditModal';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
@@ -54,13 +53,16 @@ export default function PantryTab({
   }
 
   const handleItemUpdate = async (
-    item: PantryItem, 
-    updates: PantryItemUpdate
+    itemId: string, 
+    updates: PantryItemCreate
   ) => {
     try {
-      const updatedItem = await pantryApi.updateItem(item.id, updates);
-      onUpdateItem(item.id, updatedItem);
-      setSelectedItem(updatedItem);
+      const updatedItem = await pantryApi.updateItem(itemId, {
+        data: updates.data,
+        nutrition: updates.nutrition
+      });
+      onUpdateItem(itemId, updatedItem);
+      setSelectedItem(null);
     } catch (err) {
       handleError(err);
     }
@@ -68,7 +70,7 @@ export default function PantryTab({
 
   const handleModalUpdate = (updates: Partial<PantryItemUpdate>) => {
     if (!selectedItem) return;
-    handleItemUpdate(selectedItem, {
+    handleItemUpdate(selectedItem.id, {
       data: updates.data || undefined,
       nutrition: updates.nutrition || undefined
     });
@@ -223,10 +225,13 @@ export default function PantryTab({
       )}
 
       {selectedItem && (
-        <ItemEditModal
-          item={selectedItem}
+        <AddItemModal
+          initialValues={selectedItem}
+          onAdd={async (updatedItem) => {
+            await handleItemUpdate(selectedItem.id, updatedItem);
+          }}
           onClose={() => setSelectedItem(null)}
-          onUpdate={handleModalUpdate}
+          isEditing={true}
         />
       )}
     </div>
