@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { 
-  PantryItemWithIngredient, 
+  PantryItem, 
   PantryItemCreate, 
   PantryItemUpdate 
 } from '@/types';
@@ -19,10 +19,10 @@ import { ERROR_MESSAGES } from '@/constants/messages';
 import { normalizeString } from '@/utils/pantry';
 
 interface PantryTabProps {
-  pantryItems: PantryItemWithIngredient[];
+  pantryItems: PantryItem[];
   loading: boolean;
-  onAddItems: (items: PantryItemWithIngredient[]) => void;
-  onUpdateItem: (id: string, updates: Partial<PantryItemWithIngredient>) => void;
+  onAddItems: (items: PantryItem[]) => void;
+  onUpdateItem: (id: string, updates: Partial<PantryItem>) => void;
   onDeleteItem: (id: string) => void;
 }
 
@@ -47,14 +47,14 @@ export default function PantryTab({
   const [showAddItemForm, setShowAddItemForm] = useState(false);
   const [showReceiptConfirmation, setShowReceiptConfirmation] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [selectedItem, setSelectedItem] = useState<PantryItemWithIngredient | null>(null);
+  const [selectedItem, setSelectedItem] = useState<PantryItem | null>(null);
 
   if (loading) {
     return <LoadingSpinner message="Loading pantry items..." />;
   }
 
   const handleItemUpdate = async (
-    item: PantryItemWithIngredient, 
+    item: PantryItem, 
     updates: PantryItemUpdate
   ) => {
     try {
@@ -69,7 +69,8 @@ export default function PantryTab({
   const handleModalUpdate = (updates: Partial<PantryItemUpdate>) => {
     if (!selectedItem) return;
     handleItemUpdate(selectedItem, {
-      data: updates.data || {}
+      data: updates.data || undefined,
+      nutrition: updates.nutrition || undefined
     });
   };
 
@@ -92,6 +93,12 @@ export default function PantryTab({
       onAddItems([]);
       setSelectedCategory(null);
       setSearchTerm('');
+      setSelectedItem(null);
+      clearError();
+      
+      if (clearUpload) {
+        clearUpload();
+      }
     } catch (err) {
       handleError(err);
     }
@@ -99,26 +106,12 @@ export default function PantryTab({
 
   const handleAddItem = async (item: PantryItemCreate) => {
     try {
-      const existingItem = pantryItems.find(
-        existing => 
-          normalizeString(existing.data.display_name) === normalizeString(item.data.display_name) &&
-          normalizeString(existing.data.unit) === normalizeString(item.data.unit)
-      );
-
-      if (existingItem) {
-        const updatedItem = await pantryApi.updateItem(existingItem.id, {
-          data: {
-            ...existingItem.data,
-            quantity: existingItem.data.quantity + item.data.quantity
-          }
-        });
-        onUpdateItem(existingItem.id, updatedItem);
-      } else {
-        const [addedItem] = await pantryApi.addItems([item]);
-        onAddItems([addedItem]);
-      }
+      console.log('Sending item to backend:', JSON.stringify(item, null, 2));
+      const [addedItem] = await pantryApi.addItems([item]);
+      onAddItems([addedItem]);
       setShowAddItemForm(false);
     } catch (err) {
+      console.error('Error response:', err);
       handleError(err);
     }
   };
@@ -127,15 +120,19 @@ export default function PantryTab({
     try {
       const formattedItems = confirmedItems.map(item => ({
         data: {
-          display_name: item.data.display_name,
+          name: item.data.name,
+          standard_name: item.data.standard_name,
           quantity: Number(item.data.quantity),
-          unit: item.data.unit || 'units',
-          notes: item.data.notes || '',
-          expiry_date: item.data.expiry_date || undefined,
-        }
+          unit: item.data.unit,
+          category: item.data.category,
+          notes: item.data.notes,
+          expiry_date: item.data.expiry_date,
+          price: item.data.price
+        },
+        nutrition: item.nutrition
       }));
 
-      const savedItems = await pantryApi.addItems(formattedItems);
+      const savedItems = await pantryApi.confirmReceipt(formattedItems);
       onAddItems(savedItems);
       
       setShowReceiptConfirmation(false);
@@ -162,7 +159,7 @@ export default function PantryTab({
 
   const groupedItems = pantryItems
     .filter(item => {
-      const matchesSearch = item.data.display_name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = item.data.name.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory = !selectedCategory || item.data.category === selectedCategory;
       return matchesSearch && matchesCategory;
     })
@@ -171,7 +168,7 @@ export default function PantryTab({
       if (!groups[category]) groups[category] = [];
       groups[category].push(item);
       return groups;
-    }, {} as Record<string, PantryItemWithIngredient[]>);
+    }, {} as Record<string, PantryItem[]>);
 
   const categories = Array.from(new Set(pantryItems.map(item => item.data.category || 'Other')));
 

@@ -12,10 +12,11 @@ export interface NutritionalInfo {
 }
 
 export interface RecipeIngredient {
-  ingredient_id: string;
+  pantry_item_id: string;
   quantity: number;
-  unit: MeasurementUnit;
+  unit: string;
   notes?: string;
+  is_optional: boolean;
 }
 
 export interface RecipeData {
@@ -35,43 +36,50 @@ export interface RecipeData {
 export interface Recipe {
   id: string;
   data: RecipeData;
-  recipe_type: RecipeType;
-  is_public: boolean;
-  original_recipe_id?: string;
   created_at: string;
   updated_at: string;
   user_id: string;
+  is_public: boolean;
 }
 
 // Pantry types matching the database
 export interface PantryItemData {
-  display_name: string;
-  quantity: number;
-  unit: MeasurementUnit;
-  category?: string;
-  notes?: string;
-  expiry_date?: string;
+  name: string;
+  standard_name?: string | null;
+  quantity?: number | null;
+  unit: string;
+  category?: string | null;
+  notes?: string | null;
+  expiry_date?: string | null;
+  price?: number | null;
 }
 
-export interface PantryItem {
-  id: string;
-  ingredient_id: string;
-  data: PantryItemData;
-  user_id: string;
-  created_at: string;
-  updated_at: string;
-}
-
-// Request types
-export interface RecipeGenerateRequest {
-  categories: Array<{
-    category: string;
-    count: number;
-  }>;
+export interface Nutrition {
+  standard_unit?: string;
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
+  fiber?: number;
 }
 
 export interface PantryItemCreate {
   data: PantryItemData;
+  nutrition: Partial<Nutrition>;
+}
+
+export interface PantryItemUpdate {
+  data?: Partial<PantryItemData>;
+  nutrition?: Partial<Nutrition>;
+}
+
+export interface PantryItem {
+  id: string;
+  data: PantryItemData;
+  nutrition: Nutrition;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface IngredientMeasurement {
@@ -99,17 +107,24 @@ export interface Ingredient {
   created_at: string;
 }
 
-// Add this new interface to match backend
-export interface PantryItemUpdate {
-  data: Partial<PantryItemData>;
+export interface RecipeCreate {
+  data: RecipeData;
+  is_public: boolean;
 }
 
-export interface PantryItemWithIngredient {
-  id: string;
-  ingredient_id: string;
-  ingredient: IngredientData;
-  data: PantryItemData;
-  user_id: string;
-  created_at: string;
-  updated_at: string;
+export interface CategoryRequest {
+  category: string;
+  count: number;
+}
+
+export interface RecipeGenerateRequest {
+  categories: CategoryRequest[];
+}
+
+export interface RecipeWithAvailability {
+  recipe: Recipe;
+  available_ingredients: string[];
+  missing_ingredients: string[];
+  availability_percentage: number;
+  substitute_suggestions: Record<string, string[]>;
 }

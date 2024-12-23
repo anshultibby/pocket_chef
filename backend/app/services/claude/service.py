@@ -1,16 +1,15 @@
-import base64
-import json
 import logging
 from typing import Dict, Generic, List, Optional, Type, TypeVar, Union
 
 from anthropic import Anthropic
-from fastapi import UploadFile
 from pydantic import BaseModel
 
-from ...models.pantry import IngredientData, PantryItemCreate, PantryItemData
+from ...models.pantry import ListOfPantryItemsCreate, PantryItemCreate
 from ...models.recipes import RecipeData
-from .handlers import StructuredResponse
-from .prompts import INGREDIENT_SYSTEM_PROMPT, MAX_TOKENS, MODEL, RECEIPT_PROMPT
+from .handlers import parse_claude_response
+from .prompts import INGREDIENT_ANALYSIS_PROMPT_TEMPLATE, MAX_TOKENS, MODEL
+
+logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -25,24 +24,32 @@ class ClaudeService:
         self.anthropic = Anthropic()
         self.logger = logging.getLogger(__name__)
 
-    async def analyze_ingredient(self, ingredients: str) -> IngredientData:
-        """Analyze a ingredients and return standardized data"""
-        response = await self._process_request(
-            f"Analyze these ingredient and create \
-standardized versions for them: {ingredients}",
-            response_model=IngredientData,
-            system_prompt=INGREDIENT_SYSTEM_PROMPT,
-        )
-        return response
-
-    async def parse_receipt_text(self, receipt_text: str) -> List[PantryItemData]:
+    async def parse_ingredient_text(self, ingredient: str) -> PantryItemCreate:
         """Parse and standardize items from receipt text"""
-        items = await self._process_request(
-            prompt=f"{RECEIPT_PROMPT}\n\nReceipt text:\n{receipt_text}",
-            response_model=PantryItemData,
+        summary_schema = summarize_schema(PantryItemCreate.model_json_schema())
+        prompt = INGREDIENT_ANALYSIS_PROMPT_TEMPLATE.substitute(
+            ingredients=ingredient, model=summary_schema
+        )
+        logger.info(f"Prompt: {prompt}")
+        item = await self._process_request(
+            prompt=prompt,
+            response_model=PantryItemCreate,
             is_text=True,
         )
-        return [PantryItemCreate(**item.model_dump()) for item in items]
+        return item
+
+    async def parse_receipt_text(self, receipt_text: str) -> ListOfPantryItemsCreate:
+        """Parse receipt text and return list of PantryItemCreate"""
+        summary_schema = summarize_schema(ListOfPantryItemsCreate.model_json_schema())
+        prompt = INGREDIENT_ANALYSIS_PROMPT_TEMPLATE.substitute(
+            ingredients=receipt_text, model=summary_schema
+        )
+        items = await self._process_request(
+            prompt=prompt,
+            response_model=ListOfPantryItemsCreate,
+            is_text=True,
+        )
+        return items
 
     async def generate_recipes(
         self, ingredients: List[str], preferences: Optional[str] = None
@@ -74,9 +81,9 @@ standardized versions for them: {ingredients}",
                 ]
             else:
                 messages = [{"role": "user", "content": prompt}]
-
             response = await self._send_request(messages, system_prompt)
-            return self._parse_response(response, response_model)
+            extracted_object = parse_claude_response(response, response_model)
+            return extracted_object
 
         except Exception as e:
             self.logger.error(f"Request failed: {str(e)}")
@@ -95,17 +102,42 @@ standardized versions for them: {ingredients}",
         response = self.anthropic.messages.create(**params)
         return response.content[0].text
 
-    def _parse_response(
-        self,
-        content: str,
-        model: Type[T],
-    ) -> Union[T, List[T]]:
-        """Parse and validate Claude's response"""
-        try:
-            handler = StructuredResponse(model)
-            return handler.parse(content)
 
-        except Exception as e:
-            self.logger.error(f"Failed to parse response: {str(e)}")
-            self.logger.debug(f"Raw content: {content}")
-            raise
+def summarize_schema(schema: dict) -> str:
+    """Return a simplified schema in name/type/description format"""
+    output = []
+    output.append(f"{'Field':<30} {'Type':<20} Description")
+    output.append("-" * 80)
+
+    def process_properties(properties: dict, prefix: str = "") -> None:
+        for name, details in properties.items():
+            field_type = get_field_type(details, schema)
+            description = details.get("description", "")
+            output.append(f"{prefix}{name:<30} {field_type:<20} {description}")
+
+            # Recursively process nested objects and arrays
+            if "$ref" in details:
+                ref_schema = get_ref_schema(details["$ref"], schema)
+                process_properties(ref_schema["properties"], f"{prefix}{name}.")
+            elif details.get("type") == "array" and "items" in details:
+                if "$ref" in details["items"]:
+                    ref_schema = get_ref_schema(details["items"]["$ref"], schema)
+                    process_properties(ref_schema["properties"], f"{prefix}{name}[].")
+
+    def get_field_type(details: dict, schema: dict) -> str:
+        if "anyOf" in details:
+            return " | ".join(t["type"] for t in details["anyOf"])
+        elif details.get("type") == "array":
+            item_details = details["items"]
+            if "$ref" in item_details:
+                ref_name = item_details["$ref"].split("/")[-1]
+                return f"List[{ref_name}]"
+            return f"List[{item_details.get('type', 'any')}]"
+        return details.get("type", "")
+
+    def get_ref_schema(ref: str, schema: dict) -> dict:
+        ref_name = ref.split("/")[-1]
+        return schema["$defs"][ref_name]
+
+    process_properties(schema["properties"])
+    return "\n".join(output)

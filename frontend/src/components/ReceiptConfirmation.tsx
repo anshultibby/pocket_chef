@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { MeasurementUnit, PantryItemCreate } from '@/types';
+import { PantryItemCreate } from '@/types';
 
 interface ReceiptConfirmationProps {
   items: PantryItemCreate[];
@@ -15,206 +15,64 @@ export default function ReceiptConfirmation({
   onConfirm, 
   onCancel 
 }: ReceiptConfirmationProps) {
-  const [editedItems, setEditedItems] = useState<(PantryItemCreate & { tempId: number; isEditing?: boolean })[]>(
-    items.map((item, index) => ({ ...item, tempId: index, isEditing: false }))
-  );
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editableItems, setEditableItems] = useState<PantryItemCreate[]>(items);
 
-  const addNewItem = () => {
-    setEditedItems([
-      {
-        tempId: editedItems.length,
-        data: {
-          display_name: '',
-          quantity: 1,
-          unit: 'units' as MeasurementUnit,
-          notes: '',
-          expiry_date: undefined
-        },
-        isEditing: true,
-      },
-      ...editedItems,
-    ]);
-  };
-
-  const toggleEdit = (tempId: number) => {
-    setEditedItems(items =>
-      items.map(item =>
-        item.tempId === tempId
-          ? { ...item, isEditing: !item.isEditing }
-          : item
-      )
-    );
-  };
-
-  const handleConfirm = async () => {
-    if (isSubmitting) return;
-    setIsSubmitting(true);
-    try {
-      const validItems = editedItems
-        .filter(item => item.data.display_name.trim() && item.data.category?.trim())
-        .map(({ tempId, isEditing, ...item }) => ({
-          ...item,
-          data: {
-            ...item.data,
-            display_name: item.data.display_name.trim(),
-            category: item.data.category?.trim() || 'Other',
-            quantity: Math.max(1, Math.floor(item.data.quantity)),
-            unit: item.data.unit || 'units'
-          }
-        }));
-        
-      await onConfirm(validItems);
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleItemUpdate = (index: number, updates: Partial<PantryItemCreate>) => {
+    setEditableItems(prev => prev.map((item, i) => 
+      i === index ? { ...item, ...updates } : item
+    ));
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6">
-        <div className="flex gap-6">
-          {/* Receipt Image Preview */}
-          {receiptImage && (
-            <div className="w-1/2">
-              <h3 className="text-lg font-semibold mb-4">Receipt Image</h3>
-              <div className="relative aspect-[3/4] bg-gray-900 rounded-lg overflow-hidden">
-                <img 
-                  src={receiptImage} 
-                  alt="Receipt"
-                  className="absolute inset-0 w-full h-full object-contain"
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
+      <div className="bg-gray-800 rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <h2 className="text-xl font-semibold mb-4">Review Receipt Items</h2>
+        
+        {receiptImage && (
+          <img 
+            src={receiptImage} 
+            alt="Receipt" 
+            className="mb-4 max-h-48 mx-auto"
+          />
+        )}
+
+        <div className="space-y-4 mb-6">
+          {editableItems.map((item, index) => (
+            <div key={index} className="bg-gray-700 p-4 rounded-lg">
+              <input
+                value={item.data.name}
+                onChange={(e) => handleItemUpdate(index, { 
+                  data: { ...item.data, name: e.target.value }
+                })}
+                className="bg-gray-600 p-2 rounded w-full mb-2"
+              />
+              <div className="flex gap-4">
+                <input
+                  type="number"
+                  value={item.data.quantity}
+                  onChange={(e) => handleItemUpdate(index, {
+                    data: { ...item.data, quantity: parseFloat(e.target.value) }
+                  })}
+                  className="bg-gray-600 p-2 rounded w-24"
+                />
+                <input
+                  value={item.data.unit}
+                  onChange={(e) => handleItemUpdate(index, {
+                    data: { ...item.data, unit: e.target.value }
+                  })}
+                  className="bg-gray-600 p-2 rounded w-24"
                 />
               </div>
             </div>
-          )}
-          
-          {/* Items List */}
-          <div className={receiptImage ? 'w-1/2' : 'w-full'}>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Confirm Items</h3>
-              <button
-                onClick={addNewItem}
-                className="px-3 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-lg text-sm"
-              >
-                Add Item
-              </button>
-            </div>
-            
-            <div className="flex-1 overflow-auto">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {editedItems.map(item => (
-                  <div 
-                    key={item.tempId} 
-                    className="flex flex-col bg-gray-700 rounded p-2 gap-2"
-                  >
-                    <div className="flex justify-between">
-                      {item.isEditing ? (
-                        <input
-                          type="text"
-                          value={item.data.display_name}
-                          onChange={(e) => {
-                            const newItems = [...editedItems];
-                            const itemIndex = newItems.findIndex(i => i.tempId === item.tempId);
-                            newItems[itemIndex] = {
-                              ...item,
-                              data: {
-                                ...item.data,
-                                display_name: e.target.value
-                              }
-                            };
-                            setEditedItems(newItems);
-                          }}
-                          className="flex-grow text-sm text-white bg-gray-600 rounded p-1"
-                          placeholder="Item name"
-                        />
-                      ) : (
-                        <span className="flex-grow text-sm text-white p-1">{item.data.display_name}</span>
-                      )}
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => toggleEdit(item.tempId)}
-                          className="text-gray-400 hover:text-white"
-                        >
-                          {item.isEditing ? "✓" : "✎"}
-                        </button>
-                        <button
-                          onClick={() => {
-                            setEditedItems(editedItems.filter(i => i.tempId !== item.tempId));
-                          }}
-                          className="text-red-400 hover:text-red-300"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      {item.isEditing ? (
-                        <>
-                          <input
-                            type="text"
-                            value={item.data.category || ''}
-                            onChange={(e) => {
-                              const newItems = [...editedItems];
-                              const itemIndex = newItems.findIndex(i => i.tempId === item.tempId);
-                              newItems[itemIndex] = {
-                                ...item,
-                                data: {
-                                  ...item.data,
-                                  category: e.target.value
-                                }
-                              };
-                              setEditedItems(newItems);
-                            }}
-                            className="flex-grow text-sm text-white bg-gray-600 rounded p-1"
-                            placeholder="Category"
-                          />
-                          <input
-                            type="number"
-                            value={item.data.quantity}
-                            onChange={(e) => {
-                              const newItems = [...editedItems];
-                              const itemIndex = newItems.findIndex(i => i.tempId === item.tempId);
-                              newItems[itemIndex] = {
-                                ...item,
-                                data: {
-                                  ...item.data,
-                                  quantity: Number(e.target.value)
-                                }
-                              };
-                              setEditedItems(newItems);
-                            }}
-                            className="w-16 text-sm text-center text-white bg-gray-600 rounded p-1"
-                            min="1"
-                          />
-                        </>
-                      ) : (
-                        <>
-                          <span className="flex-grow text-sm text-white p-1">{item.data.category}</span>
-                          <span className="w-16 text-sm text-center text-white p-1">{item.data.quantity}</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex justify-end gap-4 mt-6">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 bg-gray-700/50 hover:bg-gray-700 rounded-lg"
-          >
+        <div className="flex justify-end space-x-4">
+          <button onClick={onCancel}>
             Cancel
           </button>
-          <button
-            onClick={handleConfirm}
-            disabled={isSubmitting}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg disabled:opacity-50"
-          >
-            {isSubmitting ? 'Saving...' : 'Save Items'}
+          <button onClick={() => onConfirm(editableItems)}>
+            Save Items
           </button>
         </div>
       </div>

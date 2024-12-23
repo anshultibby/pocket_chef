@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { PantryItemCreate } from '@/types';
-import { pantryApi } from '@/lib/api';
+import { pantryApi, receiptApi } from '@/lib/api';
 import { ERROR_MESSAGES } from '@/constants/messages';
 
 export const useFileUpload = () => {
@@ -23,7 +23,7 @@ export const useFileUpload = () => {
       const imageUrl = URL.createObjectURL(file);
       setReceiptImage(imageUrl);
 
-      const items = await pantryApi.uploadReceipt(formData);
+      const items = await receiptApi.process(formData);
       setPendingItems(items);
       return true;
     } catch (err) {

@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Recipe, PantryItem, MealCategory, RecipeGenerateRequest } from '@/types';
+import { useState } from 'react';
+import { Recipe, PantryItem, MealCategory, RecipeGenerateRequest, RecipeWithAvailability } from '@/types';
 import RecipeCard from './RecipeCard';
 import { recipeApi } from '@/lib/api';
 
@@ -16,7 +16,7 @@ export default function RecipesTab({
   pantryItems,
   loading: parentLoading
 }: RecipesTabProps) {
-  const [recipes, setRecipes] = useState<Record<MealCategory, Recipe[]>>({
+  const [recipes, setRecipes] = useState<Record<MealCategory, RecipeWithAvailability[]>>({
     breakfast: [],
     lunch: [],
     dinner: [],
@@ -34,43 +34,8 @@ export default function RecipesTab({
     try {
       // First try to get existing recipes
       const recipesByCategory = await recipeApi.getByCategory();
-      
-      // Check if we have enough recipes for each category
-      const requiredCounts: Record<MealCategory, number> = {
-        breakfast: 3,
-        lunch: 3,
-        dinner: 3,
-        snack: 2
-      };
-
-      const needsGeneration = Object.entries(requiredCounts).some(
-        ([category, count]) => 
-          !recipesByCategory[category as MealCategory] || 
-          recipesByCategory[category as MealCategory].length < count
-      );
-
-      if (needsGeneration) {
-        // Only generate what we need
-        const categoriesToGenerate: RecipeGenerateRequest['categories'] = Object.entries(requiredCounts)
-          .filter(([category, count]) => 
-            !recipesByCategory[category as MealCategory] || 
-            recipesByCategory[category as MealCategory].length < count
-          )
-          .map(([category, count]) => ({
-            category: category as MealCategory,
-            count: count - (recipesByCategory[category as MealCategory]?.length || 0)
-          }));
-
-        await recipeApi.generate({ categories: categoriesToGenerate });
-        
-        // Fetch again to get the complete set
-        const updatedRecipes = await recipeApi.getByCategory();
-        setRecipes(updatedRecipes);
-        setIsGenerating(false);
-      } else {
-        setRecipes(recipesByCategory);
-        setIsGenerating(false);
-      }
+      setRecipes(recipesByCategory);
+      setIsGenerating(false);
     } catch (err) {
       handleError(err);
     } finally {
@@ -112,12 +77,6 @@ export default function RecipesTab({
     poll();
   };
 
-  useEffect(() => {
-    if (pantryItems.length > 0) {
-      fetchRecipes();
-    }
-  }, [pantryItems]);
-
   const handleError = (err: unknown) => {
     let message = 'An error occurred';
     if (err instanceof Error) message = err.message;
@@ -153,6 +112,18 @@ export default function RecipesTab({
     }
   };
 
+  const handleSave = (recipeData: RecipeWithAvailability) => {
+    return async () => {
+      await onSaveRecipe(recipeData.recipe);
+    };
+  };
+
+  const handleRemove = (recipeId: string) => {
+    return () => {
+      onRemoveRecipe(recipeId);
+    };
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex justify-start">
@@ -163,7 +134,7 @@ export default function RecipesTab({
             </div>
           )}
           <button
-            onClick={handleGenerateRecipes}
+            onClick={fetchRecipes}
             disabled={isLoading || isGenerating || pantryItems.length === 0}
             className={`px-4 py-2 rounded-lg ${pantryItems.length === 0 ? 'rounded-t-none' : ''} transition-colors ${
               isLoading || isGenerating || pantryItems.length === 0
@@ -177,7 +148,7 @@ export default function RecipesTab({
                 {isGenerating ? 'Generating...' : 'Loading...'}
               </>
             ) : (
-              'Generate New Recipes'
+              'Get Recipe Suggestions'
             )}
           </button>
         </div>
@@ -198,21 +169,23 @@ export default function RecipesTab({
         </div>
       )}
 
-      {!isLoading && !isGenerating && (Object.entries(recipes) as [MealCategory, Recipe[]][]).map(([category, categoryRecipes]) => (
-        <div key={category} className="space-y-4">
-          <h2 className="text-xl font-bold text-white capitalize">{category}</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {categoryRecipes.map(recipe => (
-              <RecipeCard
-                key={recipe.id}
-                recipe={recipe}
-                onSave={onSaveRecipe}
-                onRemove={onRemoveRecipe}
-              />
-            ))}
+      {!isLoading && !isGenerating && (
+        Object.entries(recipes).map(([category, categoryRecipes]) => (
+          <div key={category} className="space-y-4">
+            <h2 className="text-xl font-bold text-white capitalize">{category}</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {categoryRecipes.map(recipeData => (
+                <RecipeCard
+                  key={recipeData.recipe.id}
+                  recipeData={recipeData}
+                  onSave={handleSave(recipeData)}
+                  onRemove={handleRemove(recipeData.recipe.id)}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        ))
+      )}
     </div>
   );
 }

@@ -5,7 +5,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from ..models.pantry import NutritionalInfo
+from .pantry import Nutrition
 
 
 class DifficultyLevel(str, Enum):
@@ -15,23 +15,26 @@ class DifficultyLevel(str, Enum):
 
 
 class RecipeIngredient(BaseModel):
-    ingredient_id: UUID
+    pantry_item_id: UUID
     quantity: float
     unit: str
     notes: Optional[str] = None
+    is_optional: bool = False
 
 
 class RecipeData(BaseModel):
     name: str
     ingredients: List[RecipeIngredient]
     instructions: List[str]
-    preparation_time: int
+    preparation_time: int = Field(gt=0, description="Preparation time in minutes")
     difficulty: DifficultyLevel = DifficultyLevel.MEDIUM
-    calculated_nutrition: Dict[str, NutritionalInfo] = {
-        "total": NutritionalInfo(),
-        "per_serving": NutritionalInfo(),
-    }
-    servings: int = 1
+    calculated_nutrition: Dict[str, Nutrition] = Field(
+        default_factory=lambda: {
+            "total": Nutrition(),
+            "per_serving": Nutrition(),
+        }
+    )
+    servings: int = Field(ge=1, default=1)
     category: str
 
 
@@ -43,9 +46,6 @@ class RecipeCreate(BaseModel):
 class RecipeResponse(BaseModel):
     id: UUID
     data: RecipeData
-    recipe_type: str
-    is_public: bool
-    original_recipe_id: Optional[UUID] = None
     created_at: datetime
     updated_at: datetime
     user_id: UUID
@@ -64,4 +64,8 @@ class RecipeWithAvailability(BaseModel):
     recipe: RecipeResponse
     available_ingredients: List[UUID]
     missing_ingredients: List[UUID]
-    availability_percentage: float
+    availability_percentage: float = Field(ge=0, le=100)
+    substitute_suggestions: Dict[UUID, List[UUID]] = Field(
+        default_factory=dict,
+        description="Map of missing ingredient IDs to possible substitute ingredient IDs",
+    )

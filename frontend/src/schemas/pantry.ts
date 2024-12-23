@@ -1,15 +1,32 @@
 import { z } from 'zod';
 
-export const itemFormSchema = z.object({
-  display_name: z.string()
+export const nutritionSchema = z.object({
+  standard_unit: z.string().optional(),
+  calories: z.number().min(0).optional(),
+  protein: z.number().min(0).optional(),
+  carbs: z.number().min(0).optional(),
+  fat: z.number().min(0).optional(),
+  fiber: z.number().min(0).optional()
+}).partial().default({});
+
+export const pantryItemDataSchema = z.object({
+  name: z.string()
     .min(1, 'Name is required')
     .max(100, 'Name must be less than 100 characters'),
   quantity: z.number()
-    .positive('Quantity must be positive')
-    .min(0.1, 'Quantity must be at least 0.1'),
+    .min(0.1, 'Quantity must be greater than 0')
+    .default(1),
   unit: z.string().min(1, 'Unit is required'),
   notes: z.string().optional(),
-  expiry_date: z.string().nullable().optional(),
+  expiry_date: z.string().optional().nullable(),
+  price: z.number().optional(),
+  category: z.string().optional(),
+  standard_name: z.string().optional()
 });
 
-export type ItemFormValues = z.infer<typeof itemFormSchema>;
+export const pantryItemCreateSchema = z.object({
+  data: pantryItemDataSchema,
+  nutrition: nutritionSchema
+});
+
+export type PantryItemFormValues = z.infer<typeof pantryItemCreateSchema>;

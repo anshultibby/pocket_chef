@@ -1,8 +1,8 @@
-import { PantryItemWithIngredient, PantryItemCreate, PantryItemUpdate, MeasurementUnit } from '@/types';
+import { PantryItem, PantryItemCreate, PantryItemUpdate } from '@/types';
 
 export interface PantryGridProps {
-  groupedItems: Record<string, PantryItemWithIngredient[]>;
-  onSelectItem: (item: PantryItemWithIngredient) => void;
+  groupedItems: Record<string, PantryItem[]>;
+  onSelectItem: (item: PantryItem) => void;
   onDeleteItem: (id: string) => void;
 }
 
@@ -21,7 +21,7 @@ export interface CategoryFiltersProps {
   categories: string[];
   selectedCategory: string | null;
   onSelectCategory: (category: string | null) => void;
-  pantryItems: PantryItemWithIngredient[];
+  pantryItems: PantryItem[];
 }
 
 export interface AddItemModalProps {
@@ -30,15 +30,7 @@ export interface AddItemModalProps {
 }
 
 export interface ItemEditModalProps {
-  item: PantryItemWithIngredient;
+  item: PantryItem;
   onClose: () => void;
   onUpdate: (updates: Partial<PantryItemUpdate>) => void;
-}
-
-export interface ItemFormValues {
-  display_name: string;
-  quantity: number;
-  unit: MeasurementUnit;
-  notes?: string;
-  expiry_date?: string | null;
 }

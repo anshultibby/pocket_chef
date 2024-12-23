@@ -1,5 +1,4 @@
 import { CategoryFiltersProps } from '@/types/pantry';
-import { PantryItemWithIngredient } from '@/types';
 
 export default function CategoryFilters({
   categories,

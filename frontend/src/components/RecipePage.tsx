@@ -1,18 +1,23 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Recipe } from '@/types';
+import { useState, useEffect } from 'react';
+import { Recipe, RecipeWithAvailability } from '@/types';
 import { recipeApi } from '@/lib/api';
+import { LoadingSpinner } from './shared/LoadingSpinner';
 
-export default function RecipePage({ params }: { params: { id: string } }) {
-  const [recipe, setRecipe] = useState<Recipe | null>(null);
+interface RecipePageProps {
+  recipeId: string;
+}
+
+export default function RecipePage({ recipeId }: RecipePageProps) {
+  const [recipeData, setRecipeData] = useState<RecipeWithAvailability | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchRecipe = async () => {
       try {
-        const recipeData = await recipeApi.getRecipeDetails(params.id);
-        setRecipe(recipeData);
+        const data = await recipeApi.getRecipeDetails(recipeId);
+        setRecipeData(data);
       } catch (error) {
         console.error('Failed to fetch recipe:', error);
       } finally {
@@ -21,23 +26,17 @@ export default function RecipePage({ params }: { params: { id: string } }) {
     };
 
     fetchRecipe();
-  }, [params.id]);
+  }, [recipeId]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
-        <div className="animate-pulse text-xl">Loading your recipe...</div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading recipe..." />;
   }
 
-  if (!recipe) {
-    return (
-      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
-        <div className="text-xl text-red-400">Recipe not found</div>
-      </div>
-    );
+  if (!recipeData) {
+    return <div>Recipe not found</div>;
   }
+
+  const { recipe, available_ingredients, missing_ingredients, availability_percentage } = recipeData;
 
   return (
     <div className="min-h-screen bg-gray-950 text-white p-8">
@@ -62,13 +61,33 @@ export default function RecipePage({ params }: { params: { id: string } }) {
           {/* Ingredients */}
           <div className="mb-8">
             <h2 className="text-xl font-semibold mb-4 text-blue-400">Ingredients</h2>
+            <div className="mb-4">
+              <div className="text-sm text-gray-400">
+                Availability: {Math.round(availability_percentage)}%
+              </div>
+            </div>
             <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {recipe.data.ingredients.map((ingredient, index) => (
-                <li key={index} className="flex items-center gap-2 text-gray-200">
-                  <span className="text-blue-400/70">•</span>
-                  {ingredient.quantity} {ingredient.unit} {ingredient.notes && `(${ingredient.notes})`}
-                </li>
-              ))}
+              {recipe.data.ingredients.map((ingredient, index) => {
+                const isAvailable = available_ingredients.includes(ingredient.pantry_item_id);
+                const substitutes = recipeData.substitute_suggestions[ingredient.pantry_item_id];
+                
+                return (
+                  <li 
+                    key={index} 
+                    className={`flex items-center gap-2 ${
+                      isAvailable ? 'text-gray-200' : 'text-yellow-500'
+                    }`}
+                  >
+                    <span className={isAvailable ? 'text-blue-400/70' : 'text-yellow-500/70'}>•</span>
+                    {ingredient.quantity} {ingredient.unit} {ingredient.notes && `(${ingredient.notes})`}
+                    {!isAvailable && substitutes && (
+                      <div className="text-xs text-gray-400 mt-1">
+                        Substitutes: {substitutes.join(', ')}
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </div>
 

@@ -3,7 +3,7 @@ from typing import Dict, List
 from uuid import UUID
 
 from ..db.crud import RecipeCRUD
-from ..models.pantry import NutritionalInfo
+from ..models.pantry import Nutrition
 from ..models.recipes import RecipeCreate, RecipeResponse
 from .claude import ClaudeService
 from .pantry import get_pantry_manager
@@ -12,6 +12,11 @@ logger = logging.getLogger(__name__)
 
 
 class RecipeManager:
+    """
+    Manages recipe-related operations including generation, nutrition analysis,
+    and availability checking.
+    """
+
     def __init__(self, claude_service: ClaudeService):
         self.claude = claude_service
         self.recipe_crud = RecipeCRUD()
@@ -29,7 +34,7 @@ def get_recipe_manager() -> RecipeManager:
     """
     global _recipe_manager
     if _recipe_manager is None:
-        claude_service = ClaudeService()  # Create ClaudeService instance
+        claude_service = ClaudeService()
         _recipe_manager = RecipeManager(claude_service)
     return _recipe_manager
 
@@ -64,25 +69,35 @@ def get_recipe_manager() -> RecipeManager:
         self, recipe_id: UUID, user_id: UUID
     ) -> Dict[str, any]:
         recipe = await self.recipe_crud.get_recipe(recipe_id)
-        pantry_items = self.pantry_manager.get_items(user_id)
+        pantry_items = await self.pantry_manager.get_items(user_id)
 
         missing = []
         available = {}
 
         for ingredient in recipe.data.ingredients:
             pantry_item = next(
-                (
-                    item
-                    for item in pantry_items
-                    if item.ingredient_id == ingredient.ingredient_id
-                ),
+                (item for item in pantry_items if item.id == ingredient.pantry_item_id),
                 None,
             )
 
-            if not pantry_item or pantry_item.data.quantity < ingredient.quantity:
-                missing.append(ingredient.ingredient_id)
+            # Convert quantities to standard units for comparison
+            if pantry_item:
+                # Get conversion factors from pantry item's unit to recipe's unit
+                conversion_factor = await self._get_unit_conversion_factor(
+                    pantry_item.data.unit,
+                    ingredient.unit,
+                    pantry_item.nutrition.standard_unit,
+                )
+
+                available_qty = pantry_item.data.quantity * conversion_factor
+                needed_qty = ingredient.quantity
+
+                if available_qty < needed_qty:
+                    missing.append(ingredient.pantry_item_id)
+                else:
+                    available[ingredient.pantry_item_id] = available_qty
             else:
-                available[ingredient.ingredient_id] = pantry_item.data.quantity
+                missing.append(ingredient.pantry_item_id)
 
         return {
             "can_cook": len(missing) == 0,
@@ -92,26 +107,30 @@ def get_recipe_manager() -> RecipeManager:
 
     async def analyze_recipe_nutrition(
         self, recipe: RecipeCreate
-    ) -> Dict[str, NutritionalInfo]:
-        total = NutritionalInfo()
-        per_serving = NutritionalInfo()
+    ) -> Dict[str, Nutrition]:
+        total = Nutrition()
+        per_serving = Nutrition()
 
         for ingredient in recipe.data.ingredients:
-            ingredient_data = await self.recipe_crud.get_ingredient_nutrition(
-                ingredient.ingredient_id
+            pantry_item = await self.pantry_manager.get_item(ingredient.pantry_item_id)
+            if not pantry_item:
+                logger.warning(f"Pantry item {ingredient.pantry_item_id} not found")
+                continue
+
+            # Convert ingredient quantity to standard units
+            conversion_factor = await self._get_unit_conversion_factor(
+                ingredient.unit,
+                pantry_item.nutrition.standard_unit,
+                pantry_item.nutrition.standard_unit,
             )
-            factor = ingredient.quantity / ingredient_data.measurement.serving_size
+            standardized_qty = ingredient.quantity * conversion_factor
 
             # Update total nutrition
-            total.calories += (
-                ingredient_data.nutrition.per_standard_unit.calories * factor
-            )
-            total.protein += (
-                ingredient_data.nutrition.per_standard_unit.protein * factor
-            )
-            total.carbs += ingredient_data.nutrition.per_standard_unit.carbs * factor
-            total.fat += ingredient_data.nutrition.per_standard_unit.fat * factor
-            total.fiber += ingredient_data.nutrition.per_standard_unit.fiber * factor
+            total.calories += pantry_item.nutrition.calories * standardized_qty
+            total.protein += pantry_item.nutrition.protein * standardized_qty
+            total.carbs += pantry_item.nutrition.carbs * standardized_qty
+            total.fat += pantry_item.nutrition.fat * standardized_qty
+            total.fiber += pantry_item.nutrition.fiber * standardized_qty
 
         # Calculate per serving
         servings = recipe.data.servings
@@ -123,4 +142,26 @@ def get_recipe_manager() -> RecipeManager:
 
         return {"total": total, "per_serving": per_serving}
 
-    # ... rest of helper methods ...
+    async def _get_unit_conversion_factor(
+        self, from_unit: str, to_unit: str, standard_unit: str
+    ) -> float:
+        """
+        Get conversion factor between units using Claude service.
+        Returns a float representing how many of to_unit are in one from_unit.
+        """
+        # If units are the same, return 1
+        if from_unit == to_unit:
+            return 1.0
+
+        try:
+            # Ask Claude for conversion factor
+            prompt = f"""What is the conversion factor from {from_unit} to {to_unit} 
+            for measuring ingredients? Express as a single number representing how many 
+            {to_unit} are in one {from_unit}. The standard unit is {standard_unit}."""
+
+            response = await self.claude.get_conversion_factor(prompt)
+            return float(response)
+        except Exception as e:
+            logger.error(f"Error getting conversion factor: {str(e)}")
+            # Return 1 as fallback to avoid breaking calculations
+            return 1.0

@@ -1,72 +1,94 @@
 import { useState } from 'react';
-import { itemFormSchema, ItemFormValues } from '@/schemas/pantry';
-import { z } from 'zod';
+import { PantryItemCreate } from '@/types';
 
-interface UseItemFormProps {
-  initialValues?: Partial<ItemFormValues>;
-  onSubmit: (values: ItemFormValues) => Promise<void> | void;
-  onClose: () => void;
-}
-
-export function useItemForm({ 
-  initialValues, 
-  onSubmit, 
-  onClose,
-}: UseItemFormProps) {
-  const [values, setValues] = useState<Partial<ItemFormValues>>({
-    display_name: '',
+const defaultValues: PantryItemCreate = {
+  data: {
+    name: '',
     quantity: 1,
-    unit: 'units',
+    unit: '',
+    standard_name: '',
+    category: '',
     notes: '',
     expiry_date: null,
-    ...initialValues,
-  });
+    price: null
+  },
+  nutrition: {}
+};
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+// Add validation function
+const formatDateForBackend = (dateString: string | null): string | null => {
+  if (!dateString) return null;
+  // Format as ISO string and take just the date part
+  return new Date(dateString).toISOString().split('T')[0];
+};
+
+export function useItemForm({ onSubmit, onClose }: {
+  onSubmit: (values: PantryItemCreate) => Promise<void>;
+  onClose: () => void;
+}) {
+  const [values, setValues] = useState<PantryItemCreate>(defaultValues);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleChange = (field: keyof ItemFormValues, value: string | number | null) => {
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    
+    // Required fields validation
+    if (!values.data.name.trim()) {
+      newErrors.name = 'Name is required';
+    }
+    if (!values.data.unit.trim()) {
+      newErrors.unit = 'Unit is required';
+    }
+    if (values.data.quantity <= 0) {
+      newErrors.quantity = 'Quantity must be greater than 0';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleChange = (field: string, value: string | number | null, section: 'data' | 'nutrition' = 'data') => {
     setValues(prev => ({
       ...prev,
-      [field]: value
+      [section]: {
+        ...prev[section],
+        [field]: field === 'expiry_date' && value 
+          ? new Date(value).toISOString()  // Convert to ISO string for backend
+          : (value === '' && field !== 'name' && field !== 'unit' ? null : value)
+      }
     }));
-    setErrors({});
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrors({});
+    setIsSubmitting(true);
+    
+    if (!validateForm()) {
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
-      // Validate the form values
-      const validatedData = itemFormSchema.parse(values);
-      
-      setIsSubmitting(true);
-      await onSubmit(validatedData);
+      // Format the date before submitting
+      const formattedValues = {
+        ...values,
+        data: {
+          ...values.data,
+          expiry_date: values.data.expiry_date 
+            ? new Date(values.data.expiry_date).toISOString().split('T')[0]
+            : null
+        }
+      };
+
+      await onSubmit(formattedValues);
       onClose();
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        // Convert Zod errors into a more friendly format
-        const formattedErrors: Record<string, string> = {};
-        err.errors.forEach((error) => {
-          if (error.path) {
-            formattedErrors[error.path[0]] = error.message;
-          }
-        });
-        setErrors(formattedErrors);
-      } else {
-        setErrors({ form: 'An unexpected error occurred' });
-      }
+    } catch (error) {
+      setErrors({ form: 'Failed to add item. Please try again.' });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  return {
-    values,
-    handleChange,
-    handleSubmit,
-    isSubmitting,
-    errors,
-  };
+  return { values, handleChange, handleSubmit, isSubmitting, errors };
 }

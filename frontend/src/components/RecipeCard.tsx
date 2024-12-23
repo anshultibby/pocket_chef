@@ -1,12 +1,14 @@
-import { Recipe } from '@/types';
+import { Recipe, RecipeWithAvailability } from '@/types';
 
 interface RecipeCardProps {
-  recipe: Recipe;
-  onSave?: (recipe: Recipe) => void;
-  onRemove: (id: string) => void;
+  recipeData: RecipeWithAvailability;
+  onSave?: () => Promise<void>;
+  onRemove: () => void;
 }
 
-export default function RecipeCard({ recipe, onSave, onRemove }: RecipeCardProps) {
+export default function RecipeCard({ recipeData, onSave, onRemove }: RecipeCardProps) {
+  const { recipe } = recipeData;
+
   return (
     <div className="border border-gray-700 rounded-lg p-6 bg-gray-800 shadow-sm text-gray-100">
       <div className="flex justify-between items-start mb-4">
@@ -75,14 +77,14 @@ export default function RecipeCard({ recipe, onSave, onRemove }: RecipeCardProps
         )}
 
         <button
-          onClick={() => recipe.recipe_type === 'saved' ? onRemove(recipe.id) : onSave?.(recipe)}
+          onClick={recipe.is_public ? onRemove : onSave}
           className={`w-full py-2 px-4 rounded-lg transition-colors ${
-            recipe.recipe_type === 'saved'
+            recipe.is_public
               ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
               : 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30'
           }`}
         >
-          {recipe.recipe_type === 'saved' ? 'Remove from Saved' : 'Save Recipe'}
+          {recipe.is_public ? 'Remove from Saved' : 'Save Recipe'}
         </button>
       </div>
     </div>

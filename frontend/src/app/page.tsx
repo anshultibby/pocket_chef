@@ -2,14 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Recipe, PantryItem, PantryItemWithIngredient } from '@/types';
+import { Recipe, PantryItem } from '@/types';
 import { recipeApi, pantryApi } from '@/lib/api';
 import RecipeCard from '@/components/RecipeCard';
 import PantryTab from '@/components/PantryTab';
-import PantryOverview from '@/components/PantryOverview';
 import { AuthGuard } from '@/components/AuthGuard';
 import { useAuth } from '@/lib/auth-context';
-import CookbookTab from '@/components/CookbookTab';
 import RecipesTab from '@/components/RecipesTab';
 import { supabase } from '@/lib/supabase';
 
@@ -17,11 +15,11 @@ export const dynamic = 'force-dynamic';
 
 export default function Home() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'cook' | 'pantry' | 'cookbook'>('cook');
+  const [activeTab, setActiveTab] = useState<'cook' | 'pantry'>('cook');
   const [currentRecipes, setCurrentRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [pantryItems, setPantryItems] = useState<PantryItemWithIngredient[]>([]);
+  const [pantryItems, setPantryItems] = useState<PantryItem[]>([]);
   const { signOut } = useAuth();
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
 
@@ -104,11 +102,11 @@ export default function Home() {
     }
   };
 
-  const handleAddItems = (items: PantryItemWithIngredient[]) => {
+  const handleAddItems = (items: PantryItem[]) => {
     setPantryItems(prev => [...prev, ...items]);
   };
 
-  const handleUpdateItem = (id: string, updates: Partial<PantryItemWithIngredient>) => {
+  const handleUpdateItem = (id: string, updates: Partial<PantryItem>) => {
     setPantryItems(prev => 
       prev.map(item => item.id === id ? { ...item, ...updates } : item)
     );
@@ -121,10 +119,11 @@ export default function Home() {
   const handleSaveRecipe = async (recipe: Recipe) => {
     try {
       await recipeApi.save(recipe.id);
-      // Update the recipe in the current list to show it's saved
       setCurrentRecipes(prev =>
         prev.map(r =>
-          r.id === recipe.id ? { ...r, is_saved: true } : r
+          r.id === recipe.id 
+            ? { ...r, is_public: true }
+            : r
         )
       );
     } catch (err) {
@@ -215,25 +214,11 @@ export default function Home() {
               >
                 Pantry
               </button>
-              <button
-                onClick={() => setActiveTab('cookbook')}
-                className={`px-4 py-3 ${
-                  activeTab === 'cookbook'
-                    ? 'border-b-2 border-blue-500 text-blue-500'
-                    : 'text-gray-400 hover:text-gray-200'
-                }`}
-              >
-                Cookbook
-              </button>
             </div>
           </div>
         </div>
 
-        {activeTab === 'cookbook' ? (
-          <div className="max-w-4xl mx-auto px-4 py-12">
-            <CookbookTab />
-          </div>
-        ) : activeTab === 'pantry' ? (
+        {activeTab === 'pantry' ? (
           <div className="max-w-4xl mx-auto px-4 py-12">
             <PantryTab
               pantryItems={pantryItems}
