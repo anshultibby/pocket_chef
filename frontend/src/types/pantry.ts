@@ -19,8 +19,9 @@ export interface PantryControlsProps {
 
 export interface CategoryFiltersProps {
   categories: string[];
-  selectedCategory: string | null;
-  onSelectCategory: (category: string | null) => void;
+  selectedCategories: string[];
+  onSelectCategory: (category: string) => void;
+  onClearCategories: () => void;
   pantryItems: PantryItem[];
 }
 

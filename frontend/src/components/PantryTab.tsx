@@ -16,6 +16,7 @@ import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { ErrorMessage } from '@/components/shared/ErrorMessage';
 import { ERROR_MESSAGES } from '@/constants/messages';
 import { normalizeString } from '@/utils/pantry';
+import { DuplicateItemModal } from './modals/DuplicateItemModal';
 
 interface PantryTabProps {
   pantryItems: PantryItem[];
@@ -41,12 +42,16 @@ export default function PantryTab({
     handleFileUpload,
     clearUpload,
   } = useFileUpload();
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddItemForm, setShowAddItemForm] = useState(false);
   const [showReceiptConfirmation, setShowReceiptConfirmation] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedItem, setSelectedItem] = useState<PantryItem | null>(null);
+  const [duplicateItem, setDuplicateItem] = useState<{
+    existing: PantryItem;
+    new: PantryItemCreate;
+  } | null>(null);
 
   if (loading) {
     return <LoadingSpinner message="Loading pantry items..." />;
@@ -93,7 +98,7 @@ export default function PantryTab({
     try {
       await pantryApi.clearPantry();
       onAddItems([]);
-      setSelectedCategory(null);
+      setSelectedCategories([]);
       setSearchTerm('');
       setSelectedItem(null);
       clearError();
@@ -108,34 +113,83 @@ export default function PantryTab({
 
   const handleAddItem = async (item: PantryItemCreate) => {
     try {
-      console.log('Sending item to backend:', JSON.stringify(item, null, 2));
-      const [addedItem] = await pantryApi.addItems([item]);
-      onAddItems([addedItem]);
-      setShowAddItemForm(false);
+      // Check for existing item with same name or standard_name
+      const existingItem = pantryItems.find(existing => {
+        // Check standard_name only if both items have it
+        if (existing.data.standard_name && item.data.standard_name) {
+          if (normalizeString(existing.data.standard_name) === normalizeString(item.data.standard_name)) {
+            return true;
+          }
+        }
+        
+        // Fallback to name comparison
+        return normalizeString(existing.data.name) === normalizeString(item.data.name);
+      });
+
+      if (existingItem) {
+        setDuplicateItem({ existing: existingItem, new: item });
+        return;
+      }
+
+      await addNewItem(item);
     } catch (err) {
-      console.error('Error response:', err);
       handleError(err);
     }
   };
 
+  const addNewItem = async (item: PantryItemCreate) => {
+    const [addedItem] = await pantryApi.addItems([item]);
+    onAddItems([addedItem]);
+    setShowAddItemForm(false);
+  };
+
+  const handleAddToExisting = async () => {
+    if (!duplicateItem) return;
+
+    const updatedQuantity = 
+      duplicateItem.existing.data.quantity + duplicateItem.new.data.quantity;
+
+    await handleItemUpdate(duplicateItem.existing.id, {
+      data: { ...duplicateItem.existing.data, quantity: updatedQuantity }
+    });
+    
+    setDuplicateItem(null);
+    setShowAddItemForm(false);
+  };
+
   const handleConfirmReceiptItems = async (confirmedItems: PantryItemCreate[]) => {
     try {
-      const formattedItems = confirmedItems.map(item => ({
-        data: {
-          name: item.data.name,
-          standard_name: item.data.standard_name,
-          quantity: Number(item.data.quantity),
-          unit: item.data.unit,
-          category: item.data.category,
-          notes: item.data.notes,
-          expiry_date: item.data.expiry_date,
-          price: item.data.price
-        },
-        nutrition: item.nutrition
-      }));
+      // Handle each item one by one
+      const savedItems: PantryItem[] = [];
+      
+      for (const item of confirmedItems) {
+        // Check for duplicate
+        const existingItem = pantryItems.find(existing => {
+          if (existing.data.standard_name && item.data.standard_name) {
+            return normalizeString(existing.data.standard_name) === normalizeString(item.data.standard_name);
+          }
+          return normalizeString(existing.data.name) === normalizeString(item.data.name);
+        });
 
-      const savedItems = await pantryApi.confirmReceipt(formattedItems);
-      onAddItems(savedItems);
+        if (existingItem) {
+          // Update existing item with new quantity
+          const updatedQuantity = existingItem.data.quantity + item.data.quantity;
+          const updatedItem = await pantryApi.updateItem(existingItem.id, {
+            data: { ...existingItem.data, quantity: updatedQuantity }
+          });
+          // Don't add to savedItems since we're using onUpdateItem
+          onUpdateItem(existingItem.id, updatedItem);
+        } else {
+          // Create new item
+          const [newItem] = await pantryApi.addItems([item]);
+          savedItems.push(newItem);
+        }
+      }
+
+      // Only call onAddItems for new items
+      if (savedItems.length > 0) {
+        onAddItems(savedItems);
+      }
       
       setShowReceiptConfirmation(false);
       clearUpload();
@@ -150,6 +204,11 @@ export default function PantryTab({
       clearUpload();
     }
     setShowReceiptConfirmation(false);
+    
+    // Reset the file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleUploadReceipt = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -159,10 +218,20 @@ export default function PantryTab({
     }
   };
 
+  const handleCategorySelect = (category: string) => {
+    setSelectedCategories(prev => {
+      if (prev.includes(category)) {
+        return prev.filter(c => c !== category);
+      }
+      return [...prev, category];
+    });
+  };
+
   const groupedItems = pantryItems
     .filter(item => {
       const matchesSearch = item.data.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = !selectedCategory || item.data.category === selectedCategory;
+      const matchesCategory = selectedCategories.length === 0 || 
+        selectedCategories.includes(item.data.category || 'Other');
       return matchesSearch && matchesCategory;
     })
     .reduce((groups, item) => {
@@ -196,8 +265,9 @@ export default function PantryTab({
 
       <CategoryFilters
         categories={categories}
-        selectedCategory={selectedCategory}
-        onSelectCategory={setSelectedCategory}
+        selectedCategories={selectedCategories}
+        onSelectCategory={handleCategorySelect}
+        onClearCategories={() => setSelectedCategories([])}
         pantryItems={pantryItems}
       />
 
@@ -215,12 +285,13 @@ export default function PantryTab({
         />
       )}
 
-      {showReceiptConfirmation && (
+      {showReceiptConfirmation && receiptImage && pendingItems && (
         <ReceiptConfirmation
           items={pendingItems}
           receiptImage={receiptImage}
           onConfirm={handleConfirmReceiptItems}
           onCancel={handleCloseConfirmation}
+          existingItems={pantryItems}
         />
       )}
 
@@ -232,6 +303,24 @@ export default function PantryTab({
           }}
           onClose={() => setSelectedItem(null)}
           isEditing={true}
+        />
+      )}
+
+      {duplicateItem && (
+        <DuplicateItemModal
+          existingItem={duplicateItem.existing}
+          newItem={duplicateItem.new}
+          onEditExisting={() => {
+            setSelectedItem(duplicateItem.existing);
+            setDuplicateItem(null);
+          }}
+          onCreateNew={() => {
+            addNewItem(duplicateItem.new);
+            setDuplicateItem(null);
+          }}
+          onCancel={() => {
+            setDuplicateItem(null);
+          }}
         />
       )}
     </div>

@@ -1,19 +1,22 @@
 import React, { useState } from 'react';
-import { PantryItemCreate } from '@/types';
+import { PantryItemCreate, PantryItem } from '@/types';
 import AddItemModal from './modals/AddItemModal';
+import { DuplicateItemModal } from './modals/DuplicateItemModal';
+import { normalizeString } from '@/utils/pantry';
 
 interface ReceiptConfirmationProps {
   items: PantryItemCreate[];
   receiptImage: string | null;
   onConfirm: (items: PantryItemCreate[]) => void;
   onCancel: () => void;
+  existingItems: PantryItem[];
 }
 
 export default function ReceiptConfirmation({ 
   items, 
   receiptImage, 
   onConfirm, 
-  onCancel 
+  onCancel
 }: ReceiptConfirmationProps) {
   const [editableItems, setEditableItems] = useState<PantryItemCreate[]>(items);
   const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null);
@@ -33,6 +36,10 @@ export default function ReceiptConfirmation({
 
   const handleDeleteItem = (index: number) => {
     setEditableItems(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSaveItems = () => {
+    onConfirm(editableItems);
   };
 
   return (
@@ -106,7 +113,7 @@ export default function ReceiptConfirmation({
               Cancel
             </button>
             <button
-              onClick={() => onConfirm(editableItems)}
+              onClick={handleSaveItems}
               className="px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-400"
             >
               Save Items ({editableItems.length})
