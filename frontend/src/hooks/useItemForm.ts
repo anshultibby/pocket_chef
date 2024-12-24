@@ -4,15 +4,17 @@ import { PantryItemCreate } from '@/types';
 const defaultValues: PantryItemCreate = {
   data: {
     name: '',
+    original_name: '',
     quantity: 1,
     unit: '',
-    standard_name: '',
     category: '',
     notes: '',
     expiry_date: null,
     price: null
   },
-  nutrition: {}
+  nutrition: {
+    standard_unit: '100 grams'
+  }
 };
 
 export function useItemForm({ 
@@ -60,7 +62,9 @@ export function useItemForm({
         ...prev[section],
         [field]: field === 'expiry_date' && value 
           ? new Date(value).toISOString()  // Convert to ISO string for backend
-          : (value === '' && field !== 'name' && field !== 'unit' ? null : value)
+          : (value === '' && field !== 'name' && field !== 'unit' && field !== 'notes' 
+            ? null 
+            : value)
       }
     }));
   };

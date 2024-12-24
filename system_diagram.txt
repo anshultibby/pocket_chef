@@ -20,6 +20,14 @@ src/
 │   ├── RecipesTab.tsx     # Recipe management component
 │   ├── PantryOverview.tsx # Simplified pantry view
 │   └── ReceiptConfirmation.tsx # Receipt processing UI
+│   └── recipes/
+│       ├── use-recipe/
+│       │   ├── RecipeUseModal.tsx        # Main container
+│       │   ├── RecipeReviewStep.tsx      # Review stage
+│       │   ├── RecipeConfirmStep.tsx     # Confirmation stage
+│       │   ├── IngredientList.tsx        # List of ingredients
+│       │   ├── IngredientCard.tsx        # Individual ingredient card
+│       │   └── types.ts                  # Shared types
 ├── hooks/
 │   ├── useItemForm.ts     # Item form state management
 │   ├── useFileUpload.ts   # File upload handling
@@ -56,6 +64,6 @@ backend/
 │   │   ├── receipt_parser.py
 │   │   ├── recipe_generator.py
 │   │   └── auth.py
-│   ���── db/
-│       └── init.sql          # Database initialization
-└── requirements.txt      # Python dependencies
+│   ├── db/
+│   │   └── init.sql          # Database initialization
+│   └── requirements.txt      # Python dependencies

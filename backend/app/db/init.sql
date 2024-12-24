@@ -16,7 +16,7 @@ create table if not exists public.pantry_items (
     id uuid default uuid_generate_v4() primary key,
     data jsonb not null default '{
         "name": null,
-        "standard_name": null,
+        "original_name": null,
         "quantity": null,
         "unit": null,
         "category": null,
@@ -151,7 +151,7 @@ COMMENT ON TABLE pantry_items IS 'Example pantry item:
 {
     "data": {
         "name": "Eggs",
-        "standard_name": "Large Eggs",
+        "original_name": "Eggs",
         "quantity": 12,
         "unit": "units",
         "category": "Dairy & Eggs",
@@ -216,3 +216,18 @@ COMMENT ON TABLE recipes IS 'Example recipe:
     },
     "is_saved": true
 }';
+
+CREATE TABLE IF NOT EXISTS public.recipe_usage (
+    id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+    recipe_id uuid REFERENCES public.recipes(id) ON DELETE CASCADE,
+    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+    used_at timestamp with time zone DEFAULT now(),
+    servings_made integer NOT NULL,
+    ingredients_used jsonb NOT NULL,
+    notes text,
+    CONSTRAINT recipe_usage_servings_check CHECK (servings_made > 0)
+);
+
+-- Add indexes
+CREATE INDEX idx_recipe_usage_user ON recipe_usage(user_id);
+CREATE INDEX idx_recipe_usage_recipe ON recipe_usage(recipe_id);

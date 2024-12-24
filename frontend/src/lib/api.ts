@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import { fetchApi } from './fetch';
-import type { Recipe, RecipePreferences, PantryItemCreate, PantryItem, PantryItemUpdate } from '@/types';
+import type { Recipe, RecipePreferences, PantryItemCreate, PantryItem, PantryItemUpdate, RecipeUsageCreate, RecipeUsage } from '@/types';
 
 // Helper function to get auth token
 const getAuthToken = async () => {
@@ -142,5 +142,17 @@ export const recipeApi = {
         'Authorization': `Bearer ${token}`
       }
     });
-  }
+  },
+
+  use: async (recipeId: string, usage: RecipeUsageCreate): Promise<RecipeUsage> => {
+    const token = await getAuthToken();
+    return fetchApi<RecipeUsage>(`/recipes/${recipeId}/use`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(usage),
+    });
+  },
 };

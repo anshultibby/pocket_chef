@@ -22,13 +22,8 @@ export default function PantryGrid({ groupedItems, onSelectItem }: Omit<PantryGr
                 <div className="flex justify-between items-start">
                   <div className="space-y-1">
                     <h3 className="font-medium text-lg">
-                      {item.data.standard_name || item.data.name}
+                      {item.data.name}
                     </h3>
-                    {item.data.standard_name && (
-                      <p className="text-sm text-gray-400">
-                        {item.data.name}
-                      </p>
-                    )}
                     <p className="text-sm">
                       {item.data.quantity} {item.data.unit}
                     </p>

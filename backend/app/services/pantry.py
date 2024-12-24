@@ -166,6 +166,32 @@ class PantryManager:
             logger.error(f"Error in clear_pantry: {str(e)}")
             raise ValueError(f"Failed to clear pantry: {str(e)}")
 
+    async def subtract_quantity(
+        self, user_id: UUID, item_id: UUID, quantity: float
+    ) -> PantryItem:
+        """Subtract quantity from a pantry item"""
+        try:
+            item = await self.pantry.get_item(item_id, user_id)
+            if not item:
+                raise ValueError("Item not found")
+
+            if item.data.quantity < quantity:
+                item.data.quantity = 0
+
+            item.data.quantity -= quantity
+
+            if item.data.quantity <= 0:
+                await self.pantry.delete_item(item_id, user_id)
+                return None
+
+            return await self.pantry.update_item(
+                item_id=item_id, updates=PantryItemUpdate(data=item.data)
+            )
+
+        except Exception as e:
+            logger.error(f"Error subtracting quantity: {str(e)}")
+            raise
+
 
 # Create a singleton instance
 _pantry_manager = PantryManager()

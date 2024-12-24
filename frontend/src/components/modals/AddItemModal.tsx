@@ -69,15 +69,15 @@ export default function AddItemModal({
               onChange={(e) => handleChange('name', e.target.value)}
               error={errors['name']}
               required
-              placeholder="As it appears on packaging"
+              placeholder="Common name (e.g., bread)"
             />
 
             <FormInput
-              label="Standard Name"
-              value={values.data.standard_name || ''}
-              onChange={(e) => handleChange('standard_name', e.target.value)}
-              error={errors['standard_name']}
-              placeholder="Common/generic name (optional)"
+              label="Original Name"
+              value={values.data.original_name || ''}
+              onChange={(e) => handleChange('original_name', e.target.value)}
+              error={errors['original_name']}
+              placeholder="As scanned/entered (optional)"
             />
           </div>
 
@@ -169,7 +169,7 @@ export default function AddItemModal({
                     Note: Nutrition information will be automatically enriched if left empty
                   </p>
                   <p className="text-sm text-gray-400">
-                    All values below are per {values.nutrition.standard_unit || '100 grams'}
+                    All values below are per {values?.nutrition?.standard_unit || '100 grams'}
                   </p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -230,7 +230,7 @@ export default function AddItemModal({
             {showNotes && (
               <div>
                 <textarea
-                  value={values.data.notes}
+                  value={values.data.notes || ''}
                   onChange={(e) => handleChange('notes', e.target.value)}
                   className="w-full bg-gray-700 rounded-lg px-3 py-2 focus:ring-2 ring-blue-500 focus:outline-none"
                   rows={3}

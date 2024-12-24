@@ -40,9 +40,9 @@ export interface Recipe {
 // Pantry types matching the database
 export interface PantryItemData {
   name: string;
+  original_name?: string;
   quantity: number;
   unit: string;
-  standard_name?: string;
   category?: string;
   notes?: string;
   expiry_date?: string | null;
@@ -125,4 +125,16 @@ export interface RecipePreferences {
   serving_size: number;
   recipes_per_meal: number;
   custom_preferences?: string;
+}
+
+export interface RecipeUsageCreate {
+  servings_made: number;
+  ingredients_used: Record<string, number>;
+  notes?: string;
+}
+
+export interface RecipeUsage extends RecipeUsageCreate {
+  id: string;
+  user_id: string;
+  used_at: string;
 }

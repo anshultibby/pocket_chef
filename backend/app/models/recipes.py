@@ -9,9 +9,13 @@ from .pantry import CustomBaseModel, Nutrition
 
 
 class RecipeIngredient(CustomBaseModel):
-    name: str
+    name: str = Field(
+        description="If you are using a pantry item, use the exact pantry item name so that we can match it"
+    )
     quantity: float
-    unit: str
+    unit: str = Field(
+        description="unit of the ingredient, try use same unit as pantry item"
+    )
     pantry_item_id: Optional[UUID] = Field(
         default=None, description="dont generate this, we will link to db later"
     )
@@ -132,3 +136,17 @@ class RecipePreferences(CustomBaseModel):
                 "custom_preferences": "Spicy food preferred",
             }
         }
+
+
+class RecipeUsageCreate(BaseModel):
+    servings_made: int = Field(gt=0)
+    ingredients_used: Dict[str, float] = Field(
+        description="Map of pantry_item_id to quantity used"
+    )
+    notes: Optional[str] = None
+
+
+class RecipeUsage(RecipeUsageCreate):
+    id: UUID
+    user_id: UUID
+    used_at: datetime

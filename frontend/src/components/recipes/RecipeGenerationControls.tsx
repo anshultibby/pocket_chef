@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useRecipeStore } from '@/stores/recipeStore';
 import { RecipePreferences } from '@/types';
 
 interface RecipeGenerationControlsProps {
@@ -6,8 +7,6 @@ interface RecipeGenerationControlsProps {
   isGenerating: boolean;
   isLoading: boolean;
   pantryItemsCount: number;
-  preferences: RecipePreferences;
-  onPreferencesChange: (preferences: Partial<RecipePreferences>) => void;
 }
 
 export default function RecipeGenerationControls({
@@ -15,9 +14,8 @@ export default function RecipeGenerationControls({
   isGenerating,
   isLoading,
   pantryItemsCount,
-  preferences,
-  onPreferencesChange
 }: RecipeGenerationControlsProps) {
+  const { preferences, setPreferences } = useRecipeStore();
   const [activeSection, setActiveSection] = useState<string | null>(null);
 
   // Filter summary helper
@@ -69,6 +67,10 @@ export default function RecipeGenerationControls({
     'Low Sugar',
     'Balanced'
   ];
+
+  const handlePreferencesChange = (updates: Partial<RecipePreferences>) => {
+    setPreferences(updates);
+  };
 
   return (
     <div className="bg-gray-900/50 rounded-xl p-8 backdrop-blur-sm border border-gray-800">
@@ -122,7 +124,7 @@ export default function RecipeGenerationControls({
               <label className="text-sm font-medium text-gray-300">Max Preparation Time</label>
               <select
                 value={preferences.max_prep_time || ''}
-                onChange={(e) => onPreferencesChange({ max_prep_time: Number(e.target.value) || undefined })}
+                onChange={(e) => handlePreferencesChange({ max_prep_time: Number(e.target.value) || undefined })}
                 className="w-full bg-gray-800 rounded-lg p-3 text-gray-200 border border-gray-700"
               >
                 <option value="">Any time</option>
@@ -138,7 +140,7 @@ export default function RecipeGenerationControls({
               <label className="text-sm font-medium text-gray-300">Serving Size</label>
               <div className="flex items-center gap-4 bg-gray-800 rounded-lg p-2">
                 <button
-                  onClick={() => onPreferencesChange({ 
+                  onClick={() => handlePreferencesChange({ 
                     serving_size: Math.max(1, preferences.serving_size - 1) 
                   })}
                   className="w-10 h-10 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-200"
@@ -149,7 +151,7 @@ export default function RecipeGenerationControls({
                   {preferences.serving_size}
                 </span>
                 <button
-                  onClick={() => onPreferencesChange({ 
+                  onClick={() => handlePreferencesChange({ 
                     serving_size: Math.min(12, preferences.serving_size + 1) 
                   })}
                   className="w-10 h-10 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-200"
@@ -171,7 +173,7 @@ export default function RecipeGenerationControls({
                     const newTypes = preferences.meal_types.includes(type)
                       ? preferences.meal_types.filter(t => t !== type)
                       : [...preferences.meal_types, type];
-                    onPreferencesChange({ meal_types: newTypes });
+                    handlePreferencesChange({ meal_types: newTypes });
                   }}
                   className={`px-4 py-2 rounded-lg text-sm transition-all ${
                     preferences.meal_types.includes(type)
@@ -196,7 +198,7 @@ export default function RecipeGenerationControls({
                     const newCuisines = preferences.cuisine.includes(cuisine)
                       ? preferences.cuisine.filter(c => c !== cuisine)
                       : [...preferences.cuisine, cuisine];
-                    onPreferencesChange({ cuisine: newCuisines });
+                    handlePreferencesChange({ cuisine: newCuisines });
                   }}
                   className={`px-4 py-2 rounded-lg text-sm transition-all ${
                     preferences.cuisine.includes(cuisine)
@@ -222,7 +224,7 @@ export default function RecipeGenerationControls({
                       const newDietary = preferences.dietary.includes(diet)
                         ? preferences.dietary.filter(d => d !== diet)
                         : [...preferences.dietary, diet];
-                      onPreferencesChange({ dietary: newDietary });
+                      handlePreferencesChange({ dietary: newDietary });
                     }}
                     className={`px-4 py-2 rounded-lg text-sm transition-all ${
                       preferences.dietary.includes(diet)
@@ -246,7 +248,7 @@ export default function RecipeGenerationControls({
                       const newGoals = preferences.nutrition_goals.includes(goal)
                         ? preferences.nutrition_goals.filter(g => g !== goal)
                         : [...preferences.nutrition_goals, goal];
-                      onPreferencesChange({ nutrition_goals: newGoals });
+                      handlePreferencesChange({ nutrition_goals: newGoals });
                     }}
                     className={`px-4 py-2 rounded-lg text-sm transition-all ${
                       preferences.nutrition_goals.includes(goal)

@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import { 
-  Recipe, 
-  PantryItem, 
-  RecipePreferences 
-} from '@/types';
+import { Recipe, PantryItem } from '@/types';
 import { recipeApi } from '@/lib/api';
 import RecipeGenerationControls from './recipes/RecipeGenerationControls';
 import RecipeCardPreview from './recipes/RecipeCardPreview';
 import RecipeDetailModal from './recipes/RecipeDetailModal';
+import RecipeUseModal from './recipes/use-recipe/RecipeUseModal';
+import { toast } from 'react-hot-toast';
+import { usePantryStore } from '@/stores/pantryStore';
+import { useRecipeStore } from '@/stores/recipeStore';
 
 interface RecipesTabProps {
   pantryItems: PantryItem[];
@@ -17,21 +17,21 @@ interface RecipesTabProps {
 export default function RecipesTab({
   pantryItems,
 }: RecipesTabProps) {
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [preferences, setPreferences] = useState<RecipePreferences>({
-    cuisine: [],
-    max_prep_time: undefined,
-    dietary: [],
-    serving_size: 2,
-    meal_types: [],
-    nutrition_goals: [],
-    custom_preferences: '',
-    recipes_per_meal: 3
-  });
+  const { fetchItems } = usePantryStore();
+  const { 
+    recipes,
+    preferences,
+    isLoading,
+    isGenerating,
+    error,
+    setRecipes,
+    setIsLoading,
+    setIsGenerating,
+    setError,
+  } = useRecipeStore();
+  
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+  const [usingRecipe, setUsingRecipe] = useState<Recipe | null>(null);
 
   const handleGenerateRecipes = async () => {
     setIsLoading(true);
@@ -59,6 +59,24 @@ export default function RecipesTab({
     setIsLoading(false);
   };
 
+  const handleUseRecipe = async (ingredientsUsed: Record<string, number>) => {
+    if (!usingRecipe) return;
+
+    try {
+      await recipeApi.use(usingRecipe.id, {
+        servings_made: usingRecipe.data.servings,
+        ingredients_used: ingredientsUsed,
+      });
+
+      await fetchItems();
+      setUsingRecipe(null);
+      setSelectedRecipe(null);
+    } catch (error) {
+      console.error('Error using recipe:', error);
+      toast.error('Failed to use recipe');
+    }
+  };
+
   return (
     <div className="space-y-8">
       <RecipeGenerationControls
@@ -66,8 +84,6 @@ export default function RecipesTab({
         isGenerating={isGenerating}
         isLoading={isLoading}
         pantryItemsCount={pantryItems.length}
-        preferences={preferences}
-        onPreferencesChange={(updates) => setPreferences(prev => ({ ...prev, ...updates }))}
       />
 
       {error && (
@@ -113,6 +129,19 @@ export default function RecipesTab({
             setRecipes([]);
             setSelectedRecipe(null);
           }}
+          onUse={() => {
+            setUsingRecipe(selectedRecipe);
+            setSelectedRecipe(null);
+          }}
+        />
+      )}
+
+      {usingRecipe && (
+        <RecipeUseModal
+          recipe={usingRecipe}
+          pantryItems={pantryItems}
+          onClose={() => setUsingRecipe(null)}
+          onConfirmUse={handleUseRecipe}
         />
       )}
     </div>

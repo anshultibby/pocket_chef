@@ -1,13 +1,22 @@
 import { Recipe } from '@/types';
 import { Dialog } from '@headlessui/react';
+import { useRecipeStore } from '@/stores/recipeStore';
 
 interface RecipeDetailModalProps {
   recipe: Recipe;
   onClose: () => void;
+  onUse: () => void;
   onRemove: () => void;
 }
 
-export default function RecipeDetailModal({ recipe, onClose, onRemove }: RecipeDetailModalProps) {
+export default function RecipeDetailModal({ recipe, onClose, onUse, onRemove }: RecipeDetailModalProps) {
+  const { setRecipes } = useRecipeStore();
+
+  const handleRemove = () => {
+    setRecipes([]); // Clear recipes
+    onClose();
+  };
+
   return (
     <Dialog open={true} onClose={onClose} className="relative z-50">
       <div className="fixed inset-0 bg-black/70" aria-hidden="true" />
@@ -73,12 +82,18 @@ export default function RecipeDetailModal({ recipe, onClose, onRemove }: RecipeD
               </div>
 
 
-              <div className="flex justify-end pt-4">
+              <div className="flex justify-end gap-4 pt-4">
                 <button
-                  onClick={onRemove}
+                  onClick={handleRemove}
                   className="px-4 py-2 text-sm text-gray-400 hover:text-white"
                 >
                   Clear Recipe
+                </button>
+                <button
+                  onClick={onUse}
+                  className="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700"
+                >
+                  Use Recipe
                 </button>
               </div>
             </div>

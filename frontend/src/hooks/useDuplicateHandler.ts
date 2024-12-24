@@ -21,12 +21,9 @@ export function useDuplicateHandler(
   const [isEditing, setIsEditing] = useState(false);
 
   const checkForDuplicate = (item: PantryItemCreate): PantryItem | undefined => {
-    return pantryItems.find(existing => {
-      if (existing.data.standard_name && item.data.standard_name) {
-        return normalizeString(existing.data.standard_name) === normalizeString(item.data.standard_name);
-      }
-      return normalizeString(existing.data.name) === normalizeString(item.data.name);
-    });
+    return pantryItems.find(existing => 
+      normalizeString(existing.data.name) === normalizeString(item.data.name)
+    );
   };
 
   const handleSingleItem = async (item: PantryItemCreate) => {

@@ -13,6 +13,7 @@ export const pantryItemDataSchema = z.object({
   name: z.string()
     .min(1, 'Name is required')
     .max(100, 'Name must be less than 100 characters'),
+  original_name: z.string().optional(),
   quantity: z.number()
     .min(0.1, 'Quantity must be greater than 0')
     .default(1),
@@ -20,8 +21,7 @@ export const pantryItemDataSchema = z.object({
   notes: z.string().optional(),
   expiry_date: z.string().optional().nullable(),
   price: z.number().optional(),
-  category: z.string().optional(),
-  standard_name: z.string().optional()
+  category: z.string().optional()
 });
 
 export const pantryItemCreateSchema = z.object({

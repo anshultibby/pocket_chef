@@ -1,9 +1,8 @@
 from datetime import datetime
-from enum import Enum
 from typing import Dict, List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field, model_serializer
+from pydantic import BaseModel, Field
 
 
 class CustomBaseModel(BaseModel):
@@ -43,7 +42,6 @@ class CustomBaseModel(BaseModel):
                 parts.append(f"notes: {fields['notes']}")
             return " ".join(parts)
 
-        # Default format for other models
         return " ".join(f"{k}: {v}" for k, v in fields.items())
 
 
@@ -61,15 +59,18 @@ class Nutrition(CustomBaseModel):
 
 class PantryItemData(CustomBaseModel):
     name: str = Field(
-        description="name of the ingredient as it appears on the receipt or user input"
-    )
-    standard_name: Optional[str] = Field(
         description="common name of the ingredient, this should be simple (for example, 'bread' instead of 'sourdough bread')"
+    )
+    original_name: Optional[str] = Field(
+        description="name of the ingredient as it appears on the receipt or user input"
     )
     quantity: Optional[float] = Field(
         default=0, description="quantity of the ingredient"
     )
-    unit: str = Field(description="unit of the ingredient")
+    unit: str = Field(
+        description="unit of the ingredient, try use standard units, \
+            use the price to guess the standard unit and quantity correctly"
+    )
     category: Optional[str] = Field(description="category of the ingredient")
     notes: Optional[str] = Field(description="notes about the ingredient")
     expiry_date: Optional[str] = Field(

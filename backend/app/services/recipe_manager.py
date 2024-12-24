@@ -2,13 +2,14 @@ import logging
 from typing import Dict, List, Optional
 from uuid import UUID
 
-from ..db.crud import RecipeCRUD
-from ..models.pantry import PantryItem
+from ..db.crud import PantryCRUD, RecipeCRUD
+from ..models.pantry import PantryItemUpdate
 from ..models.recipes import (
     ListOfRecipeData,
-    RecipeData,
     RecipePreferences,
     RecipeResponse,
+    RecipeUsage,
+    RecipeUsageCreate,
 )
 from .claude import ClaudeService
 from .pantry import get_pantry_manager
@@ -25,6 +26,7 @@ class RecipeManager:
     def __init__(self):
         self.claude_service = ClaudeService()
         self.recipe_crud = RecipeCRUD()
+        self.pantry_crud = PantryCRUD()
 
     async def generate_recipe(
         self, preferences: RecipePreferences, user_id: UUID
@@ -33,9 +35,13 @@ class RecipeManager:
         pantry_manager = get_pantry_manager()
         pantry_items = await pantry_manager.get_items(user_id)
         final_recipes = []
+        ingredients = [
+            f"{item.data.name} ({item.data.quantity} {item.data.unit})"
+            for item in pantry_items
+        ]
         list_of_recipe_data = await self.claude_service.generate_recipes(
             ListOfRecipeData,
-            ingredients=[item.data.name for item in pantry_items],
+            ingredients=ingredients,
             preferences=preferences,
         )
         for recipe_data in list_of_recipe_data.recipes:
@@ -81,6 +87,44 @@ class RecipeManager:
     ) -> Optional[RecipeResponse]:
         """Get a single recipe by ID"""
         return await self.recipe_crud.get_recipe(recipe_id, user_id)
+
+    async def use_recipe(
+        self, recipe_id: str, user_id: UUID, usage: RecipeUsageCreate
+    ) -> RecipeUsage:
+        """Use a recipe and update pantry quantities"""
+        # Verify recipe exists
+        recipe = await self.recipe_crud.get_recipe(recipe_id, user_id)
+        if not recipe:
+            raise ValueError("Recipe not found")
+
+        logger.info(
+            f"Using recipe {recipe_id} for user {user_id}, here is the usage: {usage}"
+        )
+        for item_id, quantity_used in usage.ingredients_used.items():
+            pantry_item = await self.pantry_crud.get_item(item_id, user_id)
+            if not pantry_item:
+                raise ValueError(f"Pantry item {item_id} not found")
+
+            new_quantity = pantry_item.data.quantity - quantity_used
+            if new_quantity < 0:
+                raise ValueError(
+                    f"Not enough quantity for item {pantry_item.data.name}"
+                )
+
+            # If quantity becomes 0, delete the item
+            if new_quantity == 0:
+                await self.pantry_crud.delete_item(item_id, user_id)
+            else:
+                updated_data = {**pantry_item.data.dict(), "quantity": new_quantity}
+                await self.pantry_crud.update_item(
+                    UUID(item_id),
+                    PantryItemUpdate(
+                        data=updated_data, nutrition=pantry_item.nutrition
+                    ),
+                )
+
+        # Record recipe usage
+        return await self.recipe_crud.create_usage(user_id, recipe_id, usage)
 
 
 _recipe_manager = None

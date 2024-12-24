@@ -4,7 +4,7 @@ from typing import List, Optional
 from uuid import UUID
 
 from ..models.pantry import PantryItem, PantryItemCreate, PantryItemUpdate
-from ..models.recipes import RecipeData, RecipeResponse
+from ..models.recipes import RecipeData, RecipeResponse, RecipeUsage, RecipeUsageCreate
 from .supabase import get_supabase
 
 logger = logging.getLogger(__name__)
@@ -219,4 +219,65 @@ class RecipeCRUD(BaseCRUD):
             return [PantryItem(**item) for item in result.data]
         except Exception as e:
             logger.error(f"Error getting matching pantry items: {str(e)}")
+            raise
+
+    async def create_usage(
+        self, user_id: UUID, recipe_id: str, usage: RecipeUsageCreate
+    ) -> RecipeUsage:
+        """Create a recipe usage record"""
+        try:
+            result = (
+                self.supabase.table("recipe_usage")
+                .insert(
+                    {
+                        "user_id": str(user_id),
+                        "recipe_id": recipe_id,
+                        "servings_made": usage.servings_made,
+                        "ingredients_used": usage.ingredients_used,
+                        "notes": usage.notes,
+                    }
+                )
+                .execute()
+            )
+            return RecipeUsage(**result.data[0])
+        except Exception as e:
+            logger.error(f"Error creating recipe usage: {str(e)}")
+            raise
+
+    async def get_recipe_usage_history(
+        self, user_id: UUID, recipe_id: Optional[UUID] = None
+    ) -> List[RecipeUsage]:
+        """Get recipe usage history for a user"""
+        try:
+            query = (
+                self.supabase.table("recipe_usage")
+                .select("*")
+                .eq("user_id", str(user_id))
+            )
+
+            if recipe_id:
+                query = query.eq("recipe_id", str(recipe_id))
+
+            result = query.order("used_at", desc=True).execute()
+
+            return [RecipeUsage(**item) for item in result.data]
+        except Exception as e:
+            logger.error(f"Error getting recipe usage history: {str(e)}")
+            raise
+
+    async def get_recipe(
+        self, recipe_id: str, user_id: UUID
+    ) -> Optional[RecipeResponse]:
+        """Get a single recipe by ID"""
+        try:
+            result = (
+                self.supabase.table(self.table)
+                .select("*")
+                .eq("id", recipe_id)
+                .eq("user_id", str(user_id))
+                .execute()
+            )
+            return RecipeResponse(**result.data[0]) if result.data else None
+        except Exception as e:
+            logger.error(f"Error getting recipe: {str(e)}")
             raise
