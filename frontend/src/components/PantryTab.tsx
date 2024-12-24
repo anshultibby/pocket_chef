@@ -14,72 +14,71 @@ import { useFileUpload } from '@/hooks/useFileUpload';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { ErrorMessage } from '@/components/shared/ErrorMessage';
 import { ERROR_MESSAGES } from '@/constants/messages';
-import { normalizeString } from '@/utils/pantry';
 import { DuplicateItemModal } from './modals/DuplicateItemModal';
-import { ApiException } from '@/types/api';
+import { useDuplicateHandler } from '@/hooks/useDuplicateHandler';
+import { usePantryStore } from '@/stores/pantryStore';
 
-interface PantryTabProps {
-  pantryItems: PantryItem[];
-  loading: boolean;
-  onAddItems: (items: PantryItem[]) => void;
-  onUpdateItem: (id: string, updates: Partial<PantryItem>) => void;
-  onDeleteItem: (id: string) => void;
-}
+export default function PantryTab() {
+  const { 
+    items: pantryItems, 
+    isLoading, 
+    addItems, 
+    updateItem, 
+    deleteItem 
+  } = usePantryStore();
 
-export default function PantryTab({
-  pantryItems,
-  loading,
-  onAddItems,
-  onUpdateItem,
-  onDeleteItem
-}: PantryTabProps) {
   const { error, handleError, clearError } = useErrorHandler();
   const {
     isUploading,
     receiptImage,
-    pendingItems,
+    pendingItems: uploadPendingItems,
     error: uploadError,
     handleFileUpload,
     clearUpload,
   } = useFileUpload();
+
+  const {
+    duplicateItem,
+    handleSingleItem,
+    handleMultipleItems,
+    handleDuplicateResolution,
+    handleEditComplete,
+    isProcessing,
+    isEditing,
+    clearDuplicates
+  } = useDuplicateHandler(pantryItems, addItems, updateItem);
+
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddItemForm, setShowAddItemForm] = useState(false);
   const [showReceiptConfirmation, setShowReceiptConfirmation] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedItem, setSelectedItem] = useState<PantryItem | null>(null);
-  const [duplicateItem, setDuplicateItem] = useState<{
-    existing: PantryItem;
-    new: PantryItemCreate;
-  } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [editingItem, setEditingItem] = useState<PantryItem | null>(null);
 
-  if (loading) {
+  if (isLoading) {
     return <LoadingSpinner message="Loading pantry items..." />;
   }
 
-  const handleItemUpdate = async (
-    itemId: string, 
-    updates: PantryItemCreate
-  ) => {
+  const handleReceiptConfirmation = async (confirmedItems: PantryItemCreate[]) => {
     try {
-      const updatedItem = await pantryApi.updateItem(itemId, {
-        data: updates.data,
-        nutrition: updates.nutrition
-      });
-      onUpdateItem(itemId, updatedItem);
-      setSelectedItem(null);
-    } catch (err) {
-      handleError(err);
+      await handleMultipleItems(confirmedItems);
+      setShowReceiptConfirmation(false);
+      if (clearUpload) {
+        clearUpload();
+      }
+    } catch (error) {
+      handleError(error);
+      setShowReceiptConfirmation(false);
     }
   };
 
-
-  const handleDeleteItem = async (itemId: string) => {
+  // Handle single item addition
+  const handleAddItem = async (item: PantryItemCreate) => {
     try {
-      await pantryApi.deleteItem(itemId);
-      onDeleteItem(itemId);
-    } catch (err) {
-      handleError(err);
+      await handleSingleItem(item);
+    } catch (error) {
+      handleError(error);
     }
   };
 
@@ -90,7 +89,7 @@ export default function PantryTab({
 
     try {
       await pantryApi.clearPantry();
-      onAddItems([]);
+      addItems([]);
       setSelectedCategories([]);
       setSearchTerm('');
       setSelectedItem(null);
@@ -101,112 +100,6 @@ export default function PantryTab({
       }
     } catch (err) {
       handleError(err);
-    }
-  };
-
-  const handleAddItem = async (item: PantryItemCreate) => {
-    try {
-      // Check for existing item with same name or standard_name
-      const existingItem = pantryItems.find(existing => {
-        // Check standard_name only if both items have it
-        if (existing.data.standard_name && item.data.standard_name) {
-          if (normalizeString(existing.data.standard_name) === normalizeString(item.data.standard_name)) {
-            return true;
-          }
-        }
-        
-        // Fallback to name comparison
-        return normalizeString(existing.data.name) === normalizeString(item.data.name);
-      });
-
-      if (existingItem) {
-        setDuplicateItem({ existing: existingItem, new: item });
-        return;
-      }
-
-      await addNewItem(item);
-    } catch (err) {
-      handleError(err);
-    }
-  };
-
-  const addNewItem = async (item: PantryItemCreate) => {
-    const [addedItem] = await pantryApi.addItems([item]);
-    onAddItems([addedItem]);
-    setShowAddItemForm(false);
-  };
-
-  const handleConfirmReceiptItems = async (confirmedItems: PantryItemCreate[]) => {
-    try {
-      // Handle each item one by one
-      const savedItems: PantryItem[] = [];
-      
-      for (const item of confirmedItems) {
-        // Check for duplicate
-        const existingItem = pantryItems.find(existing => {
-          if (existing.data.standard_name && item.data.standard_name) {
-            return normalizeString(existing.data.standard_name) === normalizeString(item.data.standard_name);
-          }
-          return normalizeString(existing.data.name) === normalizeString(item.data.name);
-        });
-
-        if (existingItem) {
-          const existingQuantity = existingItem.data.quantity ?? 0;
-          const newQuantity = item.data.quantity ?? 0;
-          const updatedQuantity = existingQuantity + newQuantity;
-          
-          const updatedItem = await pantryApi.updateItem(existingItem.id, {
-            data: { ...existingItem.data, quantity: updatedQuantity }
-          });
-          // Don't add to savedItems since we're using onUpdateItem
-          onUpdateItem(existingItem.id, updatedItem);
-        } else {
-          // Create new item
-          const [newItem] = await pantryApi.addItems([item]);
-          savedItems.push(newItem);
-        }
-      }
-
-      // Only call onAddItems for new items
-      if (savedItems.length > 0) {
-        onAddItems(savedItems);
-      }
-      
-      setShowReceiptConfirmation(false);
-      clearUpload();
-    } catch (err) {
-      handleError(err);
-    }
-  };
-
-  const handleCloseConfirmation = () => {
-    if (receiptImage) {
-      URL.revokeObjectURL(receiptImage);
-      clearUpload();
-    }
-    setShowReceiptConfirmation(false);
-    
-    // Reset the file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const handleUploadReceipt = async (file: File) => {
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      // Use the consolidated API
-      const suggestedItems = await pantryApi.receipt.process(formData);
-      setReceiptItems(suggestedItems);
-      setShowReceiptConfirmation(true);
-    } catch (error) {
-      if (error instanceof ApiException) {
-        handleError(`Failed to process receipt: ${error.error.message}`);
-      } else {
-        handleError('An unexpected error occurred while processing the receipt');
-      }
     }
   };
 
@@ -235,6 +128,57 @@ export default function PantryTab({
 
   const categories = Array.from(new Set(pantryItems.map(item => item.data.category || 'Other')));
 
+  const handleUploadReceipt = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      await handleFileUpload(event);
+      setShowReceiptConfirmation(true);
+    } catch (error) {
+      handleError(error);
+    }
+  };
+
+  const handleCloseConfirmation = () => {
+    setShowReceiptConfirmation(false);
+    if (clearUpload) {
+      clearUpload();
+    }
+  };
+
+  const handleDeleteItem = async (id: string) => {
+    try {
+      await deleteItem(id);
+    } catch (error) {
+      handleError(error);
+    }
+  };
+
+  const handleItemUpdate = async (id: string, updates: Partial<PantryItem>) => {
+    try {
+      await updateItem(id, updates);
+    } catch (error) {
+      handleError(error);
+    }
+  };
+
+  const handleMergeAndEdit = async () => {
+    try {
+      const mergedItem = await handleDuplicateResolution('mergeEdit');
+      if (mergedItem) {
+        setEditingItem(mergedItem);
+      }
+    } catch (error) {
+      handleError(error);
+    }
+  };
+
+  const handleEditModalClose = async (updates?: Partial<PantryItem>) => {
+    if (updates) {
+      await updateItem(editingItem!.id, updates);
+    }
+    setEditingItem(null);
+    await handleEditComplete();
+  };
+
   return (
     <div className="space-y-6">
       {(error || uploadError) && (
@@ -260,16 +204,23 @@ export default function PantryTab({
         selectedCategories={selectedCategories}
         onSelectCategory={handleCategorySelect}
         onClearCategories={() => setSelectedCategories([])}
-        pantryItems={pantryItems}
       />
 
       <PantryGrid
         groupedItems={groupedItems}
         onSelectItem={setSelectedItem}
-        onDeleteItem={handleDeleteItem}
       />
 
       {/* Modals */}
+      {showReceiptConfirmation && uploadPendingItems && (
+        <ReceiptConfirmation
+          items={uploadPendingItems}
+          receiptImage={receiptImage}
+          onConfirm={handleReceiptConfirmation}
+          onCancel={handleCloseConfirmation}
+        />
+      )}
+
       {showAddItemForm && (
         <AddItemModal
           onAdd={handleAddItem}
@@ -277,13 +228,24 @@ export default function PantryTab({
         />
       )}
 
-      {showReceiptConfirmation && receiptImage && pendingItems && (
-        <ReceiptConfirmation
-          items={pendingItems}
-          receiptImage={receiptImage}
-          onConfirm={handleConfirmReceiptItems}
-          onCancel={handleCloseConfirmation}
-          existingItems={pantryItems}
+      {duplicateItem && !isEditing && (
+        <DuplicateItemModal
+          existingItem={duplicateItem.existing}
+          newItem={duplicateItem.new}
+          onMergeQuantities={() => handleDuplicateResolution('merge')}
+          onMergeAndEdit={handleMergeAndEdit}
+          onCreateNew={() => handleDuplicateResolution('create')}
+          onCancel={clearDuplicates}
+          isProcessing={isProcessing}
+        />
+      )}
+
+      {editingItem && (
+        <AddItemModal
+          initialValues={editingItem}
+          onAdd={handleEditModalClose}
+          onClose={() => handleEditModalClose()}
+          isEditing={true}
         />
       )}
 
@@ -292,27 +254,10 @@ export default function PantryTab({
           initialValues={selectedItem}
           onAdd={async (updatedItem) => {
             await handleItemUpdate(selectedItem.id, updatedItem);
+            setSelectedItem(null);
           }}
           onClose={() => setSelectedItem(null)}
-          isEditing={true}
-        />
-      )}
-
-      {duplicateItem && (
-        <DuplicateItemModal
-          existingItem={duplicateItem.existing}
-          newItem={duplicateItem.new}
-          onEditExisting={() => {
-            setSelectedItem(duplicateItem.existing);
-            setDuplicateItem(null);
-          }}
-          onCreateNew={() => {
-            addNewItem(duplicateItem.new);
-            setDuplicateItem(null);
-          }}
-          onCancel={() => {
-            setDuplicateItem(null);
-          }}
+          isEditing
         />
       )}
     </div>

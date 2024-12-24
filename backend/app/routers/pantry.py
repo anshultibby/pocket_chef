@@ -2,7 +2,7 @@ import logging
 from typing import List
 from uuid import UUID
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Body, Depends, File, HTTPException, Request, UploadFile
 from pydantic import ValidationError
 
 from ..models.pantry import (
@@ -108,25 +108,12 @@ async def clear_pantry(current_user: dict = Depends(get_current_user)):
 
 @router.post("/receipt/process")
 async def process_receipt(
-    file: UploadFile, current_user: dict = Depends(get_current_user)
+    file: UploadFile = File(...), current_user: dict = Depends(get_current_user)
 ) -> List[PantryItemCreate]:
     """Process receipt and return suggested items without storing"""
     try:
         return await pantry_manager.process_receipt(
             file=file, user_id=UUID(current_user["id"])
-        )
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-
-@router.post("/receipt/confirm")
-async def confirm_receipt_items(
-    items: List[PantryItemCreate], current_user: dict = Depends(get_current_user)
-) -> List[PantryItem]:
-    """Store confirmed receipt items"""
-    try:
-        return await pantry_manager.add_receipt_items(
-            items=items, user_id=UUID(current_user["id"])
         )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

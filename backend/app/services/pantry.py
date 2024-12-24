@@ -1,5 +1,5 @@
-import json
 import logging
+from functools import lru_cache
 from typing import List, Optional
 from uuid import UUID
 
@@ -32,16 +32,23 @@ class PantryManager:
         """Helper method to process and add a single pantry item"""
         try:
             partial_item = await self.pantry.create_item(user_id=user_id, item=item)
-            ingredient_text = str(item)
-            logger.info(f"Ingredient text: {ingredient_text}")
-            enriched_item: PantryItemCreate = await self.claude.parse_ingredient_text(
-                PantryItemCreate, ingredient_text
-            )
-            updates = PantryItemUpdate(
-                data=enriched_item.data,
-                nutrition=enriched_item.nutrition,
-            )
-            return await self.pantry.update_item(partial_item.id, updates)
+
+            # Skip Claude enrichment if nutrition is already provided
+            if not item.nutrition or not any(vars(item.nutrition).values()):
+                ingredient_text = str(item)
+                logger.info(f"Ingredient text: {ingredient_text}")
+                enriched_item: PantryItemCreate = (
+                    await self.claude.parse_ingredient_text(
+                        PantryItemCreate, ingredient_text
+                    )
+                )
+                updates = PantryItemUpdate(
+                    data=enriched_item.data,
+                    nutrition=enriched_item.nutrition,
+                )
+                return await self.pantry.update_item(partial_item.id, updates)
+
+            return partial_item
 
         except Exception as e:
             logger.error(f"Error processing item: {str(e)}")
@@ -59,6 +66,7 @@ class PantryManager:
             logger.exception("Full traceback:")
             raise
 
+    @lru_cache(maxsize=10)
     async def process_receipt(
         self, file: UploadFile, user_id: UUID
     ) -> List[PantryItemCreate]:
@@ -71,20 +79,6 @@ class PantryManager:
         except Exception as e:
             logger.error(f"Error processing receipt: {str(e)}")
             raise ValueError(f"Failed to process receipt: {str(e)}")
-
-    async def add_receipt_items(
-        self, items: List[PantryItemCreate], user_id: UUID
-    ) -> List[PantryItem]:
-        """Store confirmed receipt items"""
-        added_items = []
-        for item in items:
-            try:
-                added_item = await self.pantry.create_item(user_id=user_id, item=item)
-                added_items.append(added_item)
-            except Exception as e:
-                logger.error(f"Error adding receipt item {item}: {str(e)}")
-                continue
-        return added_items
 
     async def get_items(self, user_id: UUID) -> List[PantryItem]:
         try:

@@ -2,22 +2,17 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { PantryItem } from '@/types';
-import { pantryApi } from '@/lib/api';
 import PantryTab from '@/components/PantryTab';
 import { AuthGuard } from '@/components/AuthGuard';
 import { useAuth } from '@/lib/auth-context';
 import RecipesTab from '@/components/RecipesTab';
-import { supabase } from '@/lib/supabase';
+import { usePantryStore } from '@/stores/pantryStore';
 
 export const dynamic = 'force-dynamic';
 
 export default function Home() {
-  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'cook' | 'pantry'>('cook');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [pantryItems, setPantryItems] = useState<PantryItem[]>([]);
+  const { items, isLoading, error, fetchItems } = usePantryStore();
   const { signOut } = useAuth();
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
 
@@ -35,61 +30,8 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const fetchPantryItems = async () => {
-      try {
-        // Get the current session
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          throw new Error('Session error: ' + sessionError.message);
-        }
-
-        if (!session) {
-          router.push('/login');
-          return;
-        }
-
-        const { data: { session: refreshedSession }, error: refreshError } = 
-          await supabase.auth.refreshSession();
-
-        if (refreshError || !refreshedSession) {
-          router.push('/login');
-          return;
-        }
-
-        const items = await pantryApi.getItems();
-        setPantryItems(items);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to fetch pantry items';
-        setError(message);
-        console.error('Fetch items error:', err);
-        
-        if (message.includes('authentication') || message.includes('session')) {
-          router.push('/login');
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPantryItems();
-  }, [router]);
-
-
-  const handleAddItems = (items: PantryItem[]) => {
-    setPantryItems(prev => [...prev, ...items]);
-  };
-
-  const handleUpdateItem = (id: string, updates: Partial<PantryItem>) => {
-    setPantryItems(prev => 
-      prev.map(item => item.id === id ? { ...item, ...updates } : item)
-    );
-  };
-
-  const handleDeleteItem = (id: string) => {
-    setPantryItems(prev => prev.filter(item => item.id !== id));
-  };
-
+    fetchItems();
+  }, [fetchItems]);
 
   const handleSignOut = async () => {
     try {
@@ -179,19 +121,13 @@ export default function Home() {
 
         {activeTab === 'pantry' ? (
           <div className="max-w-4xl mx-auto px-4 py-12">
-            <PantryTab
-              pantryItems={pantryItems}
-              onAddItems={handleAddItems}
-              onUpdateItem={handleUpdateItem}
-              onDeleteItem={handleDeleteItem}
-              loading={loading}
-            />
+            <PantryTab />
           </div>
         ) : (
           <div className="max-w-4xl mx-auto px-4 py-12">
             <RecipesTab
-              loading={loading}
-              pantryItems={pantryItems}
+              loading={isLoading}
+              pantryItems={items}
             />
           </div>
         )}

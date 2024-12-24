@@ -18,13 +18,16 @@ export const useFileUpload = () => {
 
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', file, file.name);
 
       const imageUrl = URL.createObjectURL(file);
       setReceiptImage(imageUrl);
 
       const items = await pantryApi.receipt.process(formData);
       setPendingItems(items);
+      
+      event.target.value = '';
+      
       return true;
     } catch (err) {
       setError(ERROR_MESSAGES.RECEIPT_PROCESSING);

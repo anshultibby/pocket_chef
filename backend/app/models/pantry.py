@@ -64,7 +64,7 @@ class PantryItemData(CustomBaseModel):
         description="name of the ingredient as it appears on the receipt or user input"
     )
     standard_name: Optional[str] = Field(
-        description="standardized name of the ingredient"
+        description="common name of the ingredient, this should be simple (for example, 'bread' instead of 'sourdough bread')"
     )
     quantity: Optional[float] = Field(
         default=0, description="quantity of the ingredient"

@@ -1,12 +1,15 @@
 import { CategoryFiltersProps } from '@/types/pantry';
+import { usePantryStore } from '@/stores/pantryStore';
+import { memo } from 'react';
 
-export default function CategoryFilters({
+const CategoryFilters = memo(function CategoryFilters({
   categories,
   selectedCategories,
   onSelectCategory,
   onClearCategories,
-  pantryItems
 }: CategoryFiltersProps) {
+  const { items } = usePantryStore();
+
   return (
     <div className="space-y-4">
       <div className="flex gap-2 flex-wrap">
@@ -22,7 +25,7 @@ export default function CategoryFilters({
           >
             {category}
             <span className="ml-2 bg-gray-700/50 px-2 py-0.5 rounded-full text-xs">
-              {pantryItems.filter(item => (item.data.category || 'Other') === category).length}
+              {items.filter(item => (item.data.category || 'Other') === category).length}
             </span>
           </button>
         ))}
@@ -38,4 +41,6 @@ export default function CategoryFilters({
       )}
     </div>
   );
-}
+});
+
+export default CategoryFilters;

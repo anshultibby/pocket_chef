@@ -1,7 +1,10 @@
 import { PantryGridProps } from '@/types/pantry';
 import { TrashIcon } from '@heroicons/react/24/outline';
+import { usePantryStore } from '@/stores/pantryStore';
 
-export default function PantryGrid({ groupedItems, onSelectItem, onDeleteItem }: PantryGridProps) {
+export default function PantryGrid({ groupedItems, onSelectItem }: Omit<PantryGridProps, 'onDeleteItem'>) {
+  const { deleteItem } = usePantryStore();
+  
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
       {Object.entries(groupedItems).map(([category, items]) => (
@@ -33,7 +36,7 @@ export default function PantryGrid({ groupedItems, onSelectItem, onDeleteItem }:
                   <button
                     onClick={(e) => {
                       e.stopPropagation(); // Prevent item selection when clicking delete
-                      onDeleteItem(item.id);
+                      deleteItem(item.id);
                     }}
                     className="text-red-400 hover:text-red-300 p-2 opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2"
                     title="Delete item"

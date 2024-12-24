@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import { PantryItemCreate, PantryItem } from '@/types';
+import { PantryItemCreate } from '@/types';
 import AddItemModal from './modals/AddItemModal';
-// import { DuplicateItemModal } from './modals/DuplicateItemModal';
-// import { normalizeString } from '@/utils/pantry';
 import Image from 'next/image';
 
 interface ReceiptConfirmationProps {
@@ -10,14 +8,13 @@ interface ReceiptConfirmationProps {
   receiptImage: string | null;
   onConfirm: (items: PantryItemCreate[]) => void;
   onCancel: () => void;
-  existingItems: PantryItem[];
 }
 
 export default function ReceiptConfirmation({ 
   items, 
   receiptImage, 
   onConfirm, 
-  onCancel
+  onCancel,
 }: ReceiptConfirmationProps) {
   const [editableItems, setEditableItems] = useState<PantryItemCreate[]>(items);
   const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null);
@@ -39,7 +36,7 @@ export default function ReceiptConfirmation({
     setEditableItems(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSaveItems = () => {
+  const handleConfirm = () => {
     onConfirm(editableItems);
   };
 
@@ -101,7 +98,7 @@ export default function ReceiptConfirmation({
                     className="text-red-400 hover:text-red-300 p-2 opacity-0 group-hover:opacity-100 transition-opacity"
                     title="Delete item"
                   >
-                    ×
+                    ��
                   </button>
                 </div>
               </div>
@@ -116,10 +113,10 @@ export default function ReceiptConfirmation({
               Cancel
             </button>
             <button
-              onClick={handleSaveItems}
+              onClick={handleConfirm}
               className="px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-400"
             >
-              Save Items ({editableItems.length})
+              Confirm Items ({editableItems.length})
             </button>
           </div>
         </div>

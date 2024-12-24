@@ -22,7 +22,6 @@ export interface CategoryFiltersProps {
   selectedCategories: string[];
   onSelectCategory: (category: string) => void;
   onClearCategories: () => void;
-  pantryItems: PantryItem[];
 }
 
 export interface AddItemModalProps {

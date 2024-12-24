@@ -82,18 +82,6 @@ const basePantryApi = {
       body: formData
     });
   },
-
-  confirmReceipt: async (items: PantryItemCreate[]): Promise<PantryItem[]> => {
-    const token = await getAuthToken();
-    return fetchApi<PantryItem[]>('/pantry/receipt/confirm', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(items)
-    });
-  }
 };
 
 // Combine both APIs
@@ -111,18 +99,6 @@ export const pantryApi = {
         body: formData
       });
     },
-
-    confirm: async (items: PantryItemCreate[]): Promise<PantryItem[]> => {
-      const token = await getAuthToken();
-      return fetchApi<PantryItem[]>('/pantry/receipt/confirm', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(items)
-      });
-    }
   }
 };
 
