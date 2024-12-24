@@ -26,8 +26,10 @@ export interface CategoryFiltersProps {
 }
 
 export interface AddItemModalProps {
-  onAdd: (item: PantryItemCreate) => void;
+  initialValues?: PantryItemCreate;
+  onAdd: (item: PantryItemCreate) => void | Promise<void>;
   onClose: () => void;
+  isEditing?: boolean;
 }
 
 export interface ItemEditModalProps {

@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import Dict, Generic, List, Optional, Type, TypeVar, Union
 
@@ -7,7 +8,12 @@ from pydantic import BaseModel
 from ...models.pantry import ListOfPantryItemsCreate, PantryItemCreate
 from ...models.recipes import RecipeData
 from .handlers import parse_claude_response
-from .prompts import INGREDIENT_ANALYSIS_PROMPT_TEMPLATE, MAX_TOKENS, MODEL
+from .prompts import (
+    INGREDIENT_ANALYSIS_PROMPT_TEMPLATE,
+    MAX_TOKENS,
+    MODEL,
+    RECIPE_GENERATION_PROMPT_TEMPLATE,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -24,46 +30,48 @@ class ClaudeService:
         self.anthropic = Anthropic()
         self.logger = logging.getLogger(__name__)
 
-    async def parse_ingredient_text(self, ingredient: str) -> PantryItemCreate:
+    async def parse_ingredient_text(self, model: Type[T], ingredient: str) -> T:
         """Parse and standardize items from receipt text"""
-        summary_schema = summarize_schema(PantryItemCreate.model_json_schema())
+        summary_schema = summarize_schema(model.model_json_schema())
         prompt = INGREDIENT_ANALYSIS_PROMPT_TEMPLATE.substitute(
             ingredients=ingredient, model=summary_schema
         )
-        logger.info(f"Prompt: {prompt}")
         item = await self._process_request(
             prompt=prompt,
-            response_model=PantryItemCreate,
+            response_model=model,
             is_text=True,
         )
         return item
 
-    async def parse_receipt_text(self, receipt_text: str) -> ListOfPantryItemsCreate:
+    async def parse_receipt_text(self, model: Type[T], receipt_text: str) -> T:
         """Parse receipt text and return list of PantryItemCreate"""
-        summary_schema = summarize_schema(ListOfPantryItemsCreate.model_json_schema())
+        summary_schema = summarize_schema(model.model_json_schema())
         prompt = INGREDIENT_ANALYSIS_PROMPT_TEMPLATE.substitute(
             ingredients=receipt_text, model=summary_schema
         )
         items = await self._process_request(
             prompt=prompt,
-            response_model=ListOfPantryItemsCreate,
+            response_model=model,
             is_text=True,
         )
         return items
 
     async def generate_recipes(
-        self, ingredients: List[str], preferences: Optional[str] = None
-    ) -> List[RecipeData]:
-        """Generate recipes from available ingredients"""
-        ingredients_list = "\n".join(f"- {item}" for item in ingredients)
-        prompt = f"""Create recipes using these ingredients:
-{ingredients_list}
-
-{preferences if preferences else ''}"""
-
+        self, model: Type[T], ingredients: List[str], preferences: str
+    ) -> List[T]:
+        """Generate recipes using structured prompt"""
+        model_text = summarize_schema(model.model_json_schema())
+        ingredients_text = "\n".join(f"- {item}" for item in ingredients)
+        prompt = RECIPE_GENERATION_PROMPT_TEMPLATE.substitute(
+            model=model_text,
+            ingredients=ingredients_text,
+            preferences=preferences,
+        )
+        logger.info(f"Prompt: {prompt}")
         return await self._process_request(
             prompt=prompt,
-            response_model=RecipeData,
+            response_model=model,
+            system_prompt="You are a culinary expert. Generate creative, practical recipes that exactly match the schema.",
         )
 
     async def _process_request(
@@ -82,6 +90,7 @@ class ClaudeService:
             else:
                 messages = [{"role": "user", "content": prompt}]
             response = await self._send_request(messages, system_prompt)
+            logger.info(f"Response: {response}")
             extracted_object = parse_claude_response(response, response_model)
             return extracted_object
 

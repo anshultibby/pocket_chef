@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Recipe, PantryItem } from '@/types';
-import { recipeApi, pantryApi } from '@/lib/api';
-import RecipeCard from '@/components/RecipeCard';
+import { PantryItem } from '@/types';
+import { pantryApi } from '@/lib/api';
 import PantryTab from '@/components/PantryTab';
 import { AuthGuard } from '@/components/AuthGuard';
 import { useAuth } from '@/lib/auth-context';
@@ -16,7 +15,6 @@ export const dynamic = 'force-dynamic';
 export default function Home() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'cook' | 'pantry'>('cook');
-  const [currentRecipes, setCurrentRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pantryItems, setPantryItems] = useState<PantryItem[]>([]);
@@ -77,30 +75,6 @@ export default function Home() {
     fetchPantryItems();
   }, [router]);
 
-  const handleRecipeClick = (recipeId: string) => {
-    router.push(`/recipe/${recipeId}`);
-  };
-
-  const handleGenerateRecipe = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const recipes = await recipeApi.generate({
-        categories: [
-          { category: 'breakfast', count: 3 },
-          { category: 'lunch', count: 3 },
-          { category: 'dinner', count: 3 },
-          { category: 'snack', count: 2 }
-        ]
-      });
-      setCurrentRecipes(recipes);
-    } catch (err) {
-      setError('Failed to generate recipes');
-      console.error('Recipe generation error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleAddItems = (items: PantryItem[]) => {
     setPantryItems(prev => [...prev, ...items]);
@@ -116,21 +90,6 @@ export default function Home() {
     setPantryItems(prev => prev.filter(item => item.id !== id));
   };
 
-  const handleSaveRecipe = async (recipe: Recipe) => {
-    try {
-      await recipeApi.save(recipe.id);
-      setCurrentRecipes(prev =>
-        prev.map(r =>
-          r.id === recipe.id 
-            ? { ...r, is_public: true }
-            : r
-        )
-      );
-    } catch (err) {
-      setError('Failed to save recipe');
-      console.error('Save recipe error:', err);
-    }
-  };
 
   const handleSignOut = async () => {
     try {
@@ -231,8 +190,6 @@ export default function Home() {
         ) : (
           <div className="max-w-4xl mx-auto px-4 py-12">
             <RecipesTab
-              onSaveRecipe={handleSaveRecipe}
-              onRemoveRecipe={handleDeleteItem}
               loading={loading}
               pantryItems={pantryItems}
             />

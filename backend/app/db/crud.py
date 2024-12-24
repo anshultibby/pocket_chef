@@ -4,7 +4,7 @@ from typing import List, Optional
 from uuid import UUID
 
 from ..models.pantry import PantryItem, PantryItemCreate, PantryItemUpdate
-from ..models.recipes import RecipeCreate, RecipeResponse
+from ..models.recipes import RecipeData, RecipeResponse
 from .supabase import get_supabase
 
 logger = logging.getLogger(__name__)
@@ -113,6 +113,23 @@ class PantryCRUD(BaseCRUD):
             logger.error(f"Error getting pantry item: {str(e)}")
             raise
 
+    async def get_items_by_names(
+        self, user_id: UUID, names: List[str]
+    ) -> List[PantryItem]:
+        """Get pantry items by a list of names for a user"""
+        try:
+            result = (
+                self.supabase.table(self.table)
+                .select("*")
+                .eq("user_id", str(user_id))
+                .filter("data->>'name'", "in", f"({','.join(names)})")
+                .execute()
+            )
+            return [PantryItem(**item) for item in result.data]
+        except Exception as e:
+            logger.error(f"Error getting pantry items by names: {str(e)}")
+            raise
+
 
 class RecipeCRUD(BaseCRUD):
     def __init__(self):
@@ -143,48 +160,6 @@ class RecipeCRUD(BaseCRUD):
             logger.error(f"Error getting recipes by categories: {str(e)}")
             raise
 
-    def get_saved_recipes(self, user_id: UUID) -> list[RecipeResponse]:
-        try:
-            result = (
-                self.supabase.table(self.table)
-                .select("*")
-                .eq("user_id", str(user_id))
-                .eq("is_saved", True)
-                .execute()
-            )
-            return [RecipeResponse(**item) for item in result.data]
-        except Exception as e:
-            logger.error(f"Error getting saved recipes: {str(e)}")
-            raise
-
-    def save_recipe(self, recipe_id: str, user_id: UUID) -> RecipeResponse:
-        try:
-            result = (
-                self.supabase.table(self.table)
-                .update({"is_saved": True})
-                .eq("id", recipe_id)
-                .eq("user_id", str(user_id))
-                .execute()
-            )
-            return RecipeResponse(**result.data[0])
-        except Exception as e:
-            logger.error(f"Error saving recipe: {str(e)}")
-            raise
-
-    def delete_saved_recipe(self, recipe_id: str, user_id: UUID) -> bool:
-        try:
-            result = (
-                self.supabase.table(self.table)
-                .update({"is_saved": False})
-                .eq("id", recipe_id)
-                .eq("user_id", str(user_id))
-                .execute()
-            )
-            return len(result.data) > 0
-        except Exception as e:
-            logger.error(f"Error deleting saved recipe: {str(e)}")
-            raise
-
     def cleanup_old_recipes(self, user_id: UUID, keep_days: int = 7):
         try:
             cutoff_date = datetime.utcnow() - timedelta(days=keep_days)
@@ -193,4 +168,55 @@ class RecipeCRUD(BaseCRUD):
             ).lt("created_at", cutoff_date.isoformat()).execute()
         except Exception as e:
             logger.error(f"Error cleaning up old recipes: {str(e)}")
+            raise
+
+    async def create_recipe(self, user_id: UUID, data: RecipeData) -> RecipeResponse:
+        try:
+            result = (
+                self.supabase.table(self.table)
+                .insert(
+                    {
+                        "user_id": str(user_id),
+                        "data": data.model_dump(),
+                    }
+                )
+                .execute()
+            )
+            return RecipeResponse(**result.data[0])
+        except Exception as e:
+            logger.error(f"Error creating recipe: {str(e)}")
+            raise
+
+    async def update_recipe(
+        self, recipe_id: str, user_id: UUID, data: RecipeData
+    ) -> RecipeResponse:
+        try:
+            result = (
+                self.supabase.table(self.table)
+                .update({"data": data.model_dump()})
+                .eq("id", recipe_id)
+                .eq("user_id", str(user_id))
+                .execute()
+            )
+            return RecipeResponse(**result.data[0])
+        except Exception as e:
+            logger.error(f"Error updating recipe: {str(e)}")
+            raise
+
+    async def get_matching_pantry_items(
+        self, user_id: UUID, ingredient_names: List[str]
+    ) -> List[PantryItem]:
+        """Get pantry items that match the given ingredient names"""
+        try:
+            # Use a single DB query to get all matching items
+            result = (
+                self.supabase.table("pantry_items")
+                .select("*")
+                .eq("user_id", str(user_id))
+                .filter("LOWER(data->>'name')", "in", f"({','.join(ingredient_names)})")
+                .execute()
+            )
+            return [PantryItem(**item) for item in result.data]
+        except Exception as e:
+            logger.error(f"Error getting matching pantry items: {str(e)}")
             raise

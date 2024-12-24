@@ -168,3 +168,51 @@ COMMENT ON TABLE pantry_items IS 'Example pantry item:
         "fiber": 0
     }
 }';
+
+-- Add index for pantry item name lookups
+CREATE INDEX IF NOT EXISTS idx_pantry_items_name ON pantry_items ((data->>'name'));
+
+-- Add indexes for recipe lookups
+CREATE INDEX IF NOT EXISTS idx_recipes_user_id ON recipes(user_id);
+CREATE INDEX IF NOT EXISTS idx_recipes_is_saved ON recipes(is_saved);
+CREATE INDEX IF NOT EXISTS idx_recipes_category ON recipes((data->>'category'));
+
+-- Recipe table structure
+COMMENT ON TABLE recipes IS 'Example recipe:
+{
+    "data": {
+        "name": "Scrambled Eggs",
+        "ingredients": [
+            {
+                "name": "Eggs",
+                "quantity": 2,
+                "unit": "units",
+                "notes": "large",
+                "pantry_item_id": "uuid-here",
+                "is_optional": false,
+                "substitutes": []
+            }
+        ],
+        "instructions": ["Beat eggs", "Cook in pan"],
+        "preparation_time": 10,
+        "calculated_nutrition": {
+            "total": {
+                "calories": 140,
+                "protein": 12,
+                "carbs": 1.2,
+                "fat": 10,
+                "fiber": 0
+            },
+            "per_serving": {
+                "calories": 140,
+                "protein": 12,
+                "carbs": 1.2,
+                "fat": 10,
+                "fiber": 0
+            }
+        },
+        "servings": 1,
+        "category": "breakfast"
+    },
+    "is_saved": true
+}';

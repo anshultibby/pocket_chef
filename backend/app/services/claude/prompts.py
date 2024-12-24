@@ -43,3 +43,32 @@ and make sure to use the standard unit for scaling the nutritional information
 """
 
 INGREDIENT_ANALYSIS_PROMPT_TEMPLATE = Template(INGREDIENT_ANALYSIS_PROMPT)
+
+RECIPE_GENERATION_PROMPT = """
+Generate recipes based on these requirements and available ingredients.
+Return recipes that exactly match this schema:
+
+<model>
+$model
+</model>
+
+<ingredients>   
+Available Ingredients:
+$ingredients
+</ingredients>
+
+<preferences>
+Preferences:
+$preferences
+</preferences>
+
+Important:
+- Each recipe must use at least 3 ingredients from the available list
+- Include detailed step-by-step instructions
+- Ensure quantities and units are specific and measurable
+- Consider dietary restrictions and nutrition goals
+- Recipes should be practical and achievable
+- Assume a few common ingredients (such as salt, pepper, oil) are available
+"""
+
+RECIPE_GENERATION_PROMPT_TEMPLATE = Template(RECIPE_GENERATION_PROMPT)

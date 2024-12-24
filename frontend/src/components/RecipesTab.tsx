@@ -1,80 +1,52 @@
 import { useState } from 'react';
-import { Recipe, PantryItem, MealCategory, RecipeGenerateRequest, RecipeWithAvailability } from '@/types';
-import RecipeCard from './RecipeCard';
+import { 
+  Recipe, 
+  PantryItem, 
+  RecipePreferences 
+} from '@/types';
 import { recipeApi } from '@/lib/api';
+import RecipeGenerationControls from './recipes/RecipeGenerationControls';
+import RecipeCardPreview from './recipes/RecipeCardPreview';
+import RecipeDetailModal from './recipes/RecipeDetailModal';
 
 interface RecipesTabProps {
-  onSaveRecipe: (recipe: Recipe) => Promise<void>;
-  onRemoveRecipe: (id: string) => void;
   pantryItems: PantryItem[];
   loading: boolean;
 }
 
 export default function RecipesTab({
-  onSaveRecipe,
-  onRemoveRecipe,
   pantryItems,
-  loading: parentLoading
 }: RecipesTabProps) {
-  const [recipes, setRecipes] = useState<Record<MealCategory, RecipeWithAvailability[]>>({
-    breakfast: [],
-    lunch: [],
-    dinner: [],
-    snack: []
-  });
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [preferences, setPreferences] = useState<RecipePreferences>({
+    cuisine: [],
+    max_prep_time: undefined,
+    dietary: [],
+    serving_size: 2,
+    meal_types: [],
+    nutrition_goals: [],
+    custom_preferences: '',
+    recipes_per_meal: 3
+  });
+  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
 
-  const fetchRecipes = async () => {
+  const handleGenerateRecipes = async () => {
     setIsLoading(true);
     setIsGenerating(true);
     setError(null);
 
     try {
-      // First try to get existing recipes
-      const recipesByCategory = await recipeApi.getByCategory();
-      setRecipes(recipesByCategory);
-      setIsGenerating(false);
+      const newRecipes = await recipeApi.generate(preferences);
+      setRecipes(newRecipes);
     } catch (err) {
       handleError(err);
     } finally {
       setIsLoading(false);
+      setIsGenerating(false);
     }
-  };
-
-  const pollForRecipes = async () => {
-    let attempts = 0;
-    const maxAttempts = 10;
-    const pollInterval = 20000; // 20 seconds
-
-    const poll = async () => {
-      if (attempts >= maxAttempts) {
-        setError('Recipe generation timed out');
-        setIsGenerating(false);
-        return;
-      }
-
-      try {
-        const recipesByCategory = await recipeApi.getByCategory();
-        const stillGenerating = Object.values(recipesByCategory).some(
-          recipes => recipes.length === 0
-        );
-
-        if (!stillGenerating) {
-          setRecipes(recipesByCategory);
-          setIsGenerating(false);
-        } else {
-          attempts++;
-          setTimeout(poll, pollInterval);
-        }
-      } catch (err) {
-        handleError(err);
-        setIsGenerating(false);
-      }
-    };
-
-    poll();
   };
 
   const handleError = (err: unknown) => {
@@ -87,72 +59,16 @@ export default function RecipesTab({
     setIsLoading(false);
   };
 
-  const handleGenerateRecipes = async () => {
-    setIsLoading(true);
-    setIsGenerating(true);
-    setError(null);
-
-    try {
-      const request: RecipeGenerateRequest = {
-        categories: [
-          { category: 'breakfast' as MealCategory, count: 3 },
-          { category: 'lunch' as MealCategory, count: 3 },
-          { category: 'dinner' as MealCategory, count: 3 },
-          { category: 'snack' as MealCategory, count: 2 }
-        ]
-      };
-      
-      await recipeApi.generate(request);
-      await fetchRecipes();
-    } catch (err) {
-      handleError(err);
-    } finally {
-      setIsLoading(false);
-      setIsGenerating(false);
-    }
-  };
-
-  const handleSave = (recipeData: RecipeWithAvailability) => {
-    return async () => {
-      await onSaveRecipe(recipeData.recipe);
-    };
-  };
-
-  const handleRemove = (recipeId: string) => {
-    return () => {
-      onRemoveRecipe(recipeId);
-    };
-  };
-
   return (
     <div className="space-y-8">
-      <div className="flex justify-start">
-        <div className="space-y-2">
-          {pantryItems.length === 0 && (
-            <div className="text-sm text-yellow-300/90 bg-yellow-900/20 px-4 py-2 rounded-t-lg border border-yellow-700/50">
-              Add ingredients to your pantry to enable recipe generation
-            </div>
-          )}
-          <button
-            onClick={fetchRecipes}
-            disabled={isLoading || isGenerating || pantryItems.length === 0}
-            className={`px-4 py-2 rounded-lg ${pantryItems.length === 0 ? 'rounded-t-none' : ''} transition-colors ${
-              isLoading || isGenerating || pantryItems.length === 0
-                ? 'bg-red-900/20 text-red-400 border border-red-700/50 cursor-not-allowed'
-                : 'bg-green-500 hover:bg-green-600 text-white border border-green-600'
-            }`}
-          >
-            {isLoading || isGenerating ? (
-              <>
-                <span className="animate-spin inline-block mr-2">⟳</span>
-                {isGenerating ? 'Generating...' : 'Loading...'}
-              </>
-            ) : (
-              'Get Recipe Suggestions'
-            )}
-          </button>
-        </div>
-      </div>
+      <RecipeGenerationControls
+        onGenerate={handleGenerateRecipes}
+        isGenerating={isGenerating}
+        isLoading={isLoading}
+        pantryItemsCount={pantryItems.length}
+        preferences={preferences}
+        onPreferencesChange={(updates) => setPreferences(prev => ({ ...prev, ...updates }))}
+      />
 
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
@@ -169,22 +85,35 @@ export default function RecipesTab({
         </div>
       )}
 
-      {!isLoading && !isGenerating && (
-        Object.entries(recipes).map(([category, categoryRecipes]) => (
-          <div key={category} className="space-y-4">
-            <h2 className="text-xl font-bold text-white capitalize">{category}</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {categoryRecipes.map(recipeData => (
-                <RecipeCard
-                  key={recipeData.recipe.id}
-                  recipeData={recipeData}
-                  onSave={handleSave(recipeData)}
-                  onRemove={handleRemove(recipeData.recipe.id)}
-                />
-              ))}
-            </div>
-          </div>
-        ))
+      {!isLoading && !isGenerating && recipes.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {recipes.map(recipe => (
+            <RecipeCardPreview
+              key={recipe.id}
+              recipe={recipe}
+              onClick={() => setSelectedRecipe(recipe)}
+            />
+          ))}
+        </div>
+      )}
+
+      {!isLoading && !isGenerating && recipes.length === 0 && (
+        <div className="text-center py-12">
+          <p className="text-gray-400">
+            No recipes yet. Click &quot;Generate Recipes&quot; to get started!
+          </p>
+        </div>
+      )}
+
+      {selectedRecipe && (
+        <RecipeDetailModal
+          recipe={selectedRecipe}
+          onClose={() => setSelectedRecipe(null)}
+          onRemove={() => {
+            setRecipes([]);
+            setSelectedRecipe(null);
+          }}
+        />
       )}
     </div>
   );

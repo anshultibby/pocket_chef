@@ -30,33 +30,28 @@ const SUGGESTED_CATEGORIES = [
   'Other'
 ];
 
-const SUGGESTED_STANDARD_UNITS = [
-  '100 g',
-  '100 ml',
-  '1 serving',
-  '1 piece',
-  '1 cup',
-  '1 oz'
-];
-
-interface AddItemModalProps {
-  initialValues?: PantryItemCreate;
-  onAdd: (item: PantryItemCreate) => void;
-  onClose: () => void;
-  isEditing?: boolean;
-}
-
 export default function AddItemModal({ 
   initialValues, 
   onAdd, 
   onClose,
   isEditing = false 
 }: AddItemModalProps) {
-  const { values, handleChange, handleSubmit, isSubmitting, errors } = useItemForm({ 
+  const handleSubmit = async (values: PantryItemCreate) => {
+    await Promise.resolve(onAdd(values));
+  };
+
+  const { 
+    values, 
+    handleChange, 
+    handleSubmit: submitForm, 
+    isSubmitting, 
+    errors 
+  } = useItemForm({ 
     initialValues,
-    onSubmit: onAdd, 
+    onSubmit: handleSubmit,
     onClose 
   });
+
   const [showNutrition, setShowNutrition] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
 
@@ -66,7 +61,7 @@ export default function AddItemModal({
         <h2 className="text-xl font-semibold mb-4">
           {isEditing ? 'Edit Item' : 'Add New Item'}
         </h2>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={submitForm}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormInput
               label="Name"
@@ -138,13 +133,13 @@ export default function AddItemModal({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormInput
               label="Price"
+              error={errors.price}
               type="number"
               value={values.data.price?.toString() ?? ''}
-              onChange={(e) => handleChange('price', e.target.value ? Number(e.target.value) : undefined)}
+              onChange={(e) => handleChange('price', e.target.value ? Number(e.target.value) : null)}
               min="0"
               step="0.01"
               placeholder="Enter price (optional)"
-              className="w-full"
             />
 
             <div>
@@ -182,7 +177,7 @@ export default function AddItemModal({
                     label="Calories"
                     type="number"
                     value={values.nutrition.calories ?? ''}
-                    onChange={(e) => handleChange('calories', e.target.value ? Number(e.target.value) : undefined, 'nutrition')}
+                    onChange={(e) => handleChange('calories', e.target.value ? Number(e.target.value) : 0, 'nutrition')}
                     min="0"
                     step="1"
                   />
@@ -190,7 +185,7 @@ export default function AddItemModal({
                     label="Protein"
                     type="number"
                     value={values.nutrition.protein ?? ''}
-                    onChange={(e) => handleChange('protein', e.target.value ? Number(e.target.value) : undefined, 'nutrition')}
+                    onChange={(e) => handleChange('protein', e.target.value ? Number(e.target.value) : 0, 'nutrition')}
                     min="0"
                     step="0.1"
                   />
@@ -198,7 +193,7 @@ export default function AddItemModal({
                     label="Carbs"
                     type="number"
                     value={values.nutrition.carbs ?? ''}
-                    onChange={(e) => handleChange('carbs', e.target.value ? Number(e.target.value) : undefined, 'nutrition')}
+                    onChange={(e) => handleChange('carbs', e.target.value ? Number(e.target.value) : 0, 'nutrition')}
                     min="0"
                     step="0.1"
                   />
@@ -206,7 +201,7 @@ export default function AddItemModal({
                     label="Fat"
                     type="number"
                     value={values.nutrition.fat ?? ''}
-                    onChange={(e) => handleChange('fat', e.target.value ? Number(e.target.value) : undefined, 'nutrition')}
+                    onChange={(e) => handleChange('fat', e.target.value ? Number(e.target.value) : 0, 'nutrition')}
                     min="0"
                     step="0.1"
                   />
@@ -214,7 +209,7 @@ export default function AddItemModal({
                     label="Fiber"
                     type="number"
                     value={values.nutrition.fiber ?? ''}
-                    onChange={(e) => handleChange('fiber', e.target.value ? Number(e.target.value) : undefined, 'nutrition')}
+                    onChange={(e) => handleChange('fiber', e.target.value ? Number(e.target.value) : 0, 'nutrition')}
                     min="0"
                     step="0.1"
                   />

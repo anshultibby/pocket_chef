@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { PantryItemCreate, PantryItem } from '@/types';
 import AddItemModal from './modals/AddItemModal';
-import { DuplicateItemModal } from './modals/DuplicateItemModal';
-import { normalizeString } from '@/utils/pantry';
+// import { DuplicateItemModal } from './modals/DuplicateItemModal';
+// import { normalizeString } from '@/utils/pantry';
+import Image from 'next/image';
 
 interface ReceiptConfirmationProps {
   items: PantryItemCreate[];
@@ -50,10 +51,12 @@ export default function ReceiptConfirmation({
           <h2 className="text-xl font-semibold mb-4">Receipt Image</h2>
           <div className="relative flex-1 bg-gray-900 rounded-lg overflow-hidden">
             {receiptImage && (
-              <img 
-                src={receiptImage} 
-                alt="Receipt" 
-                className="absolute inset-0 w-full h-full object-contain"
+              <Image 
+                src={receiptImage}
+                alt="Receipt"
+                fill
+                className="object-contain"
+                sizes="(max-width: 768px) 100vw, 50vw"
               />
             )}
           </div>

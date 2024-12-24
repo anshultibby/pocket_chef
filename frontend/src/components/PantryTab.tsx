@@ -2,14 +2,13 @@ import { useState, useRef } from 'react';
 import { 
   PantryItem, 
   PantryItemCreate, 
-  PantryItemUpdate 
 } from '@/types';
 import { pantryApi } from '@/lib/api';
 import ReceiptConfirmation from '@/components/ReceiptConfirmation';
 import CategoryFilters from './pantry/CategoryFilters';
 import PantryControls from './pantry/PantryControls';
 import PantryGrid from './pantry/PantryGrid';
-import AddItemModal from './modals/AddItemModal';
+import AddItemModal from '@/components/modals/AddItemModal';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
@@ -17,6 +16,7 @@ import { ErrorMessage } from '@/components/shared/ErrorMessage';
 import { ERROR_MESSAGES } from '@/constants/messages';
 import { normalizeString } from '@/utils/pantry';
 import { DuplicateItemModal } from './modals/DuplicateItemModal';
+import { ApiException } from '@/types/api';
 
 interface PantryTabProps {
   pantryItems: PantryItem[];
@@ -73,13 +73,6 @@ export default function PantryTab({
     }
   };
 
-  const handleModalUpdate = (updates: Partial<PantryItemUpdate>) => {
-    if (!selectedItem) return;
-    handleItemUpdate(selectedItem.id, {
-      data: updates.data || undefined,
-      nutrition: updates.nutrition || undefined
-    });
-  };
 
   const handleDeleteItem = async (itemId: string) => {
     try {
@@ -143,20 +136,6 @@ export default function PantryTab({
     setShowAddItemForm(false);
   };
 
-  const handleAddToExisting = async () => {
-    if (!duplicateItem) return;
-
-    const updatedQuantity = 
-      duplicateItem.existing.data.quantity + duplicateItem.new.data.quantity;
-
-    await handleItemUpdate(duplicateItem.existing.id, {
-      data: { ...duplicateItem.existing.data, quantity: updatedQuantity }
-    });
-    
-    setDuplicateItem(null);
-    setShowAddItemForm(false);
-  };
-
   const handleConfirmReceiptItems = async (confirmedItems: PantryItemCreate[]) => {
     try {
       // Handle each item one by one
@@ -172,8 +151,10 @@ export default function PantryTab({
         });
 
         if (existingItem) {
-          // Update existing item with new quantity
-          const updatedQuantity = existingItem.data.quantity + item.data.quantity;
+          const existingQuantity = existingItem.data.quantity ?? 0;
+          const newQuantity = item.data.quantity ?? 0;
+          const updatedQuantity = existingQuantity + newQuantity;
+          
           const updatedItem = await pantryApi.updateItem(existingItem.id, {
             data: { ...existingItem.data, quantity: updatedQuantity }
           });
@@ -211,10 +192,21 @@ export default function PantryTab({
     }
   };
 
-  const handleUploadReceipt = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const success = await handleFileUpload(event);
-    if (success) {
+  const handleUploadReceipt = async (file: File) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      // Use the consolidated API
+      const suggestedItems = await pantryApi.receipt.process(formData);
+      setReceiptItems(suggestedItems);
       setShowReceiptConfirmation(true);
+    } catch (error) {
+      if (error instanceof ApiException) {
+        handleError(`Failed to process receipt: ${error.error.message}`);
+      } else {
+        handleError('An unexpected error occurred while processing the receipt');
+      }
     }
   };
 

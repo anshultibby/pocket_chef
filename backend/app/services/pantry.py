@@ -31,14 +31,11 @@ class PantryManager:
     ) -> PantryItem:
         """Helper method to process and add a single pantry item"""
         try:
-            logger.info(f"Processing pantry item data: {item.data}")
-
-            # First store the item as-is with user's partial data
             partial_item = await self.pantry.create_item(user_id=user_id, item=item)
             ingredient_text = str(item)
             logger.info(f"Ingredient text: {ingredient_text}")
             enriched_item: PantryItemCreate = await self.claude.parse_ingredient_text(
-                ingredient_text
+                PantryItemCreate, ingredient_text
             )
             updates = PantryItemUpdate(
                 data=enriched_item.data,
@@ -56,7 +53,6 @@ class PantryManager:
     ) -> PantryItem:
         """Add a single item to pantry with name standardization"""
         try:
-            logger.info(f"Adding single item: {item}")
             return await self._process_pantry_item(item, user_id)
         except Exception as e:
             logger.error(f"Error in add_single_item: {str(e)}")

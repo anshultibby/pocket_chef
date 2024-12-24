@@ -29,5 +29,7 @@ class ReceiptParser:
 
         receipt_text = texts[0].description
 
-        items_data = await self.claude_service.parse_receipt_text(receipt_text)
+        items_data = await self.claude_service.parse_receipt_text(
+            ListOfPantryItemsCreate, receipt_text
+        )
         return items_data

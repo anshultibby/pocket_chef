@@ -12,11 +12,12 @@ export interface NutritionalInfo {
 }
 
 export interface RecipeIngredient {
-  pantry_item_id: string;
+  name: string;
   quantity: number;
   unit: string;
-  notes?: string;
+  pantry_item_id?: string;
   is_optional: boolean;
+  substitutes: string[];
 }
 
 export interface RecipeData {
@@ -24,11 +25,6 @@ export interface RecipeData {
   ingredients: RecipeIngredient[];
   instructions: string[];
   preparation_time: number;
-  difficulty: DifficultyLevel;
-  calculated_nutrition: {
-    total: NutritionalInfo;
-    per_serving: NutritionalInfo;
-  };
   servings: number;
   category: string;
 }
@@ -38,18 +34,17 @@ export interface Recipe {
   data: RecipeData;
   created_at: string;
   updated_at: string;
-  user_id: string;
-  is_public: boolean;
+  is_saved: boolean;
 }
 
 // Pantry types matching the database
 export interface PantryItemData {
   name: string;
-  standard_name?: string | null;
-  quantity?: number | null;
+  quantity: number;
   unit: string;
-  category?: string | null;
-  notes?: string | null;
+  standard_name?: string;
+  category?: string;
+  notes?: string;
   expiry_date?: string | null;
   price?: number | null;
 }
@@ -121,10 +116,13 @@ export interface RecipeGenerateRequest {
   categories: CategoryRequest[];
 }
 
-export interface RecipeWithAvailability {
-  recipe: Recipe;
-  available_ingredients: string[];
-  missing_ingredients: string[];
-  availability_percentage: number;
-  substitute_suggestions: Record<string, string[]>;
+export interface RecipePreferences {
+  cuisine: string[];
+  max_prep_time?: number;
+  meal_types: string[];
+  dietary: string[];
+  nutrition_goals: string[];
+  serving_size: number;
+  recipes_per_meal: number;
+  custom_preferences?: string;
 }

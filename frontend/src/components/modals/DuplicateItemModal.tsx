@@ -10,7 +10,6 @@ interface DuplicateItemModalProps {
 
 export function DuplicateItemModal({
   existingItem,
-  newItem,
   onEditExisting,
   onCreateNew,
   onCancel

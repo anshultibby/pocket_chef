@@ -106,20 +106,6 @@ async def clear_pantry(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/upload", response_model=List[PantryItemCreate])
-async def upload_receipt(
-    file: UploadFile, current_user: dict = Depends(get_current_user)
-):
-    """Process receipt and return suggested items without storing"""
-    try:
-        return await pantry_manager.process_receipt(
-            file=file, user_id=UUID(current_user["id"])
-        )
-    except Exception as e:
-        logger.error(f"Error processing receipt: {str(e)}")
-        raise HTTPException(status_code=400, detail=str(e))
-
-
 @router.post("/receipt/process")
 async def process_receipt(
     file: UploadFile, current_user: dict = Depends(get_current_user)

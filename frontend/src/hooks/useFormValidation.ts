@@ -8,8 +8,11 @@ export type ValidationRules<T> = {
   [K in keyof T]?: ValidationRule<T[K]>;
 };
 
-// Main hook definition
-export function useFormValidation<T extends Record<string, any>>(
+// Define a base type constraint for the form values
+type FormValues = Record<string, unknown>;
+
+// Main hook definition with improved type safety
+export function useFormValidation<T extends FormValues>(
   rules: ValidationRules<T>
 ) {
   const [errors, setErrors] = useState<Partial<Record<keyof T, string>>>({});

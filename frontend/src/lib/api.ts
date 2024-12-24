@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import { fetchApi } from './fetch';
-import type { Recipe, PantryItemCreate, MealCategory, RecipeGenerateRequest, PantryItem, PantryItemUpdate, RecipeWithAvailability } from '@/types';
+import type { Recipe, RecipePreferences, PantryItemCreate, PantryItem, PantryItemUpdate } from '@/types';
 
 // Helper function to get auth token
 const getAuthToken = async () => {
@@ -98,38 +98,36 @@ const basePantryApi = {
 
 // Combine both APIs
 export const pantryApi = {
-  ...basePantryApi
+  ...basePantryApi,
+
+  receipt: {
+    process: async (formData: FormData): Promise<PantryItemCreate[]> => {
+      const token = await getAuthToken();
+      return fetchApi<PantryItemCreate[]>('/pantry/receipt/process', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+    },
+
+    confirm: async (items: PantryItemCreate[]): Promise<PantryItem[]> => {
+      const token = await getAuthToken();
+      return fetchApi<PantryItem[]>('/pantry/receipt/confirm', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(items)
+      });
+    }
+  }
 };
 
-// Recipe-related API calls
-interface ApiResponse<T> {
-  data: T;
-  error?: string;
-}
-
 export const recipeApi = {
-  // Get recipes by category with auto-generation if needed
-  getByCategory: async (): Promise<Record<MealCategory, RecipeWithAvailability[]>> => {
-    const token = await getAuthToken();
-    return fetchApi<Record<MealCategory, RecipeWithAvailability[]>>('/recipes/by-category', {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-  },
-
-  // Get saved recipes with availability information
-  getSavedWithAvailability: async (): Promise<Recipe[]> => {
-    const token = await getAuthToken();
-    return fetchApi<Recipe[]>('/recipes/saved', {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-  },
-
-  // Generate new recipes based on pantry
-  generate: async (request: RecipeGenerateRequest): Promise<Recipe[]> => {
+  generate: async (preferences: RecipePreferences): Promise<Recipe[]> => {
     const token = await getAuthToken();
     return fetchApi<Recipe[]>('/recipes/generate', {
       method: 'POST',
@@ -137,24 +135,13 @@ export const recipeApi = {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(request)
+      body: JSON.stringify(preferences),
     });
   },
 
-  // Get detailed recipe with nutritional info and availability
-  getRecipeDetails: async (id: string): Promise<RecipeWithAvailability> => {
+  linkIngredients: async (recipeId: string): Promise<Recipe> => {
     const token = await getAuthToken();
-    return fetchApi<RecipeWithAvailability>(`/recipes/${id}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-  },
-
-  // Save a recipe
-  save: async (recipeId: string): Promise<Recipe> => {
-    const token = await getAuthToken();
-    return fetchApi<Recipe>(`/recipes/save/${recipeId}`, {
+    return fetchApi<Recipe>(`/recipes/${recipeId}/link-ingredients`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -162,39 +149,22 @@ export const recipeApi = {
     });
   },
 
-  // Delete a saved recipe
-  deleteSaved: async (recipeId: string): Promise<void> => {
+  getRecipeDetails: async (recipeId: string): Promise<Recipe> => {
     const token = await getAuthToken();
-    return fetchApi<void>(`/recipes/saved/${recipeId}`, {
+    return fetchApi<Recipe>(`/recipes/${recipeId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  },
+
+  delete: async (recipeId: string): Promise<void> => {
+    const token = await getAuthToken();
+    return fetchApi<void>(`/recipes/${recipeId}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`
       }
-    });
-  }
-};
-
-export const receiptApi = {
-  process: async (formData: FormData): Promise<PantryItemCreate[]> => {
-    const token = await getAuthToken();
-    return fetchApi<PantryItemCreate[]>('/pantry/receipt/process', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      },
-      body: formData
-    });
-  },
-
-  confirm: async (items: PantryItemCreate[]): Promise<PantryItem[]> => {
-    const token = await getAuthToken();
-    return fetchApi<PantryItem[]>('/pantry/receipt/confirm', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(items)
     });
   }
 };

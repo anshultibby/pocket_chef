@@ -15,13 +15,6 @@ const defaultValues: PantryItemCreate = {
   nutrition: {}
 };
 
-// Add validation function
-const formatDateForBackend = (dateString: string | null): string | null => {
-  if (!dateString) return null;
-  // Format as ISO string and take just the date part
-  return new Date(dateString).toISOString().split('T')[0];
-};
-
 export function useItemForm({ 
   initialValues,
   onSubmit, 
@@ -95,8 +88,12 @@ export function useItemForm({
 
       await onSubmit(formattedValues);
       onClose();
-    } catch (error) {
-      setErrors({ form: 'Failed to add item. Please try again.' });
+    } catch (err) {
+      setErrors({ 
+        form: err instanceof Error 
+          ? err.message 
+          : 'Failed to add item. Please try again.' 
+      });
     } finally {
       setIsSubmitting(false);
     }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -12,12 +12,35 @@ export default function LoginPage() {
   const { signIn } = useAuth();
   const router = useRouter();
 
+  const ErrorDisplay = useCallback(() => {
+    if (!error) return null;
+    return (
+      <div 
+        className="text-red-500 text-center text-sm" 
+        role="alert"
+        aria-live="polite"
+      >
+        {error}
+      </div>
+    );
+  }, [error]);
+
+  useEffect(() => {
+    if (!error) return;
+    
+    const timer = setTimeout(() => {
+      setError('');
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, [error]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await signIn(email, password);
       router.push('/');
-    } catch (error) {
+    } catch (err) {
       setError('Invalid login credentials');
     }
   };
@@ -26,12 +49,12 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-950">
       <div className="max-w-md w-full space-y-8 p-8 bg-gray-900 rounded-lg">
         <div>
-          <h2 className="text-center text-3xl font-bold text-white">Sign in to Kitchen Elf</h2>
+          <h2 className="text-center text-3xl font-bold text-white">
+            Sign in to Kitchen Elf
+          </h2>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="text-red-500 text-center text-sm">{error}</div>
-          )}
+          <ErrorDisplay />
           <div className="space-y-4">
             <div>
               <label htmlFor="email" className="sr-only">
