@@ -22,22 +22,14 @@ const basePantryApi = {
 
   async addItems(items: PantryItemCreate[]): Promise<PantryItem[]> {
     const token = await getAuthToken();
-    try {
-      console.log('Request payload:', JSON.stringify(items, null, 2));
-      const response = await fetchApi<PantryItem[]>('/pantry/items', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(items),
-      });
-      console.log('Response:', response);
-      return response;
-    } catch (err) {
-      console.error('API error:', err);
-      throw err;
-    }
+    return fetchApi<PantryItem[]>('/pantry/items', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(items),
+    });
   },
 
   async updateItem(id: string, updates: PantryItemUpdate): Promise<PantryItem> {
@@ -153,6 +145,15 @@ export const recipeApi = {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(usage),
+    });
+  },
+
+  getAll: async (): Promise<Recipe[]> => {
+    const token = await getAuthToken();
+    return fetchApi<Recipe[]>('/recipes', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
     });
   },
 };

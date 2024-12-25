@@ -29,6 +29,8 @@ export interface AddItemModalProps {
   onAdd: (item: PantryItemCreate) => void | Promise<void>;
   onClose: () => void;
   isEditing?: boolean;
+  isRecipeUse?: boolean;
+  originalQuantity?: number;
 }
 
 export interface ItemEditModalProps {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Recipe, PantryItem } from '@/types';
 import { recipeApi } from '@/lib/api';
 import RecipeCardPreview from './recipes/RecipeCardPreview';
@@ -7,6 +7,9 @@ import RecipeUseModal from './recipes/use-recipe/RecipeUseModal';
 import { toast } from 'react-hot-toast';
 import { usePantryStore } from '@/stores/pantryStore';
 import { useRecipeStore } from '@/stores/recipeStore';
+import { RecipeCollectionHeader } from './recipes/RecipeCollectionHeader';
+import { RecipeGenerationGroup } from './recipes/RecipeGenerationGroup';
+import ElfModal from './modals/ElfModal';
 
 interface RecipesTabProps {
   pantryItems: PantryItem[];
@@ -31,32 +34,25 @@ export default function RecipesTab({
   
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [usingRecipe, setUsingRecipe] = useState<Recipe | null>(null);
+  const [showElfModal, setShowElfModal] = useState(false);
 
-  const handleGenerateRecipes = async () => {
-    setIsLoading(true);
-    setIsGenerating(true);
-    setError(null);
+  useEffect(() => {
+    const fetchRecipes = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const response = await recipeApi.getAll();
+        setRecipes(response);
+      } catch (error) {
+        console.error('Error fetching recipes:', error);
+        setError('Failed to load recipes');
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    try {
-      const newRecipes = await recipeApi.generate(preferences);
-      setRecipes(newRecipes);
-    } catch (err) {
-      handleError(err);
-    } finally {
-      setIsLoading(false);
-      setIsGenerating(false);
-    }
-  };
-
-  const handleError = (err: unknown) => {
-    let message = 'An error occurred';
-    if (err instanceof Error) message = err.message;
-    else if (typeof err === 'string') message = err;
-    setError(message);
-    console.error('Recipe error:', err);
-    setIsGenerating(false);
-    setIsLoading(false);
-  };
+    fetchRecipes();
+  }, [setIsLoading, setError, setRecipes]);
 
   const handleUseRecipe = async (ingredientsUsed: Record<string, number>) => {
     if (!usingRecipe) return;
@@ -76,55 +72,80 @@ export default function RecipesTab({
     }
   };
 
+  // Group recipes by generation timestamp and sort within groups by availability
+  const groupedRecipes = recipes.reduce((groups, recipe) => {
+    const timestamp = recipe.created_at.split('T')[0];
+    if (!groups[timestamp]) groups[timestamp] = [];
+    groups[timestamp].push(recipe);
+    return groups;
+  }, {} as Record<string, Recipe[]>);
+
+  // Sort recipes within each group by availability
+  Object.values(groupedRecipes).forEach(recipeGroup => {
+    recipeGroup.sort((a, b) => {
+      const calcAvailability = (recipe: Recipe) => {
+        const total = recipe.data.ingredients.length;
+        if (total === 0) return 0;
+        
+        const available = recipe.data.ingredients.filter(ing => 
+          pantryItems.some(item => 
+            item.data.name && 
+            item.data.name.toLowerCase() === ing.name.toLowerCase()
+          )
+        ).length;
+        
+        return available / total;
+      };
+
+      return calcAvailability(b) - calcAvailability(a);
+    });
+  });
+
+  // Sort timestamps in reverse chronological order
+  const sortedTimestamps = Object.keys(groupedRecipes).sort((a, b) => 
+    new Date(b).getTime() - new Date(a).getTime()
+  );
+
   return (
     <div className="space-y-8">
+      <RecipeCollectionHeader
+        recipesCount={recipes.length}
+        lastGeneratedAt={sortedTimestamps[0]}
+        onGenerateNew={() => setShowElfModal(true)}
+        pantryItemsCount={pantryItems.length}
+      />
+
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+        <div className="bg-red-500/20 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg">
           {error}
         </div>
       )}
 
-      {(isLoading || isGenerating) && (
+      {(isLoading || isGenerating) ? (
         <div className="text-center py-8">
           <div className="animate-spin inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mb-4"></div>
           <p className="text-gray-400">
             {isGenerating ? 'Generating your recipes...' : 'Loading recipes...'}
           </p>
         </div>
-      )}
-
-      {!isLoading && !isGenerating && recipes.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {recipes.map(recipe => (
-            <RecipeCardPreview
-              key={recipe.id}
-              recipe={recipe}
-              onClick={() => setSelectedRecipe(recipe)}
-            />
-          ))}
-        </div>
-      )}
-
-      {!isLoading && !isGenerating && recipes.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-gray-400">
-            No recipes yet. Click &quot;Generate Recipes&quot; to get started!
-          </p>
-        </div>
+      ) : (
+        sortedTimestamps.map(timestamp => (
+          <RecipeGenerationGroup
+            key={timestamp}
+            timestamp={timestamp}
+            recipes={groupedRecipes[timestamp]}
+            pantryItems={pantryItems}
+            preferences={preferences}
+            onSelectRecipe={setSelectedRecipe}
+          />
+        ))
       )}
 
       {selectedRecipe && (
         <RecipeDetailModal
           recipe={selectedRecipe}
           onClose={() => setSelectedRecipe(null)}
-          onRemove={() => {
-            setRecipes([]);
-            setSelectedRecipe(null);
-          }}
-          onUse={() => {
-            setUsingRecipe(selectedRecipe);
-            setSelectedRecipe(null);
-          }}
+          onUse={() => setUsingRecipe(selectedRecipe)}
         />
       )}
 
@@ -134,6 +155,13 @@ export default function RecipesTab({
           pantryItems={pantryItems}
           onClose={() => setUsingRecipe(null)}
           onConfirmUse={handleUseRecipe}
+        />
+      )}
+
+      {showElfModal && (
+        <ElfModal
+          onClose={() => setShowElfModal(false)}
+          pantryItemsCount={pantryItems.length}
         />
       )}
     </div>

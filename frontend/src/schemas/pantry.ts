@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { UNITS } from '../constants/units';
 
 export const nutritionSchema = z.object({
   standard_unit: z.string().optional(),
@@ -17,7 +18,9 @@ export const pantryItemDataSchema = z.object({
   quantity: z.number()
     .min(0.1, 'Quantity must be greater than 0')
     .default(1),
-  unit: z.string().min(1, 'Unit is required'),
+  unit: z.string()
+    .min(1, 'Unit is required')
+    .default(UNITS.UNITS),
   notes: z.string().optional(),
   expiry_date: z.string().optional().nullable(),
   price: z.number().optional(),

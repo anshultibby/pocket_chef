@@ -62,15 +62,6 @@ class RecipeResponse(BaseModel):
     updated_at: datetime
     user_id: UUID
 
-    @property
-    def availability_percentage(self) -> float:
-        """Calculate percentage of available ingredients"""
-        total = len(self.data.ingredients)
-        if total == 0:
-            return 0
-        available = len([i for i in self.data.ingredients if i.pantry_item_id])
-        return (available / total) * 100
-
 
 class RecipePreferences(CustomBaseModel):
     """

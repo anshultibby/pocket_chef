@@ -126,6 +126,26 @@ class RecipeManager:
         # Record recipe usage
         return await self.recipe_crud.create_usage(user_id, recipe_id, usage)
 
+    async def get_saved_recipes_with_availability(
+        self, user_id: UUID
+    ) -> List[RecipeResponse]:
+        """Get all saved recipes for a user"""
+        try:
+            result = (
+                self.recipe_crud.supabase.table(self.recipe_crud.table)
+                .select("*")
+                .eq("user_id", str(user_id))
+                .order("created_at", desc=True)
+                .limit(8)
+                .execute()
+            )
+
+            return [RecipeResponse(**item) for item in result.data]
+
+        except Exception as e:
+            logger.error(f"Error getting saved recipes: {str(e)}")
+            raise
+
 
 _recipe_manager = None
 

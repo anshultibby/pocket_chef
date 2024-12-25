@@ -54,7 +54,7 @@ async def link_recipe_ingredients(
 @router.get("/", response_model=List[RecipeResponse])
 async def get_recipes(current_user: dict = Depends(get_current_user)):
     """Get recipes with availability information"""
-    return recipe_manager.get_saved_recipes_with_availability(
+    return await recipe_manager.get_saved_recipes_with_availability(
         user_id=UUID(current_user["id"])
     )
 
