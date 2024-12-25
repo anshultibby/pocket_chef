@@ -40,7 +40,7 @@ export default function LoginPage() {
     try {
       await signIn(email, password);
       router.push('/');
-    } catch (err) {
+    } catch {
       setError('Invalid login credentials');
     }
   };

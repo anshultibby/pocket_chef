@@ -1,5 +1,6 @@
 import { RecipeConfirmStepProps } from './types';
 import { IngredientCard } from './IngredientCard';
+import { PantryItem } from '@/types';
 
 export function RecipeConfirmStep({
   finalQuantities,

@@ -24,7 +24,6 @@ export default function PantryTab() {
     isLoading, 
     addItems, 
     updateItem, 
-    deleteItem 
   } = usePantryStore();
 
   const { error, handleError, clearError } = useErrorHandler();
@@ -144,13 +143,6 @@ export default function PantryTab() {
     }
   };
 
-  const handleDeleteItem = async (id: string) => {
-    try {
-      await deleteItem(id);
-    } catch (error) {
-      handleError(error);
-    }
-  };
 
   const handleItemUpdate = async (id: string, updates: Partial<PantryItem>) => {
     try {

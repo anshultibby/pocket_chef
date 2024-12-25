@@ -46,7 +46,7 @@ export const usePantryStore = create<PantryStore>((set, get) => ({
       }));
       await pantryApi.deleteItem(id);
       set({ isLoading: false });
-    } catch (error) {
+    } catch (_error) {
       set({ 
         items: previousItems, 
         error: 'Failed to delete item',
@@ -61,7 +61,7 @@ export const usePantryStore = create<PantryStore>((set, get) => ({
     try {
       const items = await pantryApi.getItems();
       set({ items, isLoading: false });
-    } catch (error) {
+    } catch (_error) {
       set({ error: 'Failed to fetch items', isLoading: false });
     }
   },

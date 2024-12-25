@@ -9,7 +9,7 @@ interface RecipeDetailModalProps {
   onRemove: () => void;
 }
 
-export default function RecipeDetailModal({ recipe, onClose, onUse, onRemove }: RecipeDetailModalProps) {
+export default function RecipeDetailModal({ recipe, onClose, onUse }: RecipeDetailModalProps) {
   const { setRecipes } = useRecipeStore();
 
   const handleRemove = () => {

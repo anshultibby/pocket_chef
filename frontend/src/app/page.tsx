@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import PantryTab from '@/components/PantryTab';
 import { AuthGuard } from '@/components/AuthGuard';
 import { useAuth } from '@/lib/auth-context';

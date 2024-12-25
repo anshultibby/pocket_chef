@@ -51,7 +51,7 @@ export function IngredientCard({ id, item, onEdit }: IngredientCardProps) {
           </>
         ) : (
           <div className="text-yellow-400">
-            Units don't match recipe requirements. Click to edit.
+            Units don&apos;t match recipe requirements. Click to edit.
           </div>
         )}
         {item.data.notes && (
