@@ -23,7 +23,21 @@ export function RecipeConfirmStep({
             id={id}
             item={item}
             recipe={recipe}
-            onEdit={(data) => onEditItem({ ...data, item: { ...data.item, id: '', user_id: '', created_at: '', updated_at: '' } as PantryItem })}
+            onEdit={(data) => onEditItem({
+              id: data.id,
+              item: {
+                data: {
+                  name: item.data.name,
+                  quantity: item.data.quantity,
+                  unit: item.data.unit,
+                  category: item.data.category,
+                  notes: item.data.notes,
+                  expiry_date: item.data.expiry_date,
+                  price: item.data.price
+                },
+                nutrition: item.nutrition
+              }
+            })}
           />
         ))}
       </div>

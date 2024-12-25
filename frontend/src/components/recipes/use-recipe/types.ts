@@ -24,11 +24,15 @@ export interface RecipeReviewStepProps {
 }
 
 export interface RecipeConfirmStepProps {
-  recipe: Recipe;
-  pantryItems: PantryItem[];
   finalQuantities: Map<string, IngredientUpdate>;
   onBack: () => void;
   onConfirm: () => void;
   isConfirming: boolean;
-  onEditItem: (item: { id: string; item: PantryItem }) => void;
+  onEditItem: (data: { 
+    id: string; 
+    item: Omit<PantryItem, 'id' | 'user_id' | 'created_at' | 'updated_at'> & Partial<Pick<PantryItem, 'id' | 'user_id' | 'created_at' | 'updated_at'>>
+  }) => void;
+  recipe: Recipe;
 }
+
+

@@ -1,266 +1,122 @@
-import { useState, useRef } from 'react';
-import { 
-  PantryItem, 
-  PantryItemCreate, 
-} from '@/types';
-import { pantryApi } from '@/lib/api';
-import ReceiptConfirmation from '@/components/ReceiptConfirmation';
+import { usePantryStore } from '@/stores/pantryStore';
+import { useUIStore } from '@/stores/uiStore';
 import CategoryFilters from './pantry/CategoryFilters';
 import PantryControls from './pantry/PantryControls';
 import PantryGrid from './pantry/PantryGrid';
-import AddItemModal from '@/components/modals/AddItemModal';
-import { useErrorHandler } from '@/hooks/useErrorHandler';
-import { useFileUpload } from '@/hooks/useFileUpload';
-import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
-import { ErrorMessage } from '@/components/shared/ErrorMessage';
-import { ERROR_MESSAGES } from '@/constants/messages';
-import { DuplicateItemModal } from './modals/DuplicateItemModal';
+import ModalManager from './modals/ModalManager';
+import { usePantryItems } from '@/hooks/usePantryItems';
+import { useRef } from 'react';
 import { useDuplicateHandler } from '@/hooks/useDuplicateHandler';
-import { usePantryStore } from '@/stores/pantryStore';
-import { CATEGORIES, getCategoryLabel } from '@/constants/categories';
+import { pantryApi } from '@/lib/api';
+import { CATEGORIES } from '@/constants/categories';
+import { PantryItem, PantryItemUpdate } from '@/types';
+import { PantryItemFormValues } from '@/schemas/pantry';
 
 export default function PantryTab() {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { 
-    items: pantryItems, 
-    isLoading, 
-    addItems,
-    setItems,
+    items, 
+    isLoading,
+    error,
+    addItem,
     updateItem,
-    fetchItems,
+    deleteItem,
+    clearPantry,
+    addItems 
   } = usePantryStore();
+  
+  const { 
+    searchTerm,
+    onSearchChange,
+    openModal,
+    selectedCategories,
+    setSelectedCategories
+  } = useUIStore();
 
-  const { error, handleError, clearError } = useErrorHandler();
-  const {
-    isUploading,
-    receiptImage,
-    pendingItems: uploadPendingItems,
-    error: uploadError,
-    handleFileUpload,
-    clearUpload,
-  } = useFileUpload();
+  const filteredItems = usePantryItems();
 
   const {
-    duplicateItem,
     handleSingleItem,
     handleMultipleItems,
-    handleDuplicateResolution,
-    handleEditComplete,
-    isProcessing,
-    isEditing,
-    clearDuplicates
-  } = useDuplicateHandler(pantryItems, addItems, updateItem);
-
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showAddItemForm, setShowAddItemForm] = useState(false);
-  const [showReceiptConfirmation, setShowReceiptConfirmation] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<PantryItem | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [editingItem, setEditingItem] = useState<PantryItem | null>(null);
-
-  if (isLoading) {
-    return <LoadingSpinner message="Loading pantry items..." />;
-  }
-
-  const handleReceiptConfirmation = async (confirmedItems: PantryItemCreate[]) => {
-    try {
-      await handleMultipleItems(confirmedItems);
-      setShowReceiptConfirmation(false);
-      if (clearUpload) {
-        clearUpload();
-      }
-    } catch (error) {
-      handleError(error);
-      setShowReceiptConfirmation(false);
+    isProcessing
+  } = useDuplicateHandler(
+    items,
+    addItems,
+    async (id: string, updates: PantryItemUpdate) => {
+      await updateItem(id, updates);
     }
-  };
-
-  // Handle single item addition
-  const handleAddItem = async (item: PantryItemCreate) => {
-    try {
-      await handleSingleItem(item);
-    } catch (error) {
-      handleError(error);
-    }
-  };
-
-  const handleClearPantry = async () => {
-    if (!confirm('Are you sure you want to clear all items from your pantry?')) {
-      return;
-    }
-
-    try {
-      // First perform the backend operation
-      await pantryApi.clearPantry();
-      
-      // Then clear UI state
-      setItems([]);
-      setSelectedCategories([]);
-      setSearchTerm('');
-      setSelectedItem(null);
-      clearError();
-
-      if (clearUpload) {
-        clearUpload();
-      }
-    } catch (err) {
-      handleError(err);
-      // Refresh items to ensure UI is in sync with backend
-      await fetchItems();
-    }
-  };
-
-  const handleCategorySelect = (category: string) => {
-    setSelectedCategories(prev => {
-      if (prev.includes(category)) {
-        return prev.filter(c => c !== category);
-      }
-      return [...prev, category];
-    });
-  };
-
-  const groupedItems = pantryItems
-    .filter(item => {
-      const matchesSearch = item.data.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const itemCategory = (item.data.category || CATEGORIES.OTHER).toLowerCase();
-      const matchesCategory = selectedCategories.length === 0 || 
-        selectedCategories.includes(itemCategory);
-      return matchesSearch && matchesCategory;
-    })
-    .reduce((groups, item) => {
-      const category = getCategoryLabel(item.data.category);
-      if (!groups[category]) groups[category] = [];
-      groups[category].push(item);
-      return groups;
-    }, {} as Record<string, PantryItem[]>);
-
-  const categories = Array.from(new Set(pantryItems.map(item => item.data.category || 'Other')));
+  );
 
   const handleUploadReceipt = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('receipt', file);
+
     try {
-      await handleFileUpload(event);
-      setShowReceiptConfirmation(true);
+      const items = await pantryApi.receipt.process(formData);
+      const formattedItems = items.map(item => ({
+        data: {
+          name: item.data.name,
+          original_name: item.data.original_name,
+          quantity: item.data.quantity,
+          unit: item.data.unit,
+          notes: item.data.notes,
+          expiry_date: item.data.expiry_date,
+          price: item.data.price,
+          category: item.data.category
+        },
+        nutrition: item.nutrition
+      }));
+      await handleMultipleItems(formattedItems);
     } catch (error) {
-      handleError(error);
+      console.error('Failed to process receipt:', error);
     }
   };
 
-  const handleCloseConfirmation = () => {
-    setShowReceiptConfirmation(false);
-    if (clearUpload) {
-      clearUpload();
-    }
+  const handleClearCategories = () => {
+    setSelectedCategories([]);
   };
 
-
-  const handleItemUpdate = async (id: string, updates: Partial<PantryItem>) => {
-    try {
-      await updateItem(id, updates);
-    } catch (error) {
-      handleError(error);
+  const handleSelectCategory = (category: string) => {
+    if (selectedCategories.includes(category)) {
+      setSelectedCategories(selectedCategories.filter(c => c !== category));
+    } else {
+      setSelectedCategories([...selectedCategories, category]);
     }
-  };
-
-  const handleMergeAndEdit = async () => {
-    try {
-      const mergedItem = await handleDuplicateResolution('mergeEdit');
-      if (mergedItem) {
-        setEditingItem(mergedItem);
-      }
-    } catch (error) {
-      handleError(error);
-    }
-  };
-
-  const handleEditModalClose = async (updates?: Partial<PantryItem>) => {
-    if (updates) {
-      await updateItem(editingItem!.id, updates);
-    }
-    setEditingItem(null);
-    await handleEditComplete();
   };
 
   return (
     <div className="space-y-6">
-      {(error || uploadError) && (
-        <ErrorMessage 
-          message={error || uploadError || ERROR_MESSAGES.GENERIC} 
-          onDismiss={clearError}
-        />
-      )}
-
-      <PantryControls
+      {isLoading && <div>Loading...</div>}
+      {error && <div className="text-red-500">{error}</div>}
+      
+      <PantryControls 
         searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        onAddItem={() => setShowAddItemForm(true)}
+        onSearchChange={onSearchChange}
+        onAddItem={() => openModal('addItem')}
         onUploadReceipt={handleUploadReceipt}
-        onClearPantry={handleClearPantry}
-        isUploading={isUploading}
+        onClearPantry={clearPantry}
+        isUploading={isProcessing}
         fileInputRef={fileInputRef}
-        pantryItemsCount={pantryItems.length}
+        pantryItemsCount={items.length}
       />
 
-      <CategoryFilters
-        categories={categories}
+      <CategoryFilters 
+        categories={Object.values(CATEGORIES)}
         selectedCategories={selectedCategories}
-        onSelectCategory={handleCategorySelect}
-        onClearCategories={() => setSelectedCategories([])}
+        onSelectCategory={handleSelectCategory}
+        onClearCategories={handleClearCategories}
+      />
+      
+      <PantryGrid 
+        items={filteredItems}
+        onSelectItem={(item) => openModal('selectedItem', { selectedItem: item })}
+        onDeleteItem={deleteItem}
       />
 
-      <PantryGrid
-        groupedItems={groupedItems}
-        onSelectItem={setSelectedItem}
-      />
-
-      {/* Modals */}
-      {showReceiptConfirmation && uploadPendingItems && (
-        <ReceiptConfirmation
-          items={uploadPendingItems}
-          receiptImage={receiptImage}
-          onConfirm={handleReceiptConfirmation}
-          onCancel={handleCloseConfirmation}
-        />
-      )}
-
-      {showAddItemForm && (
-        <AddItemModal
-          onAdd={handleAddItem}
-          onClose={() => setShowAddItemForm(false)}
-        />
-      )}
-
-      {duplicateItem && !isEditing && (
-        <DuplicateItemModal
-          existingItem={duplicateItem.existing}
-          newItem={duplicateItem.new}
-          onMergeQuantities={() => handleDuplicateResolution('merge')}
-          onMergeAndEdit={handleMergeAndEdit}
-          onCreateNew={() => handleDuplicateResolution('create')}
-          onCancel={clearDuplicates}
-          isProcessing={isProcessing}
-        />
-      )}
-
-      {editingItem && (
-        <AddItemModal
-          initialValues={editingItem}
-          onAdd={handleEditModalClose}
-          onClose={() => handleEditModalClose()}
-          isEditing={true}
-        />
-      )}
-
-      {selectedItem && (
-        <AddItemModal
-          initialValues={selectedItem}
-          onAdd={async (updatedItem) => {
-            await handleItemUpdate(selectedItem.id, updatedItem);
-            setSelectedItem(null);
-          }}
-          onClose={() => setSelectedItem(null)}
-          isEditing
-        />
-      )}
+      <ModalManager />
     </div>
   );
 }

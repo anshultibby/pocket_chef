@@ -1,0 +1,25 @@
+import React, { useState } from 'react';
+
+export function usePantryErrors() {
+  const [errors, setErrors] = useState<{
+    fetch?: string;
+    add?: string;
+    update?: string;
+    delete?: string;
+    receipt?: string;
+  }>({});
+
+  const clearError = (type: keyof typeof errors) => {
+    setErrors(prev => ({ ...prev, [type]: undefined }));
+  };
+
+  const handleError = (error: unknown, type: keyof typeof errors) => {
+    const message = error instanceof Error ? error.message : 'An error occurred';
+    setErrors(prev => ({ ...prev, [type]: message }));
+    
+    // Auto-clear after 5 seconds
+    setTimeout(() => clearError(type), 5000);
+  };
+
+  return { errors, handleError, clearError };
+}

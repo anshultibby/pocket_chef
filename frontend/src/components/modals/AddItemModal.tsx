@@ -1,59 +1,63 @@
-import { FormInput } from '../shared/FormInput';
-import { AddItemModalProps } from '@/types/pantry';
-import { useItemForm } from '@/hooks/useItemForm';
-import { PantryItemCreate } from '@/types';
 import { useState } from 'react';
-
-const SUGGESTED_UNITS = [
-  'grams',
-  'milliliters',
-  'units',
-  'pieces',
-  'cups',
-  'tablespoons',
-  'teaspoons',
-  'ounces',
-  'pounds',
-  'pinch'
-];
-
-const SUGGESTED_CATEGORIES = [
-  'Produce',
-  'Meat & Seafood',
-  'Dairy & Eggs',
-  'Pantry Staples',
-  'Snacks',
-  'Beverages',
-  'Frozen Foods',
-  'Condiments',
-  'Baking',
-  'Other'
-];
+import { useForm, FormProvider } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { pantryItemCreateSchema} from '@/schemas/pantry';
+import { PantryItemCreate, PantryItemUpdate } from '@/types';
+import { FormField } from '@/components/forms/FormField';
+import { SUGGESTED_UNITS, SUGGESTED_CATEGORIES } from '@/constants';
+import { AddItemModalProps } from '@/types/pantry';
+import { usePantryStore } from '@/stores/pantryStore';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 
 export default function AddItemModal({ 
+  onClose, 
+  isEditing = false, 
   initialValues, 
-  onAdd, 
-  onClose,
-  isEditing = false 
+  itemId,
+  onAdd 
 }: AddItemModalProps) {
-  const handleSubmit = async (values: PantryItemCreate) => {
-    await Promise.resolve(onAdd(values));
-  };
-
-  const { 
-    values, 
-    handleChange, 
-    handleSubmit: submitForm, 
-    isSubmitting, 
-    errors 
-  } = useItemForm({ 
-    initialValues,
-    onSubmit: handleSubmit,
-    onClose 
-  });
-
+  const { addItem, updateItem } = usePantryStore();
+  const { handleError } = useErrorHandler();
   const [showNutrition, setShowNutrition] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
+
+  const methods = useForm<PantryItemCreate>({
+    resolver: zodResolver(pantryItemCreateSchema),
+    defaultValues: initialValues || {
+      data: {
+        name: '',
+        quantity: 1,
+        unit: '',
+        category: ''
+      },
+      nutrition: {}
+    }
+  });
+
+  const { handleSubmit, formState: { isSubmitting } } = methods;
+
+  const onSubmit = async (values: PantryItemCreate) => {
+    try {
+      if (onAdd) {
+        onAdd(values);
+        onClose();
+        return;
+      }
+
+      if (isEditing && itemId) {
+        const updates: PantryItemUpdate = {
+          data: values.data,
+          nutrition: values.nutrition
+        };
+        await updateItem(itemId, updates);
+      } else {
+        await addItem(values);
+      }
+      onClose();
+    } catch (error) {
+      handleError(error);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
@@ -61,47 +65,41 @@ export default function AddItemModal({
         <h2 className="text-xl font-semibold mb-4">
           {isEditing ? 'Edit Item' : 'Add New Item'}
         </h2>
-        <form onSubmit={submitForm}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormInput
-              label="Name"
-              value={values.data.name}
-              onChange={(e) => handleChange('name', e.target.value)}
-              error={errors['name']}
-              required
-              placeholder="Common name (e.g., bread)"
-            />
-
-            <FormInput
-              label="Original Name"
-              value={values.data.original_name || ''}
-              onChange={(e) => handleChange('original_name', e.target.value)}
-              error={errors['original_name']}
-              placeholder="As scanned/entered (optional)"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 mt-4">
-            <FormInput
-              label="Quantity"
-              type="number"
-              value={values.data.quantity}
-              onChange={(e) => handleChange('quantity', Number(e.target.value))}
-              error={errors['quantity']}
-              min="0"
-              step="0.1"
-            />
-            
-            <div>
-              <label className="text-sm text-gray-400">Unit</label>
-              <input
-                list="unit-suggestions"
-                type="text"
-                value={values.data.unit}
-                onChange={(e) => handleChange('unit', e.target.value)}
-                className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
-                placeholder="Enter or select a unit"
+        
+        <FormProvider {...methods}>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                name="data.name"
+                label="Name"
                 required
+                placeholder="Common name (e.g., bread)"
+              />
+              
+              <FormField
+                name="data.original_name"
+                label="Original Name"
+                placeholder="As scanned/entered (optional)"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                name="data.quantity"
+                label="Quantity"
+                type="number"
+                min="0"
+                step="0.1"
+                required
+              />
+              
+              <FormField
+                name="data.unit"
+                label="Unit"
+                required
+                placeholder="Enter or select a unit"
+                className="datalist-input"
+                list="unit-suggestions"
               />
               <datalist id="unit-suggestions">
                 {SUGGESTED_UNITS.map(unit => (
@@ -109,161 +107,131 @@ export default function AddItemModal({
                 ))}
               </datalist>
             </div>
-          </div>
 
-          <div className="mt-4">
-            <div>
-              <label className="text-sm text-gray-400">Category</label>
-              <input
-                list="category-suggestions"
-                type="text"
-                value={values.data.category}
-                onChange={(e) => handleChange('category', e.target.value)}
-                className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
-                placeholder="Select or enter category"
-              />
-              <datalist id="category-suggestions">
-                {SUGGESTED_CATEGORIES.map(cat => (
-                  <option key={cat} value={cat} />
-                ))}
-              </datalist>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormInput
-              label="Price"
-              error={errors.price}
-              type="number"
-              value={values.data.price?.toString() ?? ''}
-              onChange={(e) => handleChange('price', e.target.value ? Number(e.target.value) : null)}
-              min="0"
-              step="0.01"
-              placeholder="Enter price (optional)"
+            <FormField
+              name="data.category"
+              label="Category"
+              placeholder="Select or enter category"
+              list="category-suggestions"
             />
+            <datalist id="category-suggestions">
+              {SUGGESTED_CATEGORIES.map(cat => (
+                <option key={cat} value={cat} />
+              ))}
+            </datalist>
 
-            <div>
-              <label className="text-sm text-gray-400">Expiry Date</label>
-              <input
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                name="data.price"
+                label="Price"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="Enter price (optional)"
+              />
+
+              <FormField
+                name="data.expiry_date"
+                label="Expiry Date"
                 type="date"
-                value={values.data.expiry_date ? new Date(values.data.expiry_date).toISOString().split('T')[0] : ''}
-                onChange={(e) => handleChange('expiry_date', e.target.value || null)}
-                className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
               />
             </div>
-          </div>
 
-          <div className="border-t border-gray-700 pt-4 mt-4">
-            <button
-              type="button"
-              onClick={() => setShowNutrition(!showNutrition)}
-              className="text-blue-400 hover:text-blue-300 mb-3"
-            >
-              {showNutrition ? 'Hide Nutrition' : 'Nutrition'}
-            </button>
-
-            {showNutrition && (
-              <div className="space-y-4">
-                <div className="flex flex-col gap-2">
-                  <p className="text-sm text-gray-400">
-                    Note: Nutrition information will be automatically enriched if left empty
-                  </p>
-                  <p className="text-sm text-gray-400">
-                    All values below are per {values?.nutrition?.standard_unit || '100 grams'}
-                  </p>
+            {/* Nutrition Section */}
+            <div className="border-t border-gray-700 pt-4">
+              <button
+                type="button"
+                onClick={() => setShowNutrition(!showNutrition)}
+                className="text-blue-400 hover:text-blue-300 mb-3"
+              >
+                {showNutrition ? 'Hide Nutrition' : 'Nutrition'}
+              </button>
+              
+              {showNutrition && (
+                <div className="space-y-4">
+                  <div className="flex flex-col gap-2">
+                    <p className="text-sm text-gray-400">
+                      Note: Nutrition information will be automatically enriched if left empty
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      name="nutrition.calories"
+                      label="Calories"
+                      type="number"
+                      min="0"
+                      step="1"
+                    />
+                    <FormField
+                      name="nutrition.protein"
+                      label="Protein"
+                      type="number"
+                      min="0"
+                      step="0.1"
+                    />
+                    <FormField
+                      name="nutrition.carbs"
+                      label="Carbs"
+                      type="number"
+                      min="0"
+                      step="0.1"
+                    />
+                    <FormField
+                      name="nutrition.fat"
+                      label="Fat"
+                      type="number"
+                      min="0"
+                      step="0.1"
+                    />
+                    <FormField
+                      name="nutrition.fiber"
+                      label="Fiber"
+                      type="number"
+                      min="0"
+                      step="0.1"
+                    />
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <FormInput
-                    label="Calories"
-                    type="number"
-                    value={values.nutrition.calories ?? ''}
-                    onChange={(e) => handleChange('calories', e.target.value ? Number(e.target.value) : 0, 'nutrition')}
-                    min="0"
-                    step="1"
-                  />
-                  <FormInput
-                    label="Protein"
-                    type="number"
-                    value={values.nutrition.protein ?? ''}
-                    onChange={(e) => handleChange('protein', e.target.value ? Number(e.target.value) : 0, 'nutrition')}
-                    min="0"
-                    step="0.1"
-                  />
-                  <FormInput
-                    label="Carbs"
-                    type="number"
-                    value={values.nutrition.carbs ?? ''}
-                    onChange={(e) => handleChange('carbs', e.target.value ? Number(e.target.value) : 0, 'nutrition')}
-                    min="0"
-                    step="0.1"
-                  />
-                  <FormInput
-                    label="Fat"
-                    type="number"
-                    value={values.nutrition.fat ?? ''}
-                    onChange={(e) => handleChange('fat', e.target.value ? Number(e.target.value) : 0, 'nutrition')}
-                    min="0"
-                    step="0.1"
-                  />
-                  <FormInput
-                    label="Fiber"
-                    type="number"
-                    value={values.nutrition.fiber ?? ''}
-                    onChange={(e) => handleChange('fiber', e.target.value ? Number(e.target.value) : 0, 'nutrition')}
-                    min="0"
-                    step="0.1"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
 
-          <div className="border-t border-gray-700 pt-4 mt-4">
-            <button
-              type="button"
-              onClick={() => setShowNotes(!showNotes)}
-              className="text-blue-400 hover:text-blue-300 mb-3"
-            >
-              {showNotes ? 'Hide Notes' : 'Notes'}
-            </button>
+            {/* Notes Section */}
+            <div className="border-t border-gray-700 pt-4">
+              <button
+                type="button"
+                onClick={() => setShowNotes(!showNotes)}
+                className="text-blue-400 hover:text-blue-300 mb-3"
+              >
+                {showNotes ? 'Hide Notes' : 'Notes'}
+              </button>
 
-            {showNotes && (
-              <div>
-                <textarea
-                  value={values.data.notes || ''}
-                  onChange={(e) => handleChange('notes', e.target.value)}
-                  className="w-full bg-gray-700 rounded-lg px-3 py-2 focus:ring-2 ring-blue-500 focus:outline-none"
-                  rows={3}
+              {showNotes && (
+                <FormField
+                  name="data.notes"
+                  label="Notes"
                   placeholder="Add any notes about this item..."
                 />
-                {errors['notes'] && (
-                  <span className="text-red-400 text-sm mt-1">{errors['notes']}</span>
-                )}
-              </div>
-            )}
-          </div>
+              )}
+            </div>
 
-          {errors.form && (
-            <div className="text-red-400 text-sm mt-4">{errors.form}</div>
-          )}
-
-          <div className="flex justify-end gap-3 mt-6">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-400 disabled:opacity-50"
-            >
-              {isSubmitting ? 'Saving...' : (isEditing ? 'Save Changes' : 'Add Item')}
-            </button>
-          </div>
-        </form>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-400 disabled:opacity-50"
+              >
+                {isSubmitting ? 'Saving...' : (isEditing ? 'Save Changes' : 'Add Item')}
+              </button>
+            </div>
+          </form>
+        </FormProvider>
       </div>
     </div>
   );

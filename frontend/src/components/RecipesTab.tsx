@@ -1,11 +1,7 @@
-import { useState } from 'react';
 import { Recipe, PantryItem } from '@/types';
-import { recipeApi } from '@/lib/api';
 import RecipeCardPreview from './recipes/RecipeCardPreview';
 import RecipeDetailModal from './recipes/RecipeDetailModal';
 import RecipeUseModal from './recipes/use-recipe/RecipeUseModal';
-import { toast } from 'react-hot-toast';
-import { usePantryStore } from '@/stores/pantryStore';
 import { useRecipeStore } from '@/stores/recipeStore';
 
 interface RecipesTabProps {
@@ -16,64 +12,27 @@ interface RecipesTabProps {
 export default function RecipesTab({
   pantryItems,
 }: RecipesTabProps) {
-  const { fetchItems } = usePantryStore();
   const { 
     recipes,
-    preferences,
     isLoading,
     isGenerating,
     error,
+    selectedRecipe,
+    usingRecipe,
+    setSelectedRecipe,
     setRecipes,
-    setIsLoading,
-    setIsGenerating,
-    setError,
+    initializeUseRecipe,
+    closeUseRecipe,
+    setUsingRecipe
   } = useRecipeStore();
-  
-  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
-  const [usingRecipe, setUsingRecipe] = useState<Recipe | null>(null);
-
-  const handleGenerateRecipes = async () => {
-    setIsLoading(true);
-    setIsGenerating(true);
-    setError(null);
-
-    try {
-      const newRecipes = await recipeApi.generate(preferences);
-      setRecipes(newRecipes);
-    } catch (err) {
-      handleError(err);
-    } finally {
-      setIsLoading(false);
-      setIsGenerating(false);
-    }
-  };
-
-  const handleError = (err: unknown) => {
-    let message = 'An error occurred';
-    if (err instanceof Error) message = err.message;
-    else if (typeof err === 'string') message = err;
-    setError(message);
-    console.error('Recipe error:', err);
-    setIsGenerating(false);
-    setIsLoading(false);
-  };
 
   const handleUseRecipe = async (ingredientsUsed: Record<string, number>) => {
-    if (!usingRecipe) return;
+    if (!usingRecipe?.recipe) return;
+    await initializeUseRecipe(usingRecipe.recipe, pantryItems);
+  };
 
-    try {
-      await recipeApi.use(usingRecipe.id, {
-        servings_made: usingRecipe.data.servings,
-        ingredients_used: ingredientsUsed,
-      });
-
-      await fetchItems();
-      setUsingRecipe(null);
-      setSelectedRecipe(null);
-    } catch (error) {
-      console.error('Error using recipe:', error);
-      toast.error('Failed to use recipe');
-    }
+  const handleCloseUseRecipe = () => {
+    closeUseRecipe();
   };
 
   return (
@@ -130,9 +89,9 @@ export default function RecipesTab({
 
       {usingRecipe && (
         <RecipeUseModal
-          recipe={usingRecipe}
+          recipe={usingRecipe.recipe!}
           pantryItems={pantryItems}
-          onClose={() => setUsingRecipe(null)}
+          onClose={handleCloseUseRecipe}
           onConfirmUse={handleUseRecipe}
         />
       )}

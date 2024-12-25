@@ -1,7 +1,7 @@
-import { PantryItem, PantryItemCreate, PantryItemUpdate } from '@/types';
+import { PantryItem, PantryItemUpdate, PantryItemCreate } from '@/types';
 
 export interface PantryGridProps {
-  groupedItems: Record<string, PantryItem[]>;
+  items: PantryItem[];
   onSelectItem: (item: PantryItem) => void;
   onDeleteItem: (id: string) => void;
 }
@@ -25,10 +25,11 @@ export interface CategoryFiltersProps {
 }
 
 export interface AddItemModalProps {
-  initialValues?: PantryItemCreate;
-  onAdd: (item: PantryItemCreate) => void | Promise<void>;
   onClose: () => void;
   isEditing?: boolean;
+  initialValues?: PantryItemCreate;
+  itemId?: string;
+  onAdd?: (item: PantryItemCreate) => void;
 }
 
 export interface ItemEditModalProps {

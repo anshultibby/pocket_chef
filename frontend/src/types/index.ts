@@ -138,3 +138,11 @@ export interface RecipeUsage extends RecipeUsageCreate {
   user_id: string;
   used_at: string;
 }
+
+export interface PantryLoadingState {
+  isFetching: boolean;
+  isAdding: boolean;
+  isUpdating: boolean;
+  isDeleting: boolean;
+  isProcessingReceipt: boolean;
+}

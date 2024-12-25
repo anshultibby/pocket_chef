@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { PantryItem, PantryItemCreate } from '@/types';
 import { normalizeString } from '@/utils/pantry';
 import { pantryApi } from '@/lib/api';
+import { PantryItemFormValues } from '@/schemas/pantry';
 
 type DuplicateItem = {
   existing: PantryItem;
@@ -12,8 +13,8 @@ type DuplicateResolutionAction = 'merge' | 'mergeEdit' | 'create';
 
 export function useDuplicateHandler(
   pantryItems: PantryItem[],
-  onAddItems: (items: PantryItem[]) => void,
-  onUpdateItem: (id: string, updates: Partial<PantryItem>) => void,
+  onAddItems: (items: PantryItemCreate[]) => Promise<void>,
+  onUpdateItem: (id: string, updates: Partial<PantryItemCreate>) => Promise<void>
 ) {
   const [duplicateItem, setDuplicateItem] = useState<DuplicateItem | null>(null);
   const [pendingItems, setPendingItems] = useState<PantryItemCreate[]>([]);
@@ -65,28 +66,28 @@ export function useDuplicateHandler(
     try {
       switch (action) {
         case 'mergeEdit':
-          const mergedEditItem = {
-            ...duplicateItem.existing,
+          const mergedEditData: PantryItemCreate = {
             data: {
               ...duplicateItem.existing.data,
               quantity: (duplicateItem.existing.data.quantity || 0) + 
                        (duplicateItem.new.data.quantity || 0)
-            }
+            },
+            nutrition: duplicateItem.existing.nutrition
           };
-          await onUpdateItem(duplicateItem.existing.id, mergedEditItem);
+          await onUpdateItem(duplicateItem.existing.id, mergedEditData);
           setIsEditing(true);
-          return mergedEditItem;
+          return mergedEditData;
 
         case 'merge':
-          const mergedItem = {
-            ...duplicateItem.existing,
+          const mergedData: PantryItemCreate = {
             data: {
               ...duplicateItem.existing.data,
               quantity: (duplicateItem.existing.data.quantity || 0) + 
                        (duplicateItem.new.data.quantity || 0)
-            }
+            },
+            nutrition: duplicateItem.existing.nutrition
           };
-          await onUpdateItem(duplicateItem.existing.id, mergedItem);
+          await onUpdateItem(duplicateItem.existing.id, mergedData);
           
           // Process remaining items
           const remainingItemsAfterMerge = pendingItems.slice(1);

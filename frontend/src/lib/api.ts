@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { fetchApi } from './fetch';
 import type { Recipe, RecipePreferences, PantryItemCreate, PantryItem, PantryItemUpdate, RecipeUsageCreate, RecipeUsage } from '@/types';
+import { PantryItemFormValues } from '@/schemas/pantry';
 
 // Helper function to get auth token
 const getAuthToken = async () => {
@@ -99,7 +100,31 @@ export const pantryApi = {
         body: formData
       });
     },
-  }
+  },
+
+  async createItem(item: PantryItemCreate): Promise<PantryItem> {
+    const token = await getAuthToken();
+    return fetchApi<PantryItem>('/pantry/items', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(item)
+    });
+  },
+
+  async updateItem(id: string, updates: PantryItemUpdate): Promise<PantryItem> {
+    const token = await getAuthToken();
+    return fetchApi<PantryItem>(`/pantry/items/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(updates)
+    });
+  },
 };
 
 export const recipeApi = {

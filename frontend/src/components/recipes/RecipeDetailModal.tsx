@@ -1,24 +1,29 @@
 import { Recipe } from '@/types';
 import { Dialog } from '@headlessui/react';
 import { useRecipeStore } from '@/stores/recipeStore';
+import { usePantryStore } from '@/stores/pantryStore';
 
 interface RecipeDetailModalProps {
   recipe: Recipe;
   onClose: () => void;
-  onUse: () => void;
   onRemove: () => void;
+  onUse: () => void;
 }
 
-export default function RecipeDetailModal({ recipe, onClose, onUse }: RecipeDetailModalProps) {
-  const { setRecipes } = useRecipeStore();
-
-  const handleRemove = () => {
-    setRecipes([]); // Clear recipes
-    onClose();
-  };
+export default function RecipeDetailModal({ 
+  recipe,
+  onClose,
+  onRemove,
+  onUse 
+}: RecipeDetailModalProps) {
+  const { setSelectedRecipe } = useRecipeStore();
+  const { items: pantryItems } = usePantryStore();
 
   return (
-    <Dialog open={true} onClose={onClose} className="relative z-50">
+    <Dialog 
+      open={true} 
+      onClose={onClose}
+    >
       <div className="fixed inset-0 bg-black/70" aria-hidden="true" />
       
       <div className="fixed inset-0 overflow-y-auto">
@@ -29,7 +34,7 @@ export default function RecipeDetailModal({ recipe, onClose, onUse }: RecipeDeta
                 {recipe.data.name}
               </Dialog.Title>
               <button 
-                onClick={onClose}
+                onClick={() => setSelectedRecipe(null)}
                 className="text-gray-400 hover:text-white"
               >
                 ✕
@@ -84,7 +89,7 @@ export default function RecipeDetailModal({ recipe, onClose, onUse }: RecipeDeta
 
               <div className="flex justify-end gap-4 pt-4">
                 <button
-                  onClick={handleRemove}
+                  onClick={onRemove}
                   className="px-4 py-2 text-sm text-gray-400 hover:text-white"
                 >
                   Clear Recipe
