@@ -6,6 +6,7 @@ import { AuthGuard } from '@/components/AuthGuard';
 import { useAuth } from '@/lib/auth-context';
 import RecipesTab from '@/components/RecipesTab';
 import { usePantryStore } from '@/stores/pantryStore';
+import ElfModal from '@/components/modals/ElfModal';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +15,7 @@ export default function Home() {
   const { items, isLoading, error, fetchItems } = usePantryStore();
   const { signOut } = useAuth();
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const [showElfModal, setShowElfModal] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -53,38 +55,48 @@ export default function Home() {
                 <p className="text-gray-400">Your magical cooking companion</p>
               </div>
               
-              <div className="relative">
+              <div className="flex items-center space-x-4">
                 <button
-                  id="account-button"
-                  onClick={() => setIsAccountMenuOpen(!isAccountMenuOpen)}
-                  className="flex items-center space-x-2 text-gray-400 hover:text-white"
+                  onClick={() => setShowElfModal(true)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                 >
-                  <span>👤</span>
-                  <span>Account</span>
+                  <span>🧝‍♂️</span>
+                  <span>Summon Elf</span>
                 </button>
                 
-                {isAccountMenuOpen && (
-                  <div 
-                    id="account-menu"
-                    className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-lg py-2 z-50"
+                <div className="relative">
+                  <button
+                    id="account-button"
+                    onClick={() => setIsAccountMenuOpen(!isAccountMenuOpen)}
+                    className="flex items-center space-x-2 text-gray-400 hover:text-white"
                   >
-                    <a 
-                      href="/profile" 
-                      className="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white"
+                    <span>👤</span>
+                    <span>Account</span>
+                  </button>
+                  
+                  {isAccountMenuOpen && (
+                    <div 
+                      id="account-menu"
+                      className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-lg py-2 z-50"
                     >
-                      Profile Settings
-                    </a>
-
-                    <div className="border-t border-gray-700">
-                      <button 
-                        onClick={handleSignOut}
-                        className="block w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-700"
+                      <a 
+                        href="/profile" 
+                        className="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white"
                       >
-                        Sign Out
-                      </button>
+                        Profile Settings
+                      </a>
+
+                      <div className="border-t border-gray-700">
+                        <button 
+                          onClick={handleSignOut}
+                          className="block w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-700"
+                        >
+                          Sign Out
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -137,6 +149,13 @@ export default function Home() {
               {error}
             </div>
           </div>
+        )}
+
+        {showElfModal && (
+          <ElfModal
+            onClose={() => setShowElfModal(false)}
+            pantryItemsCount={items.length}
+          />
         )}
       </main>
     </AuthGuard>

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Recipe, PantryItem } from '@/types';
 import { recipeApi } from '@/lib/api';
-import RecipeGenerationControls from './recipes/RecipeGenerationControls';
 import RecipeCardPreview from './recipes/RecipeCardPreview';
 import RecipeDetailModal from './recipes/RecipeDetailModal';
 import RecipeUseModal from './recipes/use-recipe/RecipeUseModal';
@@ -79,13 +78,6 @@ export default function RecipesTab({
 
   return (
     <div className="space-y-8">
-      <RecipeGenerationControls
-        onGenerate={handleGenerateRecipes}
-        isGenerating={isGenerating}
-        isLoading={isLoading}
-        pantryItemsCount={pantryItems.length}
-      />
-
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
           {error}

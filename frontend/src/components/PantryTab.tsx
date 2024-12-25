@@ -17,13 +17,16 @@ import { ERROR_MESSAGES } from '@/constants/messages';
 import { DuplicateItemModal } from './modals/DuplicateItemModal';
 import { useDuplicateHandler } from '@/hooks/useDuplicateHandler';
 import { usePantryStore } from '@/stores/pantryStore';
+import { CATEGORIES, getCategoryLabel } from '@/constants/categories';
 
 export default function PantryTab() {
   const { 
     items: pantryItems, 
     isLoading, 
-    addItems, 
-    updateItem, 
+    addItems,
+    setItems,
+    updateItem,
+    fetchItems,
   } = usePantryStore();
 
   const { error, handleError, clearError } = useErrorHandler();
@@ -87,18 +90,23 @@ export default function PantryTab() {
     }
 
     try {
+      // First perform the backend operation
       await pantryApi.clearPantry();
-      addItems([]);
+      
+      // Then clear UI state
+      setItems([]);
       setSelectedCategories([]);
       setSearchTerm('');
       setSelectedItem(null);
       clearError();
-      
+
       if (clearUpload) {
         clearUpload();
       }
     } catch (err) {
       handleError(err);
+      // Refresh items to ensure UI is in sync with backend
+      await fetchItems();
     }
   };
 
@@ -114,12 +122,13 @@ export default function PantryTab() {
   const groupedItems = pantryItems
     .filter(item => {
       const matchesSearch = item.data.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const itemCategory = (item.data.category || CATEGORIES.OTHER).toLowerCase();
       const matchesCategory = selectedCategories.length === 0 || 
-        selectedCategories.includes(item.data.category || 'Other');
+        selectedCategories.includes(itemCategory);
       return matchesSearch && matchesCategory;
     })
     .reduce((groups, item) => {
-      const category = item.data.category || 'Other';
+      const category = getCategoryLabel(item.data.category);
       if (!groups[category]) groups[category] = [];
       groups[category].push(item);
       return groups;

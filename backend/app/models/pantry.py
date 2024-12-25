@@ -65,7 +65,10 @@ class PantryItemData(CustomBaseModel):
         description="name of the ingredient as it appears on the receipt or user input"
     )
     quantity: Optional[float] = Field(
-        default=0, description="quantity of the ingredient"
+        default=0,
+        description="quantity of the ingredient",
+        ge=0,
+        multiple_of=0.01,  # Ensures 2 decimal place precision
     )
     unit: str = Field(
         description="unit of the ingredient, try use standard units, \

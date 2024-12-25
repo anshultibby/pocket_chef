@@ -32,9 +32,24 @@ export const usePantryStore = create<PantryStore>((set, get) => ({
     items: [...state.items, ...items] 
   })),
   updateItem: (id, updates) => set((state) => ({
-    items: state.items.map(item => 
-      item.id === id ? { ...item, data: { ...item.data, ...updates.data }, nutrition: { ...item.nutrition, ...updates.nutrition } } : item
-    )
+    items: state.items.map(item => {
+      if (item.id === id) {
+        // Round quantity to 2 decimal places if it exists in updates
+        const roundedData = updates.data?.quantity 
+          ? { 
+              ...updates.data, 
+              quantity: roundQuantity(updates.data.quantity)
+            }
+          : updates.data;
+        
+        return { 
+          ...item, 
+          data: { ...item.data, ...roundedData }, 
+          nutrition: { ...item.nutrition, ...updates.nutrition } 
+        };
+      }
+      return item;
+    })
   })),
   deleteItem: async (id: string) => {
     set({ isLoading: true, error: null });
@@ -70,3 +85,7 @@ export const usePantryStore = create<PantryStore>((set, get) => ({
 
   reset: () => set({ items: [], isLoading: false, error: null }),
 }));
+
+export const roundQuantity = (value: number): number => {
+  return Math.round(value * 100) / 100;
+};

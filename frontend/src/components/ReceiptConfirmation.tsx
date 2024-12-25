@@ -19,6 +19,7 @@ export default function ReceiptConfirmation({
   const [editableItems, setEditableItems] = useState<PantryItemCreate[]>(items);
   const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
 
   const handleItemUpdate = (index: number, updatedItem: PantryItemCreate) => {
     setEditableItems(prev => prev.map((item, i) => 
@@ -36,8 +37,13 @@ export default function ReceiptConfirmation({
     setEditableItems(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleConfirm = () => {
-    onConfirm(editableItems);
+  const handleConfirm = async () => {
+    setIsConfirming(true);
+    try {
+      await onConfirm(editableItems);
+    } finally {
+      setIsConfirming(false);
+    }
   };
 
   return (
@@ -108,15 +114,24 @@ export default function ReceiptConfirmation({
           <div className="flex justify-end space-x-4 mt-6 pt-4 border-t border-gray-700">
             <button
               onClick={onCancel}
-              className="px-4 py-2 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600"
+              disabled={isConfirming}
+              className={`px-4 py-2 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 disabled:opacity-50`}
             >
               Cancel
             </button>
             <button
               onClick={handleConfirm}
-              className="px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-400"
+              disabled={isConfirming}
+              className={`px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-400 disabled:opacity-50 flex items-center gap-2`}
             >
-              Confirm Items ({editableItems.length})
+              {isConfirming ? (
+                <>
+                  <span className="animate-spin">⟳</span>
+                  Confirming...
+                </>
+              ) : (
+                `Confirm Items (${editableItems.length})`
+              )}
             </button>
           </div>
         </div>

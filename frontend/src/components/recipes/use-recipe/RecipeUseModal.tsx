@@ -8,6 +8,7 @@ import {RecipeConfirmStep} from './RecipeConfirmStep';
 import AddItemModal from '@/components/modals/AddItemModal';
 import { RecipeUseModalProps, IngredientUpdate } from './types';
 import { PantryItem, PantryItemCreate } from '@/types';
+import { roundQuantity } from '@/stores/pantryStore';
 
 export default function RecipeUseModal({ 
   recipe, 
@@ -28,6 +29,7 @@ export default function RecipeUseModal({
 
   const getFinalQuantities = useCallback(() => {
     const finalQuantities = new Map<string, IngredientUpdate>();
+    const scalingFactor = servings / recipe.data.servings;
     
     recipe.data.ingredients.forEach((ing) => {
       const matchingPantryItem = pantryItems.find(
@@ -36,11 +38,13 @@ export default function RecipeUseModal({
 
       if (matchingPantryItem) {
         const matches = matchingPantryItem.data.unit === ing.unit;
+        const scaledQuantity = ing.quantity * scalingFactor;
+        
         finalQuantities.set(matchingPantryItem.id, {
           ...matchingPantryItem,
           initial: matchingPantryItem.data.quantity ?? 0,
           final: matches 
-            ? Math.max(0, (matchingPantryItem.data.quantity ?? 0) - ing.quantity) 
+            ? Math.max(0, (matchingPantryItem.data.quantity ?? 0) - scaledQuantity) 
             : matchingPantryItem.data.quantity ?? 0,
           matches
         });
@@ -48,7 +52,7 @@ export default function RecipeUseModal({
     });
     
     return finalQuantities;
-  }, [recipe, pantryItems]);
+  }, [recipe, pantryItems, servings]);
 
   const [finalQuantities, setFinalQuantities] = useState<Map<string, IngredientUpdate>>(
     () => getFinalQuantities()
@@ -62,13 +66,39 @@ export default function RecipeUseModal({
     if (!editingItem) return;
     
     try {
-      await updateItem(editingItem.id, {
-        data: values.data,
-        nutrition: values.nutrition
-      });
+      // Update finalQuantities with the edited item
+      const updatedQuantities = new Map(finalQuantities);
+      const currentItem = updatedQuantities.get(editingItem.id);
+      
+      if (currentItem) {
+        const recipeIngredient = recipe.data.ingredients.find(
+          ing => ing.name.toLowerCase() === values.data.name.toLowerCase()
+        );
+        
+        // If units match exactly, use standard logic
+        const exactMatch = recipeIngredient ? values.data.unit === recipeIngredient.unit : false;
+        
+        // If units don't match but quantity was edited, assume user did the conversion
+        const userConverted = !exactMatch && 
+          values.data.quantity !== currentItem.data.quantity &&
+          values.data.unit === currentItem.data.unit;
+
+        const updatedItem = {
+          ...currentItem,
+          data: {
+            ...currentItem.data,
+            ...values.data,
+          },
+          nutrition: values.nutrition,
+          matches: exactMatch || userConverted,
+          initial: currentItem.data.quantity ?? 0,  // Keep original quantity as initial
+          final: values.data.quantity ?? 0         // New quantity as final
+        };
+
+        setFinalQuantities(new Map(updatedQuantities.set(editingItem.id, updatedItem)));
+      }
       
       setEditingItem(null);
-      setFinalQuantities(getFinalQuantities());
     } catch (error) {
       handleError(error);
     }
@@ -81,7 +111,7 @@ export default function RecipeUseModal({
         onConfirmUse(Object.fromEntries(
           Array.from(finalQuantities).map(([key, value]) => [
             key, 
-            value.initial - value.final
+            roundQuantity(value.initial - value.final)
           ])
         )),
         {

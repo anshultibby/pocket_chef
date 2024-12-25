@@ -105,7 +105,7 @@ class RecipeManager:
             if not pantry_item:
                 raise ValueError(f"Pantry item {item_id} not found")
 
-            new_quantity = pantry_item.data.quantity - quantity_used
+            new_quantity = round(pantry_item.data.quantity - quantity_used, 2)
             if new_quantity < 0:
                 raise ValueError(
                     f"Not enough quantity for item {pantry_item.data.name}"

@@ -7,7 +7,8 @@ export function RecipeConfirmStep({
   onBack,
   onConfirm,
   isConfirming,
-  onEditItem
+  onEditItem,
+  recipe
 }: RecipeConfirmStepProps) {
   return (
     <div className="space-y-6">
@@ -21,6 +22,7 @@ export function RecipeConfirmStep({
             key={id}
             id={id}
             item={item}
+            recipe={recipe}
             onEdit={(data) => onEditItem({ ...data, item: { ...data.item, id: '', user_id: '', created_at: '', updated_at: '' } as PantryItem })}
           />
         ))}
