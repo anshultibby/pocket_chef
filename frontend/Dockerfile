@@ -5,9 +5,8 @@ WORKDIR /app
 # Copy package files first
 COPY package*.json ./
 
-# Install dependencies including postcss and tailwind
+# Install dependencies
 RUN npm cache clean --force && \
-    npm install --no-cache postcss postcss-loader tailwindcss autoprefixer && \
     npm install --no-cache
 
 # Copy the rest of the application
