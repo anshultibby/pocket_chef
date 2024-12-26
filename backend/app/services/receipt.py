@@ -14,13 +14,22 @@ logger = logging.getLogger(__name__)
 class ReceiptParser:
     def __init__(self):
         self.claude_service = ClaudeService()
-        self.vision_client = vision.ImageAnnotatorClient()
+        self._vision_client = None  # Initialize as None
+
+    @property
+    def vision_client(self):
+        """Lazy initialization of vision client"""
+        if self._vision_client is None:
+            self._vision_client = vision.ImageAnnotatorClient()
+        return self._vision_client
 
     async def parse_receipt(
         self, file: UploadFile, user_id: UUID
     ) -> ListOfPantryItemsCreate:
         content = await file.read()
         image = vision.Image(content=content)
+
+        # Use the property to get the client
         response = self.vision_client.text_detection(image=image)
         texts = response.text_annotations
 
