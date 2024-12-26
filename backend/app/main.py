@@ -17,10 +17,8 @@ logger = logging.getLogger(__name__)
 # Store CORS origins in a variable
 CORS_ORIGINS = [
     "http://localhost:3000",
+    "https://kitchen-elf.vercel.app",
     "https://kitchen-elf.com",
-    "https://www.kitchen-elf.com",
-    "https://app.kitchen-elf.com",
-    "https://kitchen-elf.vercel.app/",
 ]
 
 app = FastAPI(
@@ -29,10 +27,11 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Configure CORS
+# Configure CORS with more permissive settings for Vercel preview deployments
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
+    allow_origin_regex=r"https://.*\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
