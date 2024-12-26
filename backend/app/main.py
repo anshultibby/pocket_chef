@@ -14,12 +14,6 @@ from .services.auth import get_current_user
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Get environment variables with defaults
-HOST = os.getenv("HOST", "0.0.0.0")
-PORT = int(os.getenv("PORT", "8000"))
-
-logger.info(f"Starting server with PORT={PORT} and HOST={HOST}")
-
 # Store CORS origins in a variable
 CORS_ORIGINS = [
     "http://localhost:3000",
@@ -49,13 +43,17 @@ app.include_router(pantry.router)
 app.include_router(recipes.router)
 
 
-@app.get("/health", tags=["health"])
+# Add a simple root endpoint for testing
+@app.get("/")
+async def root():
+    return {"status": "ok"}
+
+
+@app.get("/health")
 async def health_check():
     return {
         "status": "healthy",
-        "cors_origins": CORS_ORIGINS,
-        "host": HOST,
-        "port": PORT,
+        "port": os.getenv("PORT"),
     }
 
 
@@ -94,4 +92,9 @@ async def startup_event():
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("app.main:app", host=HOST, port=PORT, reload=True, log_level="info")
+    uvicorn.run(
+        "app.main:app",
+        host="0.0.0.0",  # Always use 0.0.0.0 for Railway
+        port=int(os.getenv("PORT", "8000")),
+        reload=True,
+    )
