@@ -56,6 +56,18 @@ async def health_check():
     }
 
 
+@app.on_event("startup")
+async def startup_event():
+    # Log all environment variables (excluding sensitive ones)
+    logger.info(f"PORT: {os.getenv('PORT')}")
+    logger.info(f"HOST: {os.getenv('HOST')}")
+    logger.info(f"SUPABASE_URL set: {bool(os.getenv('SUPABASE_URL'))}")
+    logger.info(f"SUPABASE_KEY set: {bool(os.getenv('SUPABASE_KEY'))}")
+    logger.info(
+        f"GOOGLE_APPLICATION_CREDENTIALS set: {bool(os.getenv('GOOGLE_APPLICATION_CREDENTIALS'))}"
+    )
+
+
 if __name__ == "__main__":
     import uvicorn
 

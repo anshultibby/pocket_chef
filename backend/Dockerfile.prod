@@ -15,7 +15,7 @@ COPY . .
 # Script to decode Google credentials at startup
 RUN echo '#!/bin/sh\n\
     echo "$GOOGLE_APPLICATION_CREDENTIALS_BASE64" | base64 -d > /app/gcp-key.json\n\
-    uvicorn app.main:app --host 0.0.0.0 --port "$PORT"' > /app/entrypoint.sh && \
-    chmod +x /app/entrypoint.sh
+    exec "$@"' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
-ENTRYPOINT ["/bin/sh", "/app/entrypoint.sh"]
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
