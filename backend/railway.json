@@ -1,0 +1,7 @@
+{
+  "build": {
+    "builder": "dockerfile",
+    "dockerfile": "Dockerfile.prod",
+    "buildCommand": "cd backend"
+  }
+}
