@@ -62,7 +62,6 @@ async def health_check():
 @app.on_event("startup")
 async def startup_event():
     try:
-        # Log environment variables (excluding sensitive ones)
         logger.info(f"PORT: {os.getenv('PORT')}")
         logger.info(f"HOST: {os.getenv('HOST')}")
         logger.info(f"SUPABASE_URL set: {bool(os.getenv('SUPABASE_URL'))}")
@@ -75,6 +74,14 @@ async def startup_event():
             with open(gcp_creds_path, "r") as f:
                 creds_content = f.read()
                 logger.info(f"GCP creds file content length: {len(creds_content)}")
+                # Log file permissions
+                import stat
+
+                st = os.stat(gcp_creds_path)
+                logger.info(f"GCP creds file permissions: {oct(st.st_mode)}")
+                logger.info(
+                    f"GOOGLE_APPLICATION_CREDENTIALS env var: {os.getenv('GOOGLE_APPLICATION_CREDENTIALS')}"
+                )
         else:
             logger.error(f"GCP credentials file not found at {gcp_creds_path}")
 
