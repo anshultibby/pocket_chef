@@ -1,5 +1,6 @@
 import logging
 import os
+import traceback
 from uuid import UUID
 
 from fastapi import Depends, FastAPI, HTTPException, status
@@ -16,6 +17,8 @@ logger = logging.getLogger(__name__)
 # Get environment variables with defaults
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "8000"))
+
+logger.info(f"Starting server with PORT={PORT} and HOST={HOST}")
 
 # Store CORS origins in a variable
 CORS_ORIGINS = [
@@ -58,14 +61,27 @@ async def health_check():
 
 @app.on_event("startup")
 async def startup_event():
-    # Log all environment variables (excluding sensitive ones)
-    logger.info(f"PORT: {os.getenv('PORT')}")
-    logger.info(f"HOST: {os.getenv('HOST')}")
-    logger.info(f"SUPABASE_URL set: {bool(os.getenv('SUPABASE_URL'))}")
-    logger.info(f"SUPABASE_KEY set: {bool(os.getenv('SUPABASE_KEY'))}")
-    logger.info(
-        f"GOOGLE_APPLICATION_CREDENTIALS set: {bool(os.getenv('GOOGLE_APPLICATION_CREDENTIALS'))}"
-    )
+    try:
+        # Log environment variables (excluding sensitive ones)
+        logger.info(f"PORT: {os.getenv('PORT')}")
+        logger.info(f"HOST: {os.getenv('HOST')}")
+        logger.info(f"SUPABASE_URL set: {bool(os.getenv('SUPABASE_URL'))}")
+        logger.info(f"SUPABASE_KEY set: {bool(os.getenv('SUPABASE_KEY'))}")
+
+        # Check GCP credentials
+        gcp_creds_path = "/app/gcp-key.json"
+        if os.path.exists(gcp_creds_path):
+            logger.info(f"GCP credentials file exists at {gcp_creds_path}")
+            with open(gcp_creds_path, "r") as f:
+                creds_content = f.read()
+                logger.info(f"GCP creds file content length: {len(creds_content)}")
+        else:
+            logger.error(f"GCP credentials file not found at {gcp_creds_path}")
+
+    except Exception as e:
+        logger.error(f"Startup error: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        raise
 
 
 if __name__ == "__main__":
