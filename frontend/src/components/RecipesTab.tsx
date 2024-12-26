@@ -146,6 +146,7 @@ export default function RecipesTab({
           recipe={selectedRecipe}
           onClose={() => setSelectedRecipe(null)}
           onUse={() => setUsingRecipe(selectedRecipe)}
+          onRemove={() => setSelectedRecipe(null)}
         />
       )}
 
