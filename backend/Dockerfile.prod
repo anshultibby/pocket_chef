@@ -1,0 +1,21 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    libgl1-mesa-glx \
+    libglib2.0-0
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+# Script to decode Google credentials at startup
+RUN echo '#!/bin/sh\n\
+    echo "$GOOGLE_APPLICATION_CREDENTIALS_BASE64" | base64 -d > /app/gcp-key.json\n\
+    uvicorn app.main:app --host 0.0.0.0 --port "$PORT"' > /app/entrypoint.sh && \
+    chmod +x /app/entrypoint.sh
+
+ENTRYPOINT ["/bin/sh", "/app/entrypoint.sh"]

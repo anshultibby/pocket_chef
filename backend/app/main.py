@@ -20,15 +20,15 @@ PORT = int(os.getenv("PORT", "8000"))
 # Store CORS origins in a variable
 CORS_ORIGINS = [
     "http://localhost:3000",
-    "http://frontend:3000",
-    "http://127.0.0.1:3000",
-    f"http://frontend:{PORT}"
+    "https://kitchen-elf.com",
+    "https://www.kitchen-elf.com",
+    "https://app.kitchen-elf.com",
 ]
 
 app = FastAPI(
     title="Smart Kitchen API",
     description="API for managing pantry items and recipes",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 # Configure CORS
@@ -38,12 +38,13 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"]
+    expose_headers=["*"],
 )
 
 # Include routers
 app.include_router(pantry.router)
 app.include_router(recipes.router)
+
 
 @app.get("/health", tags=["health"])
 async def health_check():
@@ -51,15 +52,11 @@ async def health_check():
         "status": "healthy",
         "cors_origins": CORS_ORIGINS,
         "host": HOST,
-        "port": PORT
+        "port": PORT,
     }
+
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(
-        "app.main:app",
-        host=HOST,
-        port=PORT,
-        reload=True,
-        log_level="info"
-    )
+
+    uvicorn.run("app.main:app", host=HOST, port=PORT, reload=True, log_level="info")
