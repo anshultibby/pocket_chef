@@ -23,4 +23,5 @@ RUN echo '#!/bin/sh\n\
 ENV GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-key.json
 
 ENTRYPOINT ["/app/entrypoint.sh"]
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "${PORT}"]
+# Use shell form to allow environment variable expansion
+CMD uvicorn app.main:app --host 0.0.0.0 --port $PORT
