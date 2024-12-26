@@ -1,54 +1,60 @@
 import { ApiException } from '@/types/api';
 import { supabase } from './supabase';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
+if (!API_BASE_URL) {
+  throw new Error('NEXT_PUBLIC_API_URL is not defined');
+}
 
 export const fetchApi = async <T>(url: string, options: RequestInit = {}): Promise<T> => {
   try {
-    const fullUrl = `${API_BASE_URL}${url}`;
-    const response = await fetch(fullUrl, options);
+    // Get current session
+    const { data: { session } } = await supabase.auth.getSession();
     
-    if (response.status === 401) {
-      // Try to refresh the session
-      const { data: { session } } = await supabase.auth.refreshSession();
-      if (session) {
-        // Retry the original request with new token
-        options.headers = {
-          ...options.headers,
-          'Authorization': `Bearer ${session.access_token}`
-        };
-        return fetchApi<T>(url, options);
-      }
-      
+    if (!session?.access_token) {
       throw new ApiException({
         status: 401,
-        message: 'Authentication failed'
+        message: 'No active session'
+      });
+    }
+
+    // Add auth header
+    const headers = new Headers(options.headers);
+    headers.set('Authorization', `Bearer ${session.access_token}`);
+    
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+      ...options,
+      headers,
+      credentials: 'include'
+    });
+
+    if (response.status === 401) {
+      // Try to refresh the session
+      const { data: { session: newSession } } = await supabase.auth.refreshSession();
+      if (newSession?.access_token) {
+        headers.set('Authorization', `Bearer ${newSession.access_token}`);
+        return fetchApi<T>(url, options);
+      }
+      throw new ApiException({
+        status: 401,
+        message: 'Session expired'
       });
     }
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ 
-        detail: 'Network response was not ok' 
-      }));
-      
       throw new ApiException({
         status: response.status,
-        message: errorData.detail || `HTTP error! status: ${response.status}`,
-        details: errorData
+        message: 'Request failed'
       });
     }
-    
-    const data = await response.json();
-    return data as T;
+
+    return response.json();
   } catch (error) {
-    if (error instanceof ApiException) {
-      throw error;
-    }
-    
-    console.error('API request failed:', error);
+    if (error instanceof ApiException) throw error;
     throw new ApiException({
       status: 500,
-      message: 'Internal client error',
+      message: 'Network error',
       details: error
     });
   }
