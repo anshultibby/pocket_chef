@@ -62,7 +62,7 @@ async def health_check():
 @app.on_event("startup")
 async def startup_event():
     try:
-        port = os.getenv("PORT", "8080")
+        port = int(os.getenv("PORT", "8000"))  # Consistent default
         logger.info(f"Starting application on port {port}")
         logger.info(f"Current working directory: {os.getcwd()}")
         logger.info(f"Directory contents: {os.listdir()}")
@@ -74,9 +74,6 @@ async def startup_event():
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(
-        "app.main:app",
-        host="0.0.0.0",  # Always use 0.0.0.0 for Railway
-        port=int(os.getenv("PORT", "8000")),
-        reload=True,
-    )
+    port = int(os.getenv("PORT", "8000"))  # Consistent default
+
+    uvicorn.run("app.main:app", host="0.0.0.0", port=port, reload=True)
