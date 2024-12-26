@@ -46,11 +46,13 @@ app.include_router(recipes.router)
 # Add a simple root endpoint for testing
 @app.get("/")
 async def root():
+    logger.info("Root endpoint called")
     return {"status": "ok"}
 
 
 @app.get("/health")
 async def health_check():
+    logger.info("Health check endpoint called")
     return {
         "status": "healthy",
         "port": os.getenv("PORT"),
@@ -60,33 +62,13 @@ async def health_check():
 @app.on_event("startup")
 async def startup_event():
     try:
-        logger.info(f"PORT: {os.getenv('PORT')}")
-        logger.info(f"HOST: {os.getenv('HOST')}")
-        logger.info(f"SUPABASE_URL set: {bool(os.getenv('SUPABASE_URL'))}")
-        logger.info(f"SUPABASE_KEY set: {bool(os.getenv('SUPABASE_KEY'))}")
-
-        # Check GCP credentials
-        gcp_creds_path = "/app/gcp-key.json"
-        if os.path.exists(gcp_creds_path):
-            logger.info(f"GCP credentials file exists at {gcp_creds_path}")
-            with open(gcp_creds_path, "r") as f:
-                creds_content = f.read()
-                logger.info(f"GCP creds file content length: {len(creds_content)}")
-                # Log file permissions
-                import stat
-
-                st = os.stat(gcp_creds_path)
-                logger.info(f"GCP creds file permissions: {oct(st.st_mode)}")
-                logger.info(
-                    f"GOOGLE_APPLICATION_CREDENTIALS env var: {os.getenv('GOOGLE_APPLICATION_CREDENTIALS')}"
-                )
-        else:
-            logger.error(f"GCP credentials file not found at {gcp_creds_path}")
-
+        port = os.getenv("PORT", "8080")
+        logger.info(f"Starting application on port {port}")
+        logger.info(f"Current working directory: {os.getcwd()}")
+        logger.info(f"Directory contents: {os.listdir()}")
     except Exception as e:
         logger.error(f"Startup error: {str(e)}")
-        logger.error(f"Traceback: {traceback.format_exc()}")
-        raise
+        logger.error(traceback.format_exc())
 
 
 if __name__ == "__main__":
