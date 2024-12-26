@@ -17,7 +17,7 @@ RUN echo '#!/bin/sh\n\
     echo "Starting entrypoint script..."\n\
     echo "Decoding GCP credentials..."\n\
     echo "$GOOGLE_APPLICATION_CREDENTIALS_BASE64" | base64 -d > /app/gcp-key.json\n\
-    echo "GCP credentials decoded. File size: $(stat -f%z /app/gcp-key.json)"\n\
+    echo "GCP credentials decoded. File size: $(stat -c%s /app/gcp-key.json)"\n\
     echo "Starting uvicorn..."\n\
     PYTHONUNBUFFERED=1 exec "$@"' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
