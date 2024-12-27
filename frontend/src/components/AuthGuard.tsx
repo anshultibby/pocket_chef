@@ -10,9 +10,21 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    const publicRoutes = ['/login', '/signup', '/onboarding'];
-    if (!loading && !user && !publicRoutes.includes(pathname)) {
-      router.push('/login');
+    const publicRoutes = ['/', '/login', '/signup', '/onboarding'];
+    const protectedRoutes = ['/home', '/profile', '/settings'];
+    
+    if (!loading) {
+      if (user) {
+        // If user is logged in and tries to access login/signup pages, redirect to home
+        if (['/login', '/signup'].includes(pathname)) {
+          router.push('/home');
+        }
+      } else {
+        // If user is not logged in and tries to access protected routes, redirect to login
+        if (protectedRoutes.includes(pathname)) {
+          router.push('/login');
+        }
+      }
     }
   }, [user, loading, router, pathname]);
 
