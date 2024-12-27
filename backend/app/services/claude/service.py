@@ -1,5 +1,5 @@
-import json
 import logging
+from functools import lru_cache
 from typing import Dict, Generic, List, Optional, Type, TypeVar, Union
 
 from anthropic import Anthropic
@@ -30,6 +30,7 @@ class ClaudeService:
         self.anthropic = Anthropic()
         self.logger = logging.getLogger(__name__)
 
+    @lru_cache(maxsize=1000)
     async def parse_ingredient_text(self, model: Type[T], ingredient: str) -> T:
         """Parse and standardize items from receipt text"""
         summary_schema = summarize_schema(model.model_json_schema())

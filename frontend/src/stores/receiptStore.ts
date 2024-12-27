@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { PantryItemCreate } from '@/types';
 import { pantryApi } from '@/lib/api';
-import { pantryStore } from './pantryStore';
+
 
 interface ReceiptStore {
   isUploading: boolean;
@@ -9,21 +9,23 @@ interface ReceiptStore {
   pendingItems: PantryItemCreate[];
   error: string | null;
   showConfirmation: boolean;
+  uploadState: 'idle' | 'uploading' | 'confirming';
   
   // Actions
   handleFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => Promise<boolean>;
-  confirmItems: (items: PantryItemCreate[]) => Promise<void>;
   clearUpload: () => void;
   setShowConfirmation: (show: boolean) => void;
   setError: (error: string | null) => void;
+  setUploadState: (state: 'idle' | 'uploading' | 'confirming') => void;
 }
 
-export const useReceiptStore = create<ReceiptStore>((set, get) => ({
+export const useReceiptStore = create<ReceiptStore>((set) => ({
   isUploading: false,
   receiptImage: null,
   pendingItems: [],
   error: null,
   showConfirmation: false,
+  uploadState: 'idle',
 
   handleFileUpload: async (event) => {
     const file = event.target.files?.[0];
@@ -52,26 +54,17 @@ export const useReceiptStore = create<ReceiptStore>((set, get) => ({
     }
   },
 
-  confirmItems: async (items) => {
-    try {
-      await pantryApi.addItems(items);
-      await pantryStore.getState().fetchItems();
-      get().clearUpload();
-    } catch (error) {
-      set({ error: 'Failed to add items' });
-      throw error;
-    }
-  },
-
   clearUpload: () => {
     set({
       receiptImage: null,
       pendingItems: [],
       error: null,
-      showConfirmation: false
+      showConfirmation: false,
+      uploadState: 'idle'
     });
   },
 
   setShowConfirmation: (show) => set({ showConfirmation: show }),
-  setError: (error) => set({ error })
+  setError: (error) => set({ error }),
+  setUploadState: (state) => set({ uploadState: state })
 }));

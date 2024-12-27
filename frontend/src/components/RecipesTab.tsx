@@ -93,7 +93,6 @@ export default function RecipesTab({
     isGenerating,
     error,
     fetchRecipes,
-    useRecipe,
   } = useRecipeStore();
   
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);

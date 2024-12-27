@@ -6,7 +6,6 @@ from fastapi import APIRouter, Body, Depends, File, HTTPException, Request, Uplo
 from pydantic import ValidationError
 
 from ..models.pantry import (
-    Nutrition,
     PantryItem,
     PantryItemCreate,
     PantryItemData,

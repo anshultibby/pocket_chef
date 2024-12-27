@@ -4,7 +4,6 @@ import {
   PantryItemCreate, 
 } from '@/types';
 import { pantryApi } from '@/lib/api';
-import ReceiptConfirmation from '@/components/ReceiptConfirmation';
 import CategoryFilters from './pantry/CategoryFilters';
 import PantryControls from './pantry/PantryControls';
 import PantryGrid from './pantry/PantryGrid';
@@ -14,7 +13,7 @@ import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { ErrorMessage } from '@/components/shared/ErrorMessage';
 import { ERROR_MESSAGES } from '@/constants/messages';
 import { DuplicateItemModal } from './modals/DuplicateItemModal';
-import { useDuplicateHandler } from '@/hooks/useDuplicateHandler';
+import { useDuplicateStore } from '@/stores/duplicateStore';
 import { usePantryStore } from '@/stores/pantryStore';
 import { CATEGORIES, getCategoryLabel } from '@/constants/categories';
 import { useReceiptStore } from '@/stores/receiptStore';
@@ -36,56 +35,32 @@ export default function PantryTab() {
     handleFileUpload,
     error: uploadError,
     clearUpload,
-    pendingItems: uploadPendingItems,
-    receiptImage
   } = useReceiptStore();
 
   const {
     duplicateItem,
-    handleSingleItem,
-    handleMultipleItems,
-    handleDuplicateResolution,
-    handleEditComplete,
     isProcessing,
     isEditing,
-    clearDuplicates
-  } = useDuplicateHandler(pantryItems, addItems, updateItem);
+    handleItems,
+    handleDuplicateResolution,
+    handleEditComplete,
+    clearDuplicates,
+  } = useDuplicateStore();
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddItemForm, setShowAddItemForm] = useState(false);
-  const [showReceiptConfirmation, setShowReceiptConfirmation] = useState(false);
   const [selectedItem, setSelectedItem] = useState<PantryItem | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [editingItem, setEditingItem] = useState<PantryItem | null>(null);
 
   if (isLoading) {
     return <LoadingSpinner message="Loading pantry items..." />;
   }
 
-  const handleReceiptConfirmation = async (confirmedItems: PantryItemCreate[]) => {
-    try {
-      await handleMultipleItems(confirmedItems);
-      setShowReceiptConfirmation(false);
-      if (clearUpload) {
-        clearUpload();
-      }
-    } catch (error) {
-      handleError(error);
-      setShowReceiptConfirmation(false);
-    }
-  };
-
-  // Handle single item addition
+  // Simplified single item add
   const handleAddItem = async (item: PantryItemCreate) => {
     try {
-      await handleSingleItem(item);
-      track('add_pantry_item', {
-        itemName: item.data.name,
-        category: item.data.category || 'Other',
-        hasUnit: !!item.data.unit,
-        hasExpiry: !!item.data.expiry_date
-      });
+      await handleItems([item], pantryItems);
     } catch (error) {
       handleError(error);
     }
@@ -148,20 +123,14 @@ export default function PantryTab() {
 
   const handleUploadReceipt = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
-      await handleFileUpload(event);
-      setShowReceiptConfirmation(true);
+      const success = await handleFileUpload(event);
+      if (success) {
+        useReceiptStore.getState().setShowConfirmation(true);
+      }
     } catch (error) {
       handleError(error);
     }
   };
-
-  const handleCloseConfirmation = () => {
-    setShowReceiptConfirmation(false);
-    if (clearUpload) {
-      clearUpload();
-    }
-  };
-
 
   const handleItemUpdate = async (id: string, updates: Partial<PantryItem>) => {
     try {
@@ -172,22 +141,23 @@ export default function PantryTab() {
   };
 
   const handleMergeAndEdit = async () => {
-    try {
-      const mergedItem = await handleDuplicateResolution('mergeEdit');
-      if (mergedItem) {
-        setEditingItem(mergedItem);
-      }
-    } catch (error) {
-      handleError(error);
+    if (duplicateItem) {
+      await handleDuplicateResolution('mergeEdit', addItems, updateItem);
     }
   };
 
-  const handleEditModalClose = async (updates?: Partial<PantryItem>) => {
-    if (updates) {
-      await updateItem(editingItem!.id, updates);
+  const handleEditModalClose = async (updates?: PantryItemCreate) => {
+    try {
+      if (updates?.data && duplicateItem) {
+        await handleEditComplete(updates, updateItem);
+      } else if (updates?.data && selectedItem) {
+        await updateItem(selectedItem.id, updates);
+      }
+    } catch (error) {
+      handleError(error);
+    } finally {
+      setSelectedItem(null);
     }
-    setEditingItem(null);
-    await handleEditComplete();
   };
 
   return (
@@ -222,16 +192,6 @@ export default function PantryTab() {
         onSelectItem={setSelectedItem}
       />
 
-      {/* Modals */}
-      {showReceiptConfirmation && uploadPendingItems && (
-        <ReceiptConfirmation
-          items={uploadPendingItems}
-          receiptImage={receiptImage}
-          onConfirm={handleReceiptConfirmation}
-          onCancel={handleCloseConfirmation}
-        />
-      )}
-
       {showAddItemForm && (
         <AddItemModal
           onAdd={handleAddItem}
@@ -243,19 +203,30 @@ export default function PantryTab() {
         <DuplicateItemModal
           existingItem={duplicateItem.existing}
           newItem={duplicateItem.new}
-          onMergeQuantities={() => handleDuplicateResolution('merge')}
+          onMergeQuantities={() => handleDuplicateResolution('merge', addItems, updateItem)}
           onMergeAndEdit={handleMergeAndEdit}
-          onCreateNew={() => handleDuplicateResolution('create')}
+          onCreateNew={() => handleDuplicateResolution('create', addItems, updateItem)}
           onCancel={clearDuplicates}
           isProcessing={isProcessing}
         />
       )}
 
-      {editingItem && (
+      {isEditing && duplicateItem && (
         <AddItemModal
-          initialValues={editingItem}
-          onAdd={handleEditModalClose}
-          onClose={() => handleEditModalClose()}
+          initialValues={{
+            data: {
+              ...duplicateItem.existing.data,
+              quantity: duplicateItem.existing.data.quantity + duplicateItem.new.data.quantity
+            },
+            nutrition: duplicateItem.existing.nutrition
+          }}
+          onAdd={async (updatedItem) => {
+            await handleEditComplete(updatedItem, updateItem);
+          }}
+          onClose={() => {
+            clearDuplicates();
+            clearUpload();
+          }}
           isEditing={true}
         />
       )}

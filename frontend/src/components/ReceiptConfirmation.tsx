@@ -4,27 +4,24 @@ import React, { useState } from 'react';
 import { PantryItemCreate } from '@/types';
 import AddItemModal from './modals/AddItemModal';
 import Image from 'next/image';
-import { track } from '@vercel/analytics';
-import { toast } from 'react-hot-toast';
 
 interface ReceiptConfirmationProps {
   items: PantryItemCreate[];
   receiptImage: string | null;
-  onConfirm: (items: PantryItemCreate[]) => void;
+  onConfirm: (items: PantryItemCreate[]) => Promise<void>;
   onCancel: () => void;
 }
 
 export default function ReceiptConfirmation({ 
   items, 
   receiptImage, 
-  onConfirm, 
   onCancel,
+  onConfirm
 }: ReceiptConfirmationProps) {
   const [editableItems, setEditableItems] = useState<PantryItemCreate[]>(items);
   const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [isConfirming, setIsConfirming] = useState(false);
-
+  
   const handleItemUpdate = (index: number, updatedItem: PantryItemCreate) => {
     setEditableItems(prev => prev.map((item, i) => 
       i === index ? updatedItem : item
@@ -39,21 +36,6 @@ export default function ReceiptConfirmation({
 
   const handleDeleteItem = (index: number) => {
     setEditableItems(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleConfirm = async () => {
-    setIsConfirming(true);
-    try {
-      await onConfirm(editableItems);
-      track('receipt_items_confirmed', {
-        itemCount: editableItems.length
-      });
-    } catch (error) {
-      console.error('Error confirming items:', error);
-      toast.error('Failed to add items to pantry');
-    } finally {
-      setIsConfirming(false);
-    }
   };
 
   return (
@@ -121,33 +103,25 @@ export default function ReceiptConfirmation({
             ))}
           </div>
 
-          <div className="flex justify-end space-x-4 mt-6 pt-4 border-t border-gray-700">
+          <div className="flex justify-end space-x-4 mt-6">
             <button
               onClick={onCancel}
-              disabled={isConfirming}
-              className={`px-4 py-2 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 disabled:opacity-50`}
+              className="px-4 py-2 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600"
             >
               Cancel
             </button>
             <button
-              onClick={handleConfirm}
-              disabled={isConfirming}
-              className={`px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-400 disabled:opacity-50 flex items-center gap-2`}
+              onClick={() => onConfirm(editableItems)}
+              disabled={editableItems.length === 0}
+              className="px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-400 disabled:opacity-50"
             >
-              {isConfirming ? (
-                <>
-                  <span className="animate-spin">⟳</span>
-                  Confirming...
-                </>
-              ) : (
-                `Confirm Items (${editableItems.length})`
-              )}
+              Confirm Items ({editableItems.length})
             </button>
           </div>
         </div>
       </div>
 
-      {/* Edit Modal */}
+      {/* Only keep the edit/add modals here */}
       {selectedItemIndex !== null && (
         <AddItemModal
           initialValues={editableItems[selectedItemIndex]}
@@ -157,7 +131,6 @@ export default function ReceiptConfirmation({
         />
       )}
 
-      {/* Add New Item Modal */}
       {showAddModal && (
         <AddItemModal
           onAdd={handleAddItem}

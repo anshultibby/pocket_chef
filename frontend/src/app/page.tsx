@@ -10,12 +10,42 @@ import ElfModal from '@/components/modals/ElfModal';
 import { CookbookTab } from '@/components/cookbook';
 import { track } from '@vercel/analytics';
 import { useRouter } from 'next/navigation';
+import { useReceiptStore } from '@/stores/receiptStore';
+import ReceiptConfirmation from '@/components/ReceiptConfirmation';
+import { toast } from 'react-hot-toast';
+import { useDuplicateStore } from '@/stores/duplicateStore';
+import DuplicateItemModal from '@/components/modals/DuplicateItemModal';
+import AddItemModal from '@/components/modals/AddItemModal';
+
+type TabType = 'cook' | 'pantry' | 'cookbook';
 
 export const dynamic = 'force-dynamic';
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<'cook' | 'pantry' | 'cookbook'>('cook');
-  const { items, isLoading, error, fetchItems } = usePantryStore();
+  const [activeTab, setActiveTab] = useState<'cook' | 'pantry' | 'cookbook'>(() => {
+    // Try to get saved tab from localStorage, default to 'cook' if not found
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('activeTab') as 'cook' | 'pantry' | 'cookbook') || 'cook';
+    }
+    return 'cook';
+  });
+  const { 
+    items: pantryItems, 
+    isLoading, 
+    error, 
+    fetchItems, 
+    addItems,
+    updateItem 
+  } = usePantryStore();
+  const { 
+    duplicateItem,
+    isProcessing,
+    isEditing,
+    handleDuplicateResolution,
+    handleEditComplete,
+    clearDuplicates,
+    handleItems
+  } = useDuplicateStore();
   const { signOut } = useAuth();
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [showElfModal, setShowElfModal] = useState(false);
@@ -23,6 +53,17 @@ export default function Home() {
   const lastTabChange = useRef(Date.now());
   const isHidden = useRef(false);
   const router = useRouter();
+  const { 
+    showConfirmation, 
+    pendingItems, 
+    receiptImage, 
+    clearUpload,
+  } = useReceiptStore();
+
+  // Save active tab to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('activeTab', activeTab);
+  }, [activeTab]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -111,15 +152,26 @@ export default function Home() {
     }
   };
 
-  const handleTabChange = (tab: 'cook' | 'pantry' | 'cookbook') => {
-    track('switch_tab', {
+  const handleTabChange = (newTab: TabType) => {
+    const { uploadState } = useReceiptStore.getState();
+    
+    if (uploadState !== 'idle') {
+      const confirm = window.confirm(
+        'Changing tabs will cancel your receipt upload. Continue?'
+      );
+      if (!confirm) return;
+      clearUpload();
+    }
+    
+    setActiveTab(newTab);
+    localStorage.setItem('activeTab', newTab);
+    track('tab_change', {
       from: activeTab,
-      to: tab,
-      timeSpentOnPreviousTab: Date.now() - lastTabChange.current
+      to: newTab,
+      uploadState
     });
-    lastTabChange.current = Date.now();
-    setActiveTab(tab);
   };
+
 
   return (
     <AuthGuard>
@@ -235,11 +287,12 @@ export default function Home() {
           ) : (
             <RecipesTab
               loading={isLoading}
-              pantryItems={items}
+              pantryItems={pantryItems}
             />
           )}
         </div>
 
+        {/* Error display */}
         {error && (
           <div className="max-w-4xl mx-auto px-4 mt-4">
             <div className="bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded">
@@ -248,10 +301,71 @@ export default function Home() {
           </div>
         )}
 
+        {/* Modals */}
         {showElfModal && (
           <ElfModal
             onClose={() => setShowElfModal(false)}
-            pantryItemsCount={items.length}
+            pantryItemsCount={pantryItems.length}
+          />
+        )}
+
+        {showConfirmation && pendingItems && (
+          <ReceiptConfirmation
+            items={pendingItems}
+            receiptImage={receiptImage}
+            onConfirm={async (items) => {
+              try {
+                await handleItems(items, pantryItems);
+                useReceiptStore.getState().setShowConfirmation(false);
+              } catch (error) {
+                console.error('Error confirming items:', error);
+                toast.error('Failed to add items to pantry');
+                clearUpload();
+              }
+            }}
+            onCancel={clearUpload}
+          />
+        )}
+
+        {duplicateItem && !isEditing && (
+          <DuplicateItemModal
+            existingItem={duplicateItem.existing}
+            newItem={duplicateItem.new}
+            onMergeQuantities={() => handleDuplicateResolution('merge', addItems, updateItem)}
+            onMergeAndEdit={() => handleDuplicateResolution('mergeEdit', addItems, updateItem)}
+            onCreateNew={() => handleDuplicateResolution('create', addItems, updateItem)}
+            onCancel={() => {
+              clearDuplicates();
+              clearUpload();
+            }}
+            isProcessing={isProcessing}
+          />
+        )}
+
+        {isEditing && duplicateItem && (
+          <AddItemModal
+            initialValues={{
+              data: {
+                ...duplicateItem.existing.data,
+                quantity: duplicateItem.existing.data.quantity + duplicateItem.new.data.quantity
+              },
+              nutrition: duplicateItem.existing.nutrition
+            }}
+            onAdd={async (updatedItem) => {
+              try {
+                await handleEditComplete(updatedItem, updateItem);
+              } catch (error) {
+                toast.error('Failed to update item');
+                // Keep the editing state active so user can retry
+                useDuplicateStore.getState().setIsProcessing(false);
+              }
+            }}
+            onClose={() => {
+              // When manually closing, clear both states
+              useDuplicateStore.getState().setIsEditing(false);
+              useDuplicateStore.getState().setIsProcessing(false);
+            }}
+            isEditing={true}
           />
         )}
       </main>
