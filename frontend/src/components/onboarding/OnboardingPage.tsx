@@ -50,7 +50,7 @@ export default function OnboardingPage() {
       case 'use_recipes':
         return (
           <UseRecipesStep
-            onComplete={() => router.push('/')}
+            onComplete={() => window.location.reload()}
             onBack={() => setCurrentStep('generate_recipes')}
           />
         );

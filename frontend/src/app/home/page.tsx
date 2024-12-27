@@ -187,14 +187,6 @@ export default function Home() {
               
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => router.push('/onboarding')}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 transition-colors text-sm"
-                >
-                  <span>🎯</span>
-                  <span className="hidden sm:inline">Redo Onboarding</span>
-                </button>
-
-                <button
                   onClick={() => setShowElfModal(true)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-600/20 hover:bg-green-600/30 text-green-400 transition-colors text-sm"
                 >
@@ -226,6 +218,17 @@ export default function Home() {
                         }}
                       >
                         Profile Settings
+                      </Link>
+                      
+                      <Link
+                        href="/onboarding"
+                        className="block w-full px-4 py-2 text-left text-indigo-400 hover:bg-indigo-950/50 text-sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsAccountMenuOpen(false);
+                        }}
+                      >
+                        Repeat Onboarding
                       </Link>
                       
                       <button
