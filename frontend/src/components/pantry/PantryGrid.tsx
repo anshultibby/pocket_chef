@@ -2,6 +2,7 @@ import { PantryGridProps } from '@/types/pantry';
 import { usePantryStore } from '@/stores/pantryStore';
 import { PantryItemCard } from './PantryItemCard';
 import { DndContext, DragEndEvent, useDroppable } from '@dnd-kit/core';
+import { pantryApi } from '@/lib/api';
 
 function CategoryDropZone({ category, children }: { category: string; children: React.ReactNode }) {
   const { setNodeRef } = useDroppable({
@@ -23,7 +24,7 @@ function CategoryDropZone({ category, children }: { category: string; children: 
 export default function PantryGrid({ groupedItems, onSelectItem }: Omit<PantryGridProps, 'onDeleteItem'>) {
   const { deleteItem, updateItem } = usePantryStore();
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     
     if (over && active.data.current) {
@@ -31,12 +32,33 @@ export default function PantryGrid({ groupedItems, onSelectItem }: Omit<PantryGr
       const item = active.data.current;
       
       if (item.data.category !== newCategory) {
+        // Immediately update UI for snappy feedback
         updateItem(active.id as string, {
           data: {
             ...item.data,
             category: newCategory
           }
         });
+
+        try {
+          // Then update backend
+          await pantryApi.updateItem(active.id as string, {
+            data: {
+              ...item.data,
+              category: newCategory
+            }
+          });
+        } catch (error) {
+          console.error('Failed to update item category:', error);
+          // Revert the UI change on error
+          updateItem(active.id as string, {
+            data: {
+              ...item.data,
+              category: item.data.category // Revert to original category
+            }
+          });
+          // Optionally show an error toast here
+        }
       }
     }
   };
