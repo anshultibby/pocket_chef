@@ -26,18 +26,9 @@ export function PantryItemCard({ item, onSelect, onDelete }: PantryItemCardProps
       ref={setNodeRef}
       style={style}
       {...attributes}
-      className="bg-gray-800/50 rounded-lg p-2.5 group hover:bg-gray-700/80 relative border border-gray-700/50 will-change-transform"
+      className="bg-gray-800/50 rounded-lg p-2 group hover:bg-gray-700/80 relative border border-gray-700/50 will-change-transform"
     >
       <div className="absolute right-2 top-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onSelect(item);
-          }}
-          className="p-1 bg-gray-700/50 rounded-lg text-gray-400 hover:text-blue-400 hover:bg-blue-500/10"
-        >
-          <PencilIcon className="h-3.5 w-3.5" />
-        </button>
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -49,8 +40,11 @@ export function PantryItemCard({ item, onSelect, onDelete }: PantryItemCardProps
         </button>
       </div>
 
-      <div {...listeners} className="cursor-move">
-        <div className="space-y-1.5">
+      <div 
+        onClick={() => onSelect(item)}
+        className="cursor-pointer"
+      >
+        <div className="space-y-1">
           <div>
             <h4 className="text-base font-medium text-white leading-tight">
               {item.data.name}
@@ -73,6 +67,18 @@ export function PantryItemCard({ item, onSelect, onDelete }: PantryItemCardProps
             </p>
           )}
         </div>
+      </div>
+
+      <div 
+        {...listeners} 
+        className="absolute bottom-2 right-2 cursor-move opacity-0 group-hover:opacity-100 transition-opacity"
+      >
+        <svg className="w-4 h-4 text-gray-400" viewBox="0 0 4 16">
+          <path 
+            fill="currentColor" 
+            d="M2 4a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"
+          />
+        </svg>
       </div>
     </div>
   );
