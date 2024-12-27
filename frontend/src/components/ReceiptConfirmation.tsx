@@ -46,8 +46,7 @@ export default function ReceiptConfirmation({
     try {
       await onConfirm(editableItems);
       track('receipt_items_confirmed', {
-        itemCount: editableItems.length,
-        modifiedCount: editableItems.filter(item => item.modified).length
+        itemCount: editableItems.length
       });
     } catch (error) {
       console.error('Error confirming items:', error);
