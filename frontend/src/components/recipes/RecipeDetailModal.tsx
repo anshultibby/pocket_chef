@@ -4,6 +4,7 @@ import { PantryItem } from '@/types';
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { recipeApi } from '@/lib/api';
+import { track } from '@vercel/analytics';
 
 interface RecipeDetailModalProps {
   recipe: Recipe;
@@ -35,6 +36,10 @@ export default function RecipeDetailModal({ recipe, onClose, onUse, onRemove, pa
     try {
       setIsSaving(true);
       await recipeApi.saveRecipe(recipe.id);
+      track('save_recipe', {
+        recipeName: recipe.data.name,
+        ingredientCount: recipe.data.ingredients.length
+      });
       toast.success('Recipe saved to cookbook');
     } catch (error) {
       console.error('Error saving recipe:', error);
@@ -55,6 +60,11 @@ export default function RecipeDetailModal({ recipe, onClose, onUse, onRemove, pa
     try {
       setIsRating(true);
       await recipeApi.rateRecipe(recipe.id, rating, review);
+      track('rate_recipe', {
+        recipeName: recipe.data.name,
+        rating,
+        hasReview: !!review
+      });
       toast.success('Rating saved');
       setShowRatingInput(false);
     } catch (error) {

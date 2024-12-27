@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { PantryItemCreate } from '@/types';
 import AddItemModal from './modals/AddItemModal';
 import Image from 'next/image';
+import { track } from '@vercel/analytics';
+import { toast } from 'react-hot-toast';
 
 interface ReceiptConfirmationProps {
   items: PantryItemCreate[];
@@ -43,6 +45,13 @@ export default function ReceiptConfirmation({
     setIsConfirming(true);
     try {
       await onConfirm(editableItems);
+      track('receipt_items_confirmed', {
+        itemCount: editableItems.length,
+        modifiedCount: editableItems.filter(item => item.modified).length
+      });
+    } catch (error) {
+      console.error('Error confirming items:', error);
+      toast.error('Failed to add items to pantry');
     } finally {
       setIsConfirming(false);
     }

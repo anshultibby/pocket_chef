@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { AuthGuard } from '@/components/AuthGuard';
 import { useAuth } from '@/lib/auth-context';
 import RecipesTab from '@/components/RecipesTab';
@@ -8,6 +8,7 @@ import PantryTab from '@/components/PantryTab';
 import { usePantryStore } from '@/stores/pantryStore';
 import ElfModal from '@/components/modals/ElfModal';
 import { CookbookTab } from '@/components/cookbook';
+import { track } from '@vercel/analytics';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,6 +18,9 @@ export default function Home() {
   const { signOut } = useAuth();
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [showElfModal, setShowElfModal] = useState(false);
+  const sessionStartTime = useRef(Date.now());
+  const lastTabChange = useRef(Date.now());
+  const isHidden = useRef(false);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -35,6 +39,67 @@ export default function Home() {
     fetchItems();
   }, [fetchItems]);
 
+  useEffect(() => {
+    // Track session start
+    track('session_start', {
+      startTime: new Date().toISOString(),
+      initialTab: activeTab
+    });
+
+    // Track when user leaves the page
+    const handleBeforeUnload = () => {
+      const sessionDuration = Math.round((Date.now() - sessionStartTime.current) / 1000);
+      track('session_end', {
+        duration: sessionDuration,
+        endTime: new Date().toISOString(),
+        lastActiveTab: activeTab
+      });
+    };
+
+    // Track when user switches tabs/minimizes window
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        isHidden.current = true;
+        track('page_hidden', {
+          timeSpent: Math.round((Date.now() - sessionStartTime.current) / 1000),
+          activeTab
+        });
+      } else {
+        if (isHidden.current) {
+          track('page_visible', {
+            awayTime: Math.round((Date.now() - lastTabChange.current) / 1000),
+            returnedToTab: activeTab
+          });
+        }
+        isHidden.current = false;
+        lastTabChange.current = Date.now();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [activeTab]);
+
+  useEffect(() => {
+    // Send heartbeat every 5 minutes
+    const heartbeatInterval = setInterval(() => {
+      if (!document.hidden) {
+        track('heartbeat', {
+          activeTab,
+          sessionDuration: Math.round((Date.now() - sessionStartTime.current) / 1000),
+          lastInteraction: Math.round((Date.now() - lastTabChange.current) / 1000)
+        });
+      }
+    }, 5 * 60 * 1000); // 5 minutes
+
+    return () => clearInterval(heartbeatInterval);
+  }, [activeTab]);
+
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -42,6 +107,16 @@ export default function Home() {
     } catch (error) {
       console.error('Error signing out:', error);
     }
+  };
+
+  const handleTabChange = (tab: 'cook' | 'pantry' | 'cookbook') => {
+    track('switch_tab', {
+      from: activeTab,
+      to: tab,
+      timeSpentOnPreviousTab: Date.now() - lastTabChange.current
+    });
+    lastTabChange.current = Date.now();
+    setActiveTab(tab);
   };
 
   return (
@@ -108,7 +183,7 @@ export default function Home() {
           <div className="max-w-4xl mx-auto px-4">
             <div className="flex space-x-1">
               <button
-                onClick={() => setActiveTab('cook')}
+                onClick={() => handleTabChange('cook')}
                 className={`px-4 py-3 ${
                   activeTab === 'cook'
                     ? 'border-b-2 border-blue-500 text-blue-500'
@@ -118,7 +193,7 @@ export default function Home() {
                 Recipe Suggestions
               </button>
               <button
-                onClick={() => setActiveTab('pantry')}
+                onClick={() => handleTabChange('pantry')}
                 className={`px-4 py-3 ${
                   activeTab === 'pantry'
                     ? 'border-b-2 border-blue-500 text-blue-500'
@@ -128,7 +203,7 @@ export default function Home() {
                 Pantry
               </button>
               <button
-                onClick={() => setActiveTab('cookbook')}
+                onClick={() => handleTabChange('cookbook')}
                 className={`px-4 py-3 ${
                   activeTab === 'cookbook'
                     ? 'border-b-2 border-blue-500 text-blue-500'

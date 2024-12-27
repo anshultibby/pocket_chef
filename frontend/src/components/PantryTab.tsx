@@ -18,6 +18,7 @@ import { useDuplicateHandler } from '@/hooks/useDuplicateHandler';
 import { usePantryStore } from '@/stores/pantryStore';
 import { CATEGORIES, getCategoryLabel } from '@/constants/categories';
 import { useReceiptStore } from '@/stores/receiptStore';
+import { track } from '@vercel/analytics';
 
 export default function PantryTab() {
   const { 
@@ -79,6 +80,12 @@ export default function PantryTab() {
   const handleAddItem = async (item: PantryItemCreate) => {
     try {
       await handleSingleItem(item);
+      track('add_pantry_item', {
+        itemName: item.name,
+        category: item.category || 'Other',
+        hasUnit: !!item.unit,
+        hasExpiry: !!item.expiry_date
+      });
     } catch (error) {
       handleError(error);
     }
@@ -92,6 +99,9 @@ export default function PantryTab() {
     try {
       // First perform the backend operation
       await pantryApi.clearPantry();
+      track('clear_pantry', {
+        itemCount: pantryItems.length
+      });
       
       // Then clear UI state
       setItems([]);

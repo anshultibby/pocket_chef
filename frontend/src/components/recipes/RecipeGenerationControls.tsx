@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useRecipeStore } from '@/stores/recipeStore';
 import { RecipePreferences } from '@/types';
+import { track } from '@vercel/analytics';
 
 interface RecipeGenerationControlsProps {
   onGenerate: () => void;
@@ -70,6 +71,15 @@ export default function RecipeGenerationControls({
     return summary.join(' • ');
   };
 
+  const handleGenerate = () => {
+    track('generate_recipes', {
+      cuisineCount: preferences.cuisine.length,
+      dietaryCount: preferences.dietary.length,
+      hasCustomPreferences: !!preferences.custom_preferences
+    });
+    onGenerate();
+  };
+
   return (
     <div className="bg-gray-900/50 rounded-xl p-6 backdrop-blur-sm border border-gray-800">
       <div className="flex flex-col space-y-6">
@@ -95,7 +105,7 @@ export default function RecipeGenerationControls({
             </button>
             
             <button
-              onClick={onGenerate}
+              onClick={handleGenerate}
               disabled={isLoading || isGenerating || pantryItemsCount === 0}
               className={`px-4 py-2 rounded-lg transition-all text-sm font-medium flex items-center gap-2 ${
                 isLoading || isGenerating || pantryItemsCount === 0
