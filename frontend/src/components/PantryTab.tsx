@@ -81,10 +81,10 @@ export default function PantryTab() {
     try {
       await handleSingleItem(item);
       track('add_pantry_item', {
-        itemName: item.name,
-        category: item.category || 'Other',
-        hasUnit: !!item.unit,
-        hasExpiry: !!item.expiry_date
+        itemName: item.data.name,
+        category: item.data.category || 'Other',
+        hasUnit: !!item.data.unit,
+        hasExpiry: !!item.data.expiry_date
       });
     } catch (error) {
       handleError(error);
