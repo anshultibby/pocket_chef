@@ -18,6 +18,7 @@ import { DuplicateItemModal } from './modals/DuplicateItemModal';
 import { useDuplicateHandler } from '@/hooks/useDuplicateHandler';
 import { usePantryStore } from '@/stores/pantryStore';
 import { CATEGORIES, getCategoryLabel } from '@/constants/categories';
+import { useReceiptStore } from '@/stores/receiptStore';
 
 export default function PantryTab() {
   const { 
@@ -32,12 +33,9 @@ export default function PantryTab() {
   const { error, handleError, clearError } = useErrorHandler();
   const {
     isUploading,
-    receiptImage,
-    pendingItems: uploadPendingItems,
-    error: uploadError,
     handleFileUpload,
-    clearUpload,
-  } = useFileUpload();
+    error: uploadError
+  } = useReceiptStore();
 
   const {
     duplicateItem,
