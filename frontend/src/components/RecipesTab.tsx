@@ -13,6 +13,77 @@ interface RecipesTabProps {
   loading: boolean;
 }
 
+interface RecipeFilters {
+  prepTime: number | null;
+  difficulty: string[];
+  dietary: string[];
+  sortBy: 'match' | 'time' | 'newest';
+}
+
+export function RecipeFilters({ filters, onChange }: { 
+  filters: RecipeFilters;
+  onChange: (filters: RecipeFilters) => void;
+}) {
+  return (
+    <div className="bg-gray-800/50 rounded-lg p-4 space-y-4">
+      <div className="flex items-center gap-4">
+        <label className="text-sm text-gray-400">Max Prep Time:</label>
+        <input
+          type="range"
+          min="0"
+          max="120"
+          step="15"
+          value={filters.prepTime || 0}
+          onChange={(e) => onChange({
+            ...filters,
+            prepTime: Number(e.target.value) || null
+          })}
+          className="w-48"
+        />
+        <span className="text-sm text-gray-400">
+          {filters.prepTime ? `${filters.prepTime}m` : 'Any'}
+        </span>
+      </div>
+
+      <div className="flex gap-4">
+        <select
+          value={filters.sortBy}
+          onChange={(e) => onChange({
+            ...filters,
+            sortBy: e.target.value as RecipeFilters['sortBy']
+          })}
+          className="bg-gray-700 rounded px-3 py-1 text-sm"
+        >
+          <option value="match">Sort by Match %</option>
+          <option value="time">Sort by Prep Time</option>
+          <option value="newest">Sort by Newest</option>
+        </select>
+
+        <div className="flex gap-2">
+          {['Vegetarian', 'Vegan', 'Gluten-Free'].map(diet => (
+            <button
+              key={diet}
+              onClick={() => onChange({
+                ...filters,
+                dietary: filters.dietary.includes(diet)
+                  ? filters.dietary.filter(d => d !== diet)
+                  : [...filters.dietary, diet]
+              })}
+              className={`px-3 py-1 rounded text-sm ${
+                filters.dietary.includes(diet)
+                  ? 'bg-blue-500/20 text-blue-300'
+                  : 'bg-gray-700 text-gray-400'
+              }`}
+            >
+              {diet}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function RecipesTab({
   pantryItems,
 }: RecipesTabProps) {
