@@ -4,6 +4,7 @@ import { useItemForm } from '@/hooks/useItemForm';
 import { PantryItemCreate } from '@/types';
 import { useState } from 'react';
 import { Dialog } from '@headlessui/react';
+import { motion } from 'framer-motion';
 
 const SUGGESTED_UNITS = [
   'grams',
@@ -64,226 +65,281 @@ export default function AddItemModal({
       
       <div className="fixed inset-0 overflow-y-auto">
         <div className="flex min-h-full items-center justify-center p-4">
-          <Dialog.Panel className="w-full max-w-xl rounded-xl bg-gray-900 p-6">
-            <Dialog.Title className="text-2xl font-bold text-white mb-4">
-              {isEditing ? 'Edit Item' : 'Add Item'}
-            </Dialog.Title>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: "spring", duration: 0.3 }}
+          >
+            <Dialog.Panel className="w-full max-w-xl rounded-xl bg-gray-900 p-6">
+              <motion.div
+                initial={{ y: -20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.1 }}
+              >
+                <Dialog.Title className="text-2xl font-bold text-white mb-4">
+                  {isEditing ? 'Edit Item' : 'Add Item'}
+                </Dialog.Title>
 
-            {isRecipeUse && (
-              <div className="mb-6 p-4 bg-blue-500/20 rounded-lg text-blue-300 text-sm">
-                <p>You are editing this item during recipe use. The quantity you set will be the final amount remaining in your pantry after using the recipe.</p>
-                {originalQuantity !== undefined && (
-                  <p className="mt-2">
-                    Original quantity: {originalQuantity} {values.data.unit}
-                  </p>
-                )}
-              </div>
-            )}
-
-            <form onSubmit={submitForm}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormInput
-                  label="Name"
-                  value={values.data.name}
-                  onChange={(e) => handleChange('name', e.target.value)}
-                  error={errors['name']}
-                  required
-                  placeholder="Common name (e.g., bread)"
-                />
-
-                <FormInput
-                  label="Original Name"
-                  value={values.data.original_name || ''}
-                  onChange={(e) => handleChange('original_name', e.target.value)}
-                  error={errors['original_name']}
-                  placeholder="As scanned/entered (optional)"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 mt-4">
-                <FormInput
-                  label={isRecipeUse ? "Final Pantry Quantity" : "Quantity"}
-                  type="number"
-                  value={values.data.quantity}
-                  onChange={(e) => handleChange('quantity', Number(e.target.value))}
-                  min="0"
-                  step="0.1"
-                  error={errors['quantity']}
-                />
-                
-                <div>
-                  <label className="text-sm text-gray-400">Unit</label>
-                  <input
-                    list="unit-suggestions"
-                    type="text"
-                    value={values.data.unit}
-                    onChange={(e) => handleChange('unit', e.target.value)}
-                    className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
-                    placeholder="Enter or select a unit"
-                    required
-                  />
-                  <datalist id="unit-suggestions">
-                    {SUGGESTED_UNITS.map(unit => (
-                      <option key={unit} value={unit} />
-                    ))}
-                  </datalist>
-                </div>
-              </div>
-
-              <div className="mt-4">
-                <div>
-                  <label className="text-sm text-gray-400">Category</label>
-                  <input
-                    list="category-suggestions"
-                    type="text"
-                    value={values.data.category}
-                    onChange={(e) => handleChange('category', e.target.value)}
-                    className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
-                    placeholder="Select or enter category"
-                  />
-                  <datalist id="category-suggestions">
-                    {SUGGESTED_CATEGORIES.map(cat => (
-                      <option key={cat} value={cat} />
-                    ))}
-                  </datalist>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormInput
-                  label="Price"
-                  error={errors.price}
-                  type="number"
-                  value={values.data.price?.toString() ?? ''}
-                  onChange={(e) => handleChange('price', e.target.value ? Number(e.target.value) : null)}
-                  min="0"
-                  step="0.01"
-                  placeholder="Enter price (optional)"
-                />
-
-                <div>
-                  <label className="text-sm text-gray-400">Expiry Date</label>
-                  <input
-                    type="date"
-                    value={values.data.expiry_date ? new Date(values.data.expiry_date).toISOString().split('T')[0] : ''}
-                    onChange={(e) => handleChange('expiry_date', e.target.value || null)}
-                    className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="border-t border-gray-700 pt-4 mt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowNutrition(!showNutrition)}
-                  className="text-blue-400 hover:text-blue-300 mb-3"
-                >
-                  {showNutrition ? 'Hide Nutrition' : 'Nutrition'}
-                </button>
-
-                {showNutrition && (
-                  <div className="space-y-4">
-                    <div className="flex flex-col gap-2">
-                      <p className="text-sm text-gray-400">
-                        Note: Nutrition information will be automatically enriched if left empty
+                {isRecipeUse && (
+                  <div className="mb-6 p-4 bg-blue-500/20 rounded-lg text-blue-300 text-sm">
+                    <p>You are editing this item during recipe use. The quantity you set will be the final amount remaining in your pantry after using the recipe.</p>
+                    {originalQuantity !== undefined && (
+                      <p className="mt-2">
+                        Original quantity: {originalQuantity} {values.data.unit}
                       </p>
-                      <p className="text-sm text-gray-400">
-                        All values below are per {values?.nutrition?.standard_unit || '100 grams'}
-                      </p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormInput
-                        label="Calories"
-                        type="number"
-                        value={values.nutrition.calories ?? ''}
-                        onChange={(e) => handleChange('calories', e.target.value ? Number(e.target.value) : 0, 'nutrition')}
-                        min="0"
-                        step="1"
-                      />
-                      <FormInput
-                        label="Protein"
-                        type="number"
-                        value={values.nutrition.protein ?? ''}
-                        onChange={(e) => handleChange('protein', e.target.value ? Number(e.target.value) : 0, 'nutrition')}
-                        min="0"
-                        step="0.1"
-                      />
-                      <FormInput
-                        label="Carbs"
-                        type="number"
-                        value={values.nutrition.carbs ?? ''}
-                        onChange={(e) => handleChange('carbs', e.target.value ? Number(e.target.value) : 0, 'nutrition')}
-                        min="0"
-                        step="0.1"
-                      />
-                      <FormInput
-                        label="Fat"
-                        type="number"
-                        value={values.nutrition.fat ?? ''}
-                        onChange={(e) => handleChange('fat', e.target.value ? Number(e.target.value) : 0, 'nutrition')}
-                        min="0"
-                        step="0.1"
-                      />
-                      <FormInput
-                        label="Fiber"
-                        type="number"
-                        value={values.nutrition.fiber ?? ''}
-                        onChange={(e) => handleChange('fiber', e.target.value ? Number(e.target.value) : 0, 'nutrition')}
-                        min="0"
-                        step="0.1"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="border-t border-gray-700 pt-4 mt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowNotes(!showNotes)}
-                  className="text-blue-400 hover:text-blue-300 mb-3"
-                >
-                  {showNotes ? 'Hide Notes' : 'Notes'}
-                </button>
-
-                {showNotes && (
-                  <div>
-                    <textarea
-                      value={values.data.notes || ''}
-                      onChange={(e) => handleChange('notes', e.target.value)}
-                      className="w-full bg-gray-700 rounded-lg px-3 py-2 focus:ring-2 ring-blue-500 focus:outline-none"
-                      rows={3}
-                      placeholder="Add any notes about this item..."
-                    />
-                    {errors['notes'] && (
-                      <span className="text-red-400 text-sm mt-1">{errors['notes']}</span>
                     )}
                   </div>
                 )}
-              </div>
+              </motion.div>
 
-              {errors.form && (
-                <div className="text-red-400 text-sm mt-4">{errors.form}</div>
-              )}
+              <form onSubmit={submitForm}>
+                <motion.div
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormInput
+                      label="Name"
+                      value={values.data.name}
+                      onChange={(e) => handleChange('name', e.target.value)}
+                      error={errors['name']}
+                      required
+                      placeholder="Common name (e.g., bread)"
+                    />
 
-              <div className="flex justify-end gap-3 mt-6">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-4 py-2 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600"
+                    <FormInput
+                      label="Original Name"
+                      value={values.data.original_name || ''}
+                      onChange={(e) => handleChange('original_name', e.target.value)}
+                      error={errors['original_name']}
+                      placeholder="As scanned/entered (optional)"
+                    />
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 }}
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-400 disabled:opacity-50"
+                  <div className="grid grid-cols-2 gap-4 mt-4">
+                    <FormInput
+                      label={isRecipeUse ? "Final Pantry Quantity" : "Quantity"}
+                      type="number"
+                      value={values.data.quantity}
+                      onChange={(e) => handleChange('quantity', Number(e.target.value))}
+                      min="0"
+                      step="0.1"
+                      error={errors['quantity']}
+                    />
+                    
+                    <div>
+                      <label className="text-sm text-gray-400">Unit</label>
+                      <input
+                        list="unit-suggestions"
+                        type="text"
+                        value={values.data.unit}
+                        onChange={(e) => handleChange('unit', e.target.value)}
+                        className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
+                        placeholder="Enter or select a unit"
+                        required
+                      />
+                      <datalist id="unit-suggestions">
+                        {SUGGESTED_UNITS.map(unit => (
+                          <option key={unit} value={unit} />
+                        ))}
+                      </datalist>
+                    </div>
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.4 }}
                 >
-                  {isSubmitting ? 'Saving...' : (isEditing ? 'Save Changes' : 'Add Item')}
-                </button>
-              </div>
-            </form>
-          </Dialog.Panel>
+                  <div className="mt-4">
+                    <div>
+                      <label className="text-sm text-gray-400">Category</label>
+                      <input
+                        list="category-suggestions"
+                        type="text"
+                        value={values.data.category}
+                        onChange={(e) => handleChange('category', e.target.value)}
+                        className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
+                        placeholder="Select or enter category"
+                      />
+                      <datalist id="category-suggestions">
+                        {SUGGESTED_CATEGORIES.map(cat => (
+                          <option key={cat} value={cat} />
+                        ))}
+                      </datalist>
+                    </div>
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormInput
+                      label="Price"
+                      error={errors.price}
+                      type="number"
+                      value={values.data.price?.toString() ?? ''}
+                      onChange={(e) => handleChange('price', e.target.value ? Number(e.target.value) : null)}
+                      min="0"
+                      step="0.01"
+                      placeholder="Enter price (optional)"
+                    />
+
+                    <div>
+                      <label className="text-sm text-gray-400">Expiry Date</label>
+                      <input
+                        type="date"
+                        value={values.data.expiry_date ? new Date(values.data.expiry_date).toISOString().split('T')[0] : ''}
+                        onChange={(e) => handleChange('expiry_date', e.target.value || null)}
+                        className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.6 }}
+                >
+                  <div className="border-t border-gray-700 pt-4 mt-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowNutrition(!showNutrition)}
+                      className="text-blue-400 hover:text-blue-300 mb-3"
+                    >
+                      {showNutrition ? 'Hide Nutrition' : 'Nutrition'}
+                    </button>
+
+                    {showNutrition && (
+                      <div className="space-y-4">
+                        <div className="flex flex-col gap-2">
+                          <p className="text-sm text-gray-400">
+                            Note: Nutrition information will be automatically enriched if left empty
+                          </p>
+                          <p className="text-sm text-gray-400">
+                            All values below are per {values?.nutrition?.standard_unit || '100 grams'}
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormInput
+                            label="Calories"
+                            type="number"
+                            value={values.nutrition.calories ?? ''}
+                            onChange={(e) => handleChange('calories', e.target.value ? Number(e.target.value) : 0, 'nutrition')}
+                            min="0"
+                            step="1"
+                          />
+                          <FormInput
+                            label="Protein"
+                            type="number"
+                            value={values.nutrition.protein ?? ''}
+                            onChange={(e) => handleChange('protein', e.target.value ? Number(e.target.value) : 0, 'nutrition')}
+                            min="0"
+                            step="0.1"
+                          />
+                          <FormInput
+                            label="Carbs"
+                            type="number"
+                            value={values.nutrition.carbs ?? ''}
+                            onChange={(e) => handleChange('carbs', e.target.value ? Number(e.target.value) : 0, 'nutrition')}
+                            min="0"
+                            step="0.1"
+                          />
+                          <FormInput
+                            label="Fat"
+                            type="number"
+                            value={values.nutrition.fat ?? ''}
+                            onChange={(e) => handleChange('fat', e.target.value ? Number(e.target.value) : 0, 'nutrition')}
+                            min="0"
+                            step="0.1"
+                          />
+                          <FormInput
+                            label="Fiber"
+                            type="number"
+                            value={values.nutrition.fiber ?? ''}
+                            onChange={(e) => handleChange('fiber', e.target.value ? Number(e.target.value) : 0, 'nutrition')}
+                            min="0"
+                            step="0.1"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.7 }}
+                >
+                  <div className="border-t border-gray-700 pt-4 mt-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowNotes(!showNotes)}
+                      className="text-blue-400 hover:text-blue-300 mb-3"
+                    >
+                      {showNotes ? 'Hide Notes' : 'Notes'}
+                    </button>
+
+                    {showNotes && (
+                      <div>
+                        <textarea
+                          value={values.data.notes || ''}
+                          onChange={(e) => handleChange('notes', e.target.value)}
+                          className="w-full bg-gray-700 rounded-lg px-3 py-2 focus:ring-2 ring-blue-500 focus:outline-none"
+                          rows={3}
+                          placeholder="Add any notes about this item..."
+                        />
+                        {errors['notes'] && (
+                          <span className="text-red-400 text-sm mt-1">{errors['notes']}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+
+                {errors.form && (
+                  <div className="text-red-400 text-sm mt-4">{errors.form}</div>
+                )}
+
+                <motion.div 
+                  className="flex justify-end gap-3 mt-6"
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                >
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="px-4 py-2 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600"
+                  >
+                    Cancel
+                  </button>
+                  <motion.button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-400 disabled:opacity-50"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    {isSubmitting ? 'Saving...' : (isEditing ? 'Save Changes' : 'Add Item')}
+                  </motion.button>
+                </motion.div>
+              </form>
+            </Dialog.Panel>
+          </motion.div>
         </div>
       </div>
     </Dialog>
