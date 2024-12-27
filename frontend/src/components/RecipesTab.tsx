@@ -7,6 +7,7 @@ import ElfModal from './modals/ElfModal';
 import { calculateRecipeAvailability } from '@/stores/recipeStore';
 import RecipeCardPreview from './recipes/RecipeCardPreview';
 import { toast } from 'react-hot-toast';
+import { LoadingSpinner } from './LoadingSpinner';
 
 interface RecipesTabProps {
   pantryItems: PantryItem[];

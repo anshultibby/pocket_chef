@@ -57,16 +57,20 @@ export default function PantryGrid({ groupedItems, onSelectItem }: Omit<PantryGr
               category: item.data.category // Revert to original category
             }
           });
-          // Optionally show an error toast here
         }
       }
     }
   };
 
+  // Sort the categories alphabetically
+  const sortedEntries = Object.entries(groupedItems).sort(([a], [b]) => 
+    a.localeCompare(b)
+  );
+
   return (
     <DndContext onDragEnd={handleDragEnd}>
       <div className="space-y-8">
-        {Object.entries(groupedItems).map(([category, items]) => (
+        {sortedEntries.map(([category, items]) => (
           <CategoryDropZone key={category} category={category}>
             {items.map(item => (
               <PantryItemCard

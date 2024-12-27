@@ -119,6 +119,11 @@ export default function PantryTab() {
       return groups;
     }, {} as Record<string, PantryItem[]>);
 
+  // Sort categories alphabetically
+  const sortedGroupedItems = Object.fromEntries(
+    Object.entries(groupedItems).sort(([a], [b]) => a.localeCompare(b))
+  );
+
   const categories = Array.from(new Set(pantryItems.map(item => item.data.category || 'Other')));
 
   const handleUploadReceipt = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -188,7 +193,7 @@ export default function PantryTab() {
       />
 
       <PantryGrid
-        groupedItems={groupedItems}
+        groupedItems={sortedGroupedItems}
         onSelectItem={setSelectedItem}
       />
 

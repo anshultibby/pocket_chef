@@ -12,11 +12,9 @@ const CategoryFilters = memo(function CategoryFilters({
 }: CategoryFiltersProps) {
   const { items } = usePantryStore();
   
-  // Sort categories by item count
+  // Sort categories alphabetically first, then by item count
   const sortedCategories = [...categories].sort((a, b) => {
-    const countA = items.filter(item => (item.data.category || CATEGORIES.OTHER).toLowerCase() === a.toLowerCase()).length;
-    const countB = items.filter(item => (item.data.category || CATEGORIES.OTHER).toLowerCase() === b.toLowerCase()).length;
-    return countB - countA;
+    return a.toLowerCase().localeCompare(b.toLowerCase());
   });
 
   // Split into main categories (top 5) and others

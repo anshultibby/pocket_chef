@@ -53,21 +53,22 @@ export const pantryStore = create<PantryStore>((set, get) => ({
     })
   })),
   deleteItem: async (id: string) => {
-    set({ isLoading: true, error: null });
     const previousItems = get().items;
     
+    // Optimistically update the UI
+    set((state) => ({
+      items: state.items.filter(item => item.id !== id)
+    }));
+
     try {
-      set((state) => ({
-        items: state.items.filter(item => item.id !== id)
-      }));
       await pantryApi.deleteItem(id);
-      set({ isLoading: false });
-    } catch (_error) {
+    } catch (error) {
+      // Revert on failure
       set({ 
-        items: previousItems, 
-        error: 'Failed to delete item',
-        isLoading: false 
+        items: previousItems,
+        error: 'Failed to delete item'
       });
+      throw error;
     }
   },
 

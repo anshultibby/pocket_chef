@@ -17,6 +17,7 @@ import { useDuplicateStore } from '@/stores/duplicateStore';
 import DuplicateItemModal from '@/components/modals/DuplicateItemModal';
 import AddItemModal from '@/components/modals/AddItemModal';
 import Link from 'next/link';
+import { FloatingElfButton } from '@/components/FloatingElfButton';
 
 type TabType = 'cook' | 'pantry' | 'cookbook';
 
@@ -186,14 +187,6 @@ export default function Home() {
               </div>
               
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowElfModal(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-600/20 hover:bg-green-600/30 text-green-400 transition-colors text-sm"
-                >
-                  <span>🧝‍♂️</span>
-                  <span className="hidden sm:inline">Summon Elf</span>
-                </button>
-
                 <div className="relative">
                   <button
                     id="account-button"
@@ -299,6 +292,14 @@ export default function Home() {
             />
           )}
         </div>
+
+        {/* Add Floating Elf Button */}
+        {activeTab === 'cook' && (
+          <FloatingElfButton
+            onClick={() => setShowElfModal(true)}
+            pantryItemsCount={pantryItems.length}
+          />
+        )}
 
         {/* Error display */}
         {error && (
