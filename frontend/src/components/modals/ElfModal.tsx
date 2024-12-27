@@ -58,7 +58,6 @@ export default function ElfModal({ onClose, pantryItemsCount }: ElfModalProps) {
                   <Dialog.Title className="text-2xl font-bold text-white">
                     Kitchen Elf
                   </Dialog.Title>
-                  <p className="text-gray-400 mt-1">Your magical cooking companion</p>
                 </div>
               </div>
               <button 

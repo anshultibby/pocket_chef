@@ -182,59 +182,24 @@ export default function Home() {
             <div className="flex justify-between items-center">
               <div>
                 <h1 className="text-3xl font-bold mb-2">Kitchen Elf</h1>
-                <p className="text-gray-400">Your magical cooking companion</p>
               </div>
               
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => router.push('/onboarding')}
-                  className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 transition-colors text-sm"
                 >
                   <span>🎯</span>
-                  <span>Redo Onboarding</span>
+                  <span className="hidden sm:inline">Redo Onboarding</span>
                 </button>
 
                 <button
                   onClick={() => setShowElfModal(true)}
-                  className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-600/20 hover:bg-green-600/30 text-green-400 transition-colors text-sm"
                 >
                   <span>🧝‍♂️</span>
-                  <span>Summon Elf</span>
+                  <span className="hidden sm:inline">Summon Elf</span>
                 </button>
-                
-                <div className="relative">
-                  <button
-                    id="account-button"
-                    onClick={() => setIsAccountMenuOpen(!isAccountMenuOpen)}
-                    className="flex items-center space-x-2 text-gray-400 hover:text-white"
-                  >
-                    <span>👤</span>
-                    <span>Account</span>
-                  </button>
-                  
-                  {isAccountMenuOpen && (
-                    <div 
-                      id="account-menu"
-                      className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-lg py-2 z-50"
-                    >
-                      <a 
-                        href="/profile" 
-                        className="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white"
-                      >
-                        Profile Settings
-                      </a>
-
-                      <div className="border-t border-gray-700">
-                        <button 
-                          onClick={handleSignOut}
-                          className="block w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-700"
-                        >
-                          Sign Out
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
               </div>
             </div>
           </div>
@@ -246,7 +211,7 @@ export default function Home() {
             <div className="flex space-x-1">
               <button
                 onClick={() => handleTabChange('cook')}
-                className={`px-3 py-2 ${
+                className={`px-3 py-1.5 ${
                   activeTab === 'cook'
                     ? 'border-b-2 border-blue-500 text-blue-500'
                     : 'text-gray-400 hover:text-gray-200'
