@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
@@ -11,13 +12,27 @@ export default function SignupPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const { signUp } = useAuth();
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await signUp(email, password, name);
-      setSuccess(true);
-      setError('');
+      const { session, isNewUser } = await signUp(email, password, name);
+      
+      if (session) {
+        if (isNewUser) {
+          // New user - redirect to profile
+          router.push('/profile');
+        } else {
+          // Email verification required
+          setSuccess(true);
+          setError('Please check your email to verify your account');
+        }
+      } else {
+        // Email verification required
+        setSuccess(true);
+        setError('Please check your email to verify your account');
+      }
     } catch (error) {
       setError('Failed to create account');
       console.error('Signup error:', error);

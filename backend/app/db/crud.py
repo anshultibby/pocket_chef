@@ -10,6 +10,7 @@ from ..models.recipe_interactions import (
     RecipeInteractionCreate,
 )
 from ..models.recipes import RecipeData, RecipeResponse
+from ..models.user_profile import UserProfile, UserProfileUpdate
 from .supabase import get_supabase
 
 logger = logging.getLogger(__name__)
@@ -324,4 +325,56 @@ class RecipeCRUD(BaseCRUD):
             return RecipeResponse(**result.data[0]) if result.data else None
         except Exception as e:
             logger.error(f"Error getting recipe: {str(e)}")
+            raise
+
+
+class ProfileCRUD(BaseCRUD):
+    def __init__(self):
+        super().__init__()
+        self.table = "user_profiles"
+
+    async def get_profile(self, user_id: UUID) -> Optional[UserProfile]:
+        try:
+            result = (
+                self.supabase.table(self.table)
+                .select("*")
+                .eq("user_id", str(user_id))
+                .execute()
+            )
+            # Handle the case where no profile exists
+            return UserProfile(**result.data[0]) if result.data else None
+        except Exception as e:
+            logger.error(f"Error getting user profile: {str(e)}")
+            raise
+
+    async def update_profile(
+        self, user_id: UUID, updates: UserProfileUpdate
+    ) -> UserProfile:
+        try:
+            result = (
+                self.supabase.table(self.table)
+                .update(updates.model_dump(exclude_none=True))
+                .eq("user_id", str(user_id))
+                .execute()
+            )
+            return UserProfile(**result.data[0])
+        except Exception as e:
+            logger.error(f"Error updating user profile: {str(e)}")
+            raise
+
+    async def create_profile(self, user_id: UUID) -> UserProfile:
+        """Create a new profile for a user with default values"""
+        try:
+            data = {
+                "user_id": str(user_id),
+                "dietary_preferences": [],
+                "goals": [],
+                "default_servings": 2,
+                "cooking_experience": "beginner",
+                "notes": None,
+            }
+            result = self.supabase.table(self.table).insert(data).execute()
+            return UserProfile(**result.data[0])
+        except Exception as e:
+            logger.error(f"Error creating user profile: {str(e)}")
             raise

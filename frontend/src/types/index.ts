@@ -184,3 +184,25 @@ export interface RecipeInteraction {
 export interface InteractionWithRecipe extends Omit<RecipeInteraction, 'recipe'> {
   recipe: Recipe;
 }
+
+export type CookingExperience = 'beginner' | 'intermediate' | 'advanced';
+
+export interface UserProfile {
+  id: string;
+  user_id: string;
+  dietary_preferences: string[];
+  goals: string[];
+  default_servings: number;
+  cooking_experience: CookingExperience;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserProfileUpdate {
+  dietary_preferences?: string[];
+  goals?: string[];
+  default_servings?: number;
+  cooking_experience?: CookingExperience;
+  notes?: string;
+}

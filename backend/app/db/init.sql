@@ -158,3 +158,26 @@ CREATE INDEX idx_recipe_interactions_recipe ON recipe_interactions(recipe_id);
 ALTER TABLE recipe_interactions 
 ADD CONSTRAINT unique_user_recipe_interaction 
 UNIQUE (user_id, recipe_id, type);
+
+-- User profiles table
+CREATE TABLE IF NOT EXISTS public.user_profiles (
+    id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE NOT NULL,
+    dietary_preferences jsonb NOT NULL DEFAULT '[]'::jsonb,
+    goals jsonb NOT NULL DEFAULT '[]'::jsonb,
+    default_servings integer NOT NULL DEFAULT 2,
+    cooking_experience text NOT NULL DEFAULT 'beginner',
+    notes text,
+    created_at timestamptz DEFAULT now(),
+    updated_at timestamptz DEFAULT now(),
+    CONSTRAINT valid_servings CHECK (default_servings BETWEEN 1 AND 12)
+);
+
+-- Add RLS policy
+ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view and update their own profile" ON public.user_profiles
+    FOR ALL USING (auth.uid() = user_id);
+
+-- Create index
+CREATE INDEX idx_user_profiles_user ON user_profiles(user_id);

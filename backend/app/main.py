@@ -1,14 +1,11 @@
 import logging
 import os
 import traceback
-from uuid import UUID
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from .routers import pantry, recipes
-from .services.auth import get_current_user
+from .routers import pantry, profile, recipes
 
 # Add logging configuration
 logging.basicConfig(level=logging.INFO)
@@ -42,6 +39,7 @@ app.add_middleware(
 # Include routers
 app.include_router(pantry.router)
 app.include_router(recipes.router)
+app.include_router(profile.router)
 
 
 # Add a simple root endpoint for testing

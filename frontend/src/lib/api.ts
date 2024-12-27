@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 import { fetchApi } from './fetch';
 import type { Recipe, RecipePreferences, PantryItemCreate, 
   PantryItem, PantryItemUpdate, RecipeInteractionCreate, 
-  RecipeInteraction, InteractionType, SaveData, RateData, CookData } from '@/types';
+  RecipeInteraction, InteractionType, SaveData, RateData, CookData, UserProfile, UserProfileUpdate } from '@/types';
 
 // Helper function to get auth token
 const getAuthToken = async () => {
@@ -245,4 +245,37 @@ export const recipeApi = {
       }
     });
   },
+};
+
+export const profileApi = {
+  async getProfile(): Promise<UserProfile> {
+    const token = await getAuthToken();
+    return fetchApi<UserProfile>('/profile', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  },
+
+  async updateProfile(updates: UserProfileUpdate): Promise<UserProfile> {
+    const token = await getAuthToken();
+    return fetchApi<UserProfile>('/profile', {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(updates)
+    });
+  },
+
+  async createProfile(): Promise<UserProfile> {
+    const token = await getAuthToken();
+    return fetchApi<UserProfile>('/profile', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  }
 };
