@@ -127,17 +127,3 @@ class RecipePreferences(CustomBaseModel):
                 "custom_preferences": "Spicy food preferred",
             }
         }
-
-
-class RecipeUsageCreate(BaseModel):
-    servings_made: int = Field(gt=0)
-    ingredients_used: Dict[str, float] = Field(
-        description="Map of pantry_item_id to quantity used"
-    )
-    notes: Optional[str] = None
-
-
-class RecipeUsage(RecipeUsageCreate):
-    id: UUID
-    user_id: UUID
-    used_at: datetime

@@ -75,6 +75,7 @@ export function useDuplicateHandler(
           };
           await onUpdateItem(duplicateItem.existing.id, mergedEditItem);
           setIsEditing(true);
+          setDuplicateItem(null);
           return mergedEditItem;
 
         case 'merge':
@@ -126,7 +127,6 @@ export function useDuplicateHandler(
     setIsEditing(false);
     const remainingItems = pendingItems.slice(1);
     if (remainingItems.length > 0) {
-      setDuplicateItem(null);
       setPendingItems(remainingItems);
       await handleMultipleItems(remainingItems);
     } else {

@@ -4,7 +4,12 @@ from typing import List, Optional
 from uuid import UUID
 
 from ..models.pantry import PantryItem, PantryItemCreate, PantryItemUpdate
-from ..models.recipes import RecipeData, RecipeResponse, RecipeUsage, RecipeUsageCreate
+from ..models.recipe_interactions import (
+    InteractionType,
+    RecipeInteraction,
+    RecipeInteractionCreate,
+)
+from ..models.recipes import RecipeData, RecipeResponse
 from .supabase import get_supabase
 
 logger = logging.getLogger(__name__)
@@ -163,9 +168,15 @@ class RecipeCRUD(BaseCRUD):
     def cleanup_old_recipes(self, user_id: UUID, keep_days: int = 7):
         try:
             cutoff_date = datetime.utcnow() - timedelta(days=keep_days)
-            self.supabase.table(self.table).delete().eq("user_id", str(user_id)).eq(
-                "is_saved", False
-            ).lt("created_at", cutoff_date.isoformat()).execute()
+
+            # Get recipes that have no save interactions and are older than cutoff
+            result = self.supabase.rpc(
+                "delete_unused_recipes",
+                {
+                    "user_id_param": str(user_id),
+                    "cutoff_date_param": cutoff_date.isoformat(),
+                },
+            ).execute()
         except Exception as e:
             logger.error(f"Error cleaning up old recipes: {str(e)}")
             raise
@@ -221,48 +232,81 @@ class RecipeCRUD(BaseCRUD):
             logger.error(f"Error getting matching pantry items: {str(e)}")
             raise
 
-    async def create_usage(
-        self, user_id: UUID, recipe_id: str, usage: RecipeUsageCreate
-    ) -> RecipeUsage:
-        """Create a recipe usage record"""
+    async def create_interaction(
+        self, user_id: UUID, recipe_id: UUID, interaction: RecipeInteractionCreate
+    ) -> RecipeInteraction:
         try:
+            # First check if interaction exists
             result = (
-                self.supabase.table("recipe_usage")
-                .insert(
-                    {
-                        "user_id": str(user_id),
-                        "recipe_id": recipe_id,
-                        "servings_made": usage.servings_made,
-                        "ingredients_used": usage.ingredients_used,
-                        "notes": usage.notes,
-                    }
-                )
+                self.supabase.table("recipe_interactions")
+                .select("*")
+                .eq("user_id", str(user_id))
+                .eq("recipe_id", str(recipe_id))
+                .eq("type", interaction.type)
                 .execute()
             )
-            return RecipeUsage(**result.data[0])
+
+            if result.data:
+                # Update existing interaction
+                result = (
+                    self.supabase.table("recipe_interactions")
+                    .update(
+                        {
+                            "data": interaction.data.dict(),
+                            "updated_at": datetime.utcnow().isoformat(),
+                        }
+                    )
+                    .eq("user_id", str(user_id))
+                    .eq("recipe_id", str(recipe_id))
+                    .eq("type", interaction.type)
+                    .execute()
+                )
+            else:
+                # Create new interaction
+                result = (
+                    self.supabase.table("recipe_interactions")
+                    .insert(
+                        {
+                            "user_id": str(user_id),
+                            "recipe_id": str(recipe_id),
+                            "type": interaction.type,
+                            "data": interaction.data.dict(),
+                        }
+                    )
+                    .execute()
+                )
+
+            if not result.data:
+                raise ValueError("Failed to create/update interaction")
+
+            return RecipeInteraction(**result.data[0])
+
         except Exception as e:
-            logger.error(f"Error creating recipe usage: {str(e)}")
+            logger.error(f"Error creating recipe interaction: {str(e)}")
             raise
 
-    async def get_recipe_usage_history(
-        self, user_id: UUID, recipe_id: Optional[UUID] = None
-    ) -> List[RecipeUsage]:
-        """Get recipe usage history for a user"""
+    async def get_recipe_interactions(
+        self,
+        user_id: UUID,
+        recipe_id: Optional[UUID] = None,
+        interaction_type: Optional[InteractionType] = None,
+    ) -> List[RecipeInteraction]:
         try:
             query = (
-                self.supabase.table("recipe_usage")
+                self.supabase.table("recipe_interactions")
                 .select("*")
                 .eq("user_id", str(user_id))
             )
 
             if recipe_id:
                 query = query.eq("recipe_id", str(recipe_id))
+            if interaction_type:
+                query = query.eq("type", interaction_type)
 
-            result = query.order("used_at", desc=True).execute()
-
-            return [RecipeUsage(**item) for item in result.data]
+            result = query.order("created_at", desc=True).execute()
+            return [RecipeInteraction(**item) for item in result.data]
         except Exception as e:
-            logger.error(f"Error getting recipe usage history: {str(e)}")
+            logger.error(f"Error getting recipe interactions: {str(e)}")
             raise
 
     async def get_recipe(

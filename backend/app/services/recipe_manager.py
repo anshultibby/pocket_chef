@@ -1,16 +1,16 @@
 import logging
-from typing import Dict, List, Optional
+from typing import List, Optional
 from uuid import UUID
 
 from ..db.crud import PantryCRUD, RecipeCRUD
 from ..models.pantry import PantryItemUpdate
-from ..models.recipes import (
-    ListOfRecipeData,
-    RecipePreferences,
-    RecipeResponse,
-    RecipeUsage,
-    RecipeUsageCreate,
+from ..models.recipe_interactions import (
+    CookData,
+    InteractionType,
+    RecipeInteraction,
+    RecipeInteractionCreate,
 )
+from ..models.recipes import ListOfRecipeData, RecipePreferences, RecipeResponse
 from .claude import ClaudeService
 from .pantry import get_pantry_manager
 
@@ -89,18 +89,137 @@ class RecipeManager:
         return await self.recipe_crud.get_recipe(recipe_id, user_id)
 
     async def use_recipe(
-        self, recipe_id: str, user_id: UUID, usage: RecipeUsageCreate
-    ) -> RecipeUsage:
+        self, recipe_id: str, user_id: UUID, usage: CookData
+    ) -> RecipeInteraction:
         """Use a recipe and update pantry quantities"""
+        logger.info(f"Starting recipe usage for recipe {recipe_id} by user {user_id}")
+
         # Verify recipe exists
         recipe = await self.recipe_crud.get_recipe(recipe_id, user_id)
         if not recipe:
+            logger.error(f"Recipe {recipe_id} not found for user {user_id}")
             raise ValueError("Recipe not found")
 
-        logger.info(
-            f"Using recipe {recipe_id} for user {user_id}, here is the usage: {usage}"
-        )
+        try:
+            # Update pantry quantities
+            for item_id, quantity_used in usage.ingredients_used.items():
+                logger.info(
+                    f"Updating quantity for item {item_id}: using {quantity_used}"
+                )
+                pantry_item = await self.pantry_crud.get_item(item_id, user_id)
+                if not pantry_item:
+                    raise ValueError(f"Pantry item {item_id} not found")
+
+                new_quantity = round(pantry_item.data.quantity - quantity_used, 2)
+                if new_quantity < 0:
+                    raise ValueError(
+                        f"Not enough quantity for item {pantry_item.data.name}"
+                    )
+
+                if new_quantity == 0:
+                    await self.pantry_crud.delete_item(item_id, user_id)
+                    logger.info(f"Deleted item {item_id} as quantity reached 0")
+                else:
+                    updated_data = {**pantry_item.data.dict(), "quantity": new_quantity}
+                    await self.pantry_crud.update_item(
+                        UUID(item_id),
+                        PantryItemUpdate(
+                            data=updated_data, nutrition=pantry_item.nutrition
+                        ),
+                    )
+                    logger.info(f"Updated item {item_id} to quantity {new_quantity}")
+
+            # Record recipe usage
+            interaction = await self.recipe_crud.create_interaction(
+                user_id=user_id,
+                recipe_id=UUID(recipe_id),
+                interaction=RecipeInteractionCreate(type="cook", data=usage),
+            )
+            logger.info(
+                f"Successfully recorded recipe usage interaction for recipe {recipe_id}"
+            )
+            return interaction
+
+        except Exception as e:
+            logger.error(f"Error during recipe usage: {str(e)}")
+            raise
+
+    async def get_saved_recipes_with_availability(
+        self, user_id: UUID
+    ) -> List[RecipeResponse]:
+        """Get all saved recipes for a user by joining interactions and recipes tables"""
+        try:
+            # Get saved interactions and join with recipes
+            result = (
+                self.recipe_crud.supabase.table("recipe_interactions")
+                .select("*, recipes(*)")
+                .eq("user_id", str(user_id))
+                .eq("type", "save")
+                .order("created_at", desc=True)
+                .execute()
+            )
+
+            # Transform the joined data into RecipeResponse objects
+            recipes = []
+            for item in result.data:
+                recipe_data = item["recipes"]
+                if recipe_data:
+                    recipes.append(RecipeResponse(**recipe_data))
+
+            return recipes
+
+        except Exception as e:
+            logger.error(f"Error getting saved recipes: {str(e)}")
+            raise
+
+    async def get_recipe_interactions(
+        self,
+        user_id: UUID,
+        recipe_id: Optional[UUID] = None,
+        interaction_type: Optional[InteractionType] = None,
+    ) -> List[RecipeInteraction]:
+        """Get recipe interactions for a user, optionally filtered by recipe and type"""
+        try:
+            return await self.recipe_crud.get_recipe_interactions(
+                user_id=user_id, recipe_id=recipe_id, interaction_type=interaction_type
+            )
+        except Exception as e:
+            logger.error(f"Error getting recipe interactions: {str(e)}")
+            raise
+
+    async def create_interaction(
+        self, user_id: UUID, recipe_id: UUID, interaction: RecipeInteractionCreate
+    ) -> RecipeInteraction:
+        """Create a recipe interaction"""
+        try:
+            # Special handling for cook interactions
+            if interaction.type == InteractionType.COOK:
+                # Update pantry quantities but don't create interaction here
+                await self._update_pantry_quantities(
+                    recipe_id=str(recipe_id), user_id=user_id, usage=interaction.data
+                )
+
+            # Create the interaction record
+            return await self.recipe_crud.create_interaction(
+                user_id=user_id, recipe_id=recipe_id, interaction=interaction
+            )
+        except Exception as e:
+            logger.error(f"Error creating recipe interaction: {str(e)}")
+            raise
+
+    async def _update_pantry_quantities(
+        self, recipe_id: str, user_id: UUID, usage: CookData
+    ) -> None:
+        """Internal method to update pantry quantities when cooking"""
+        # Verify recipe exists
+        recipe = await self.recipe_crud.get_recipe(recipe_id, user_id)
+        if not recipe:
+            logger.error(f"Recipe {recipe_id} not found for user {user_id}")
+            raise ValueError("Recipe not found")
+
+        # Update pantry quantities
         for item_id, quantity_used in usage.ingredients_used.items():
+            logger.info(f"Updating quantity for item {item_id}: using {quantity_used}")
             pantry_item = await self.pantry_crud.get_item(item_id, user_id)
             if not pantry_item:
                 raise ValueError(f"Pantry item {item_id} not found")
@@ -111,9 +230,9 @@ class RecipeManager:
                     f"Not enough quantity for item {pantry_item.data.name}"
                 )
 
-            # If quantity becomes 0, delete the item
             if new_quantity == 0:
                 await self.pantry_crud.delete_item(item_id, user_id)
+                logger.info(f"Deleted item {item_id} as quantity reached 0")
             else:
                 updated_data = {**pantry_item.data.dict(), "quantity": new_quantity}
                 await self.pantry_crud.update_item(
@@ -122,28 +241,21 @@ class RecipeManager:
                         data=updated_data, nutrition=pantry_item.nutrition
                     ),
                 )
+                logger.info(f"Updated item {item_id} to quantity {new_quantity}")
 
-        # Record recipe usage
-        return await self.recipe_crud.create_usage(user_id, recipe_id, usage)
-
-    async def get_saved_recipes_with_availability(
-        self, user_id: UUID
-    ) -> List[RecipeResponse]:
-        """Get all saved recipes for a user"""
+    async def get_all_recipes(self, user_id: UUID) -> List[RecipeResponse]:
+        """Get all recipes for a user"""
         try:
             result = (
-                self.recipe_crud.supabase.table(self.recipe_crud.table)
+                self.recipe_crud.supabase.table("recipes")
                 .select("*")
                 .eq("user_id", str(user_id))
                 .order("created_at", desc=True)
-                .limit(8)
                 .execute()
             )
-
-            return [RecipeResponse(**item) for item in result.data]
-
+            return [RecipeResponse(**recipe) for recipe in result.data]
         except Exception as e:
-            logger.error(f"Error getting saved recipes: {str(e)}")
+            logger.error(f"Error getting recipes: {str(e)}")
             raise
 
 

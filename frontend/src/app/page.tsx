@@ -1,17 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import PantryTab from '@/components/PantryTab';
 import { AuthGuard } from '@/components/AuthGuard';
 import { useAuth } from '@/lib/auth-context';
 import RecipesTab from '@/components/RecipesTab';
+import PantryTab from '@/components/PantryTab';
 import { usePantryStore } from '@/stores/pantryStore';
 import ElfModal from '@/components/modals/ElfModal';
+import { CookbookTab } from '@/components/cookbook';
 
 export const dynamic = 'force-dynamic';
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<'cook' | 'pantry'>('cook');
+  const [activeTab, setActiveTab] = useState<'cook' | 'pantry' | 'cookbook'>('cook');
   const { items, isLoading, error, fetchItems } = usePantryStore();
   const { signOut } = useAuth();
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
@@ -126,22 +127,33 @@ export default function Home() {
               >
                 Pantry
               </button>
+              <button
+                onClick={() => setActiveTab('cookbook')}
+                className={`px-4 py-3 ${
+                  activeTab === 'cookbook'
+                    ? 'border-b-2 border-blue-500 text-blue-500'
+                    : 'text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                Cookbook
+              </button>
             </div>
           </div>
         </div>
 
-        {activeTab === 'pantry' ? (
-          <div className="max-w-4xl mx-auto px-4 py-12">
+        {/* Tab Content */}
+        <div className="max-w-4xl mx-auto px-4 py-12">
+          {activeTab === 'pantry' ? (
             <PantryTab />
-          </div>
-        ) : (
-          <div className="max-w-4xl mx-auto px-4 py-12">
+          ) : activeTab === 'cookbook' ? (
+            <CookbookTab />
+          ) : (
             <RecipesTab
               loading={isLoading}
               pantryItems={items}
             />
-          </div>
-        )}
+          )}
+        </div>
 
         {error && (
           <div className="max-w-4xl mx-auto px-4 mt-4">

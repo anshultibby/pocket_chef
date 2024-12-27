@@ -1,6 +1,8 @@
 import { supabase } from './supabase';
 import { fetchApi } from './fetch';
-import type { Recipe, RecipePreferences, PantryItemCreate, PantryItem, PantryItemUpdate, RecipeUsageCreate, RecipeUsage } from '@/types';
+import type { Recipe, RecipePreferences, PantryItemCreate, 
+  PantryItem, PantryItemUpdate, RecipeInteractionCreate, 
+  RecipeInteraction, InteractionType, SaveData, RateData, CookData } from '@/types';
 
 // Helper function to get auth token
 const getAuthToken = async () => {
@@ -136,19 +138,106 @@ export const recipeApi = {
     });
   },
 
-  use: async (recipeId: string, usage: RecipeUsageCreate): Promise<RecipeUsage> => {
+  interact: async (
+    recipeId: string, 
+    interaction: RecipeInteractionCreate
+  ): Promise<RecipeInteraction> => {
     const token = await getAuthToken();
-    return fetchApi<RecipeUsage>(`/recipes/${recipeId}/use`, {
+    return fetchApi<RecipeInteraction>(`/recipes/${recipeId}/interact`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(usage),
+      body: JSON.stringify(interaction),
+    });
+  },
+
+  getInteractions: async (
+    recipeId?: string,
+    type?: InteractionType
+  ): Promise<RecipeInteraction[]> => {
+    const token = await getAuthToken();
+    const url = recipeId 
+      ? `/recipes/${recipeId}/interactions` 
+      : '/recipes/interactions';
+    
+    const params = type ? `?interaction_type=${type}` : '';
+    
+    return fetchApi<RecipeInteraction[]>(`${url}${params}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  },
+
+
+  isSaveData(data: SaveData | RateData | CookData): data is SaveData {
+    return 'folder' in data || 'notes' in data;
+  },
+
+  saveRecipe: async (recipeId: string, folder?: string): Promise<RecipeInteraction> => {
+    try {
+      // Try to create/update the save interaction
+      return await recipeApi.interact(recipeId, {
+        type: 'save',
+        data: { folder }
+      });
+    } catch (error) {
+      // If we get a duplicate key error, the recipe is already saved
+      if (error instanceof Error && error.message.includes('duplicate key value')) {
+        // Get the existing save interaction
+        const interactions = await recipeApi.getInteractions(recipeId, 'save');
+        if (interactions.length > 0) {
+          return interactions[0];
+        }
+      }
+      // If it's any other error, or we couldn't find the existing interaction, rethrow
+      console.error('Error saving recipe:', error);
+      throw error;
+    }
+  },
+
+  rateRecipe: async (
+    recipeId: string, 
+    rating: number, 
+    review?: string
+  ): Promise<RecipeInteraction> => {
+    return recipeApi.interact(recipeId, {
+      type: 'rate',
+      data: { rating, review }
+    });
+  },
+
+  use: async (
+    recipeId: string, 
+    usage: { servings_made: number; ingredients_used: Record<string, number>; notes?: string }
+  ): Promise<RecipeInteraction> => {
+    return recipeApi.interact(recipeId, {
+      type: 'cook',
+      data: usage
     });
   },
 
   getAll: async (): Promise<Recipe[]> => {
+    const token = await getAuthToken();
+    return fetchApi<Recipe[]>('/recipes', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  },
+
+  getRecipe: async (recipeId: string): Promise<Recipe> => {
+    const token = await getAuthToken();
+    return fetchApi<Recipe>(`/recipes/${recipeId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  },
+
+  getAllSuggestions: async (): Promise<Recipe[]> => {
     const token = await getAuthToken();
     return fetchApi<Recipe[]>('/recipes', {
       headers: {

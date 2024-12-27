@@ -1,20 +1,20 @@
 -- Enable necessary extensions
-create extension if not exists "uuid-ossp";
-create extension if not exists "pg_trgm";
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 
 -- Create custom types
 DO $$ 
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'difficulty_level') THEN
-        create type difficulty_level as enum ('easy', 'medium', 'hard');
+        CREATE TYPE difficulty_level AS ENUM ('easy', 'medium', 'hard');
     END IF;
 END
 $$;
 
--- Pantry items
-create table if not exists public.pantry_items (
-    id uuid default uuid_generate_v4() primary key,
-    data jsonb not null default '{
+-- Pantry items table
+CREATE TABLE IF NOT EXISTS public.pantry_items (
+    id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+    data jsonb NOT NULL DEFAULT '{
         "name": null,
         "original_name": null,
         "quantity": null,
@@ -24,7 +24,7 @@ create table if not exists public.pantry_items (
         "expiry_date": null,
         "price": null
     }'::jsonb,
-    nutrition jsonb not null default '{
+    nutrition jsonb NOT NULL DEFAULT '{
         "standard_unit": "serving",
         "calories": 0,
         "protein": 0,
@@ -32,22 +32,22 @@ create table if not exists public.pantry_items (
         "fat": 0,
         "fiber": 0
     }'::jsonb,
-    created_at timestamp with time zone default now(),
-    updated_at timestamp with time zone default now(),
-    user_id uuid references auth.users(id) on delete cascade not null,
-    constraint pantry_items_required_fields 
-        check (
-            data -> 'name' is not null and
-            data -> 'quantity' is not null and
-            data -> 'quantity' > '0' and
-            data -> 'unit' is not null
+    created_at timestamptz DEFAULT now(),
+    updated_at timestamptz DEFAULT now(),
+    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    CONSTRAINT pantry_items_required_fields 
+        CHECK (
+            data -> 'name' IS NOT NULL AND
+            data -> 'quantity' IS NOT NULL AND
+            data -> 'quantity' > '0' AND
+            data -> 'unit' IS NOT NULL
         )
 );
 
--- Recipes
-create table if not exists public.recipes (
-    id uuid default uuid_generate_v4() primary key,
-    data jsonb not null default '{
+-- Recipes table
+CREATE TABLE IF NOT EXISTS public.recipes (
+    id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+    data jsonb NOT NULL DEFAULT '{
         "name": null,
         "ingredients": [],
         "instructions": [],
@@ -55,7 +55,6 @@ create table if not exists public.recipes (
         "difficulty": "medium",
         "calculated_nutrition": {
             "total": {
-                "standard_unit": "serving",
                 "calories": 0,
                 "protein": 0,
                 "carbs": 0,
@@ -63,7 +62,6 @@ create table if not exists public.recipes (
                 "fiber": 0
             },
             "per_serving": {
-                "standard_unit": "serving",
                 "calories": 0,
                 "protein": 0,
                 "carbs": 0,
@@ -74,160 +72,89 @@ create table if not exists public.recipes (
         "servings": 1,
         "category": null
     }'::jsonb,
-    is_public boolean default false,
-    created_at timestamp with time zone default now(),
-    updated_at timestamp with time zone default now(),
-    user_id uuid references auth.users(id) on delete cascade not null,
-    constraint recipes_required_fields 
-        check (
-            data -> 'name' is not null and
-            data -> 'ingredients' is not null and
-            data -> 'instructions' is not null and
-            data -> 'preparation_time' is not null and
-            data -> 'category' is not null and
-            data -> 'servings' is not null and
+    is_public boolean DEFAULT false,
+    created_at timestamptz DEFAULT now(),
+    updated_at timestamptz DEFAULT now(),
+    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    CONSTRAINT recipes_required_fields 
+        CHECK (
+            data -> 'name' IS NOT NULL AND
+            data -> 'ingredients' IS NOT NULL AND
+            data -> 'instructions' IS NOT NULL AND
+            data -> 'preparation_time' IS NOT NULL AND
+            data -> 'category' IS NOT NULL AND
+            data -> 'servings' IS NOT NULL AND
             (data -> 'servings')::int > 0
         )
 );
 
--- Indexes
-create index if not exists idx_pantry_items_user on pantry_items (user_id);
-create index if not exists idx_pantry_items_name 
-    on pantry_items using gin (((data -> 'name')::text) gin_trgm_ops);
-create index if not exists idx_pantry_items_category 
-    on pantry_items using gin ((data ->> 'category'));
-
-create index if not exists idx_recipes_user on recipes (user_id);
-create index if not exists idx_recipes_public on recipes (is_public) where is_public = true;
-create index if not exists idx_recipes_name 
-    on recipes using gin (((data -> 'name')::text) gin_trgm_ops);
-create index if not exists idx_recipes_category
-    on recipes using gin ((data ->> 'category'));
-
--- RLS Policies
-alter table public.pantry_items enable row level security;
-alter table public.recipes enable row level security;
-
-create policy "Users can read own pantry items" 
-    on public.pantry_items for select using (auth.uid() = user_id);
-
-create policy "Users can insert own pantry items" 
-    on public.pantry_items for insert with check (auth.uid() = user_id);
-
-create policy "Users can update own pantry items" 
-    on public.pantry_items for update using (auth.uid() = user_id);
-
-create policy "Users can delete own pantry items" 
-    on public.pantry_items for delete using (auth.uid() = user_id);
-
-create policy "Users can read own or public recipes" 
-    on public.recipes for select using (auth.uid() = user_id OR is_public = true);
-
-create policy "Users can insert own recipes" 
-    on public.recipes for insert with check (auth.uid() = user_id);
-
-create policy "Users can update own recipes" 
-    on public.recipes for update using (auth.uid() = user_id);
-
-create policy "Users can delete own recipes" 
-    on public.recipes for delete using (auth.uid() = user_id);
-
--- Recipe ingredients structure example:
-COMMENT ON TABLE recipes IS 'Recipe ingredients structure:
-{
-    "ingredients": [
-        {
-            "pantry_item_id": "uuid",
-            "quantity": 2.0,
-            "unit": "units",
-            "notes": "optional notes",
-            "is_optional": false
-        }
-    ]
-}';
-
--- Example pantry item structure
-COMMENT ON TABLE pantry_items IS 'Example pantry item:
-{
-    "data": {
-        "name": "Eggs",
-        "original_name": "Eggs",
-        "quantity": 12,
-        "unit": "units",
-        "category": "Dairy & Eggs",
-        "notes": "organic",
-        "expiry_date": "2024-04-01T00:00:00Z",
-        "price": 4.99
-    },
-    "nutrition": {
-        "standard_unit": "serving",
-        "calories": 70,
-        "protein": 6,
-        "carbs": 0.6,
-        "fat": 5,
-        "fiber": 0
-    }
-}';
-
--- Add index for pantry item name lookups
-CREATE INDEX IF NOT EXISTS idx_pantry_items_name ON pantry_items ((data->>'name'));
-
--- Add indexes for recipe lookups
-CREATE INDEX IF NOT EXISTS idx_recipes_user_id ON recipes(user_id);
-CREATE INDEX IF NOT EXISTS idx_recipes_is_saved ON recipes(is_saved);
-CREATE INDEX IF NOT EXISTS idx_recipes_category ON recipes((data->>'category'));
-
--- Recipe table structure
-COMMENT ON TABLE recipes IS 'Example recipe:
-{
-    "data": {
-        "name": "Scrambled Eggs",
-        "ingredients": [
-            {
-                "name": "Eggs",
-                "quantity": 2,
-                "unit": "units",
-                "notes": "large",
-                "pantry_item_id": "uuid-here",
-                "is_optional": false,
-                "substitutes": []
-            }
-        ],
-        "instructions": ["Beat eggs", "Cook in pan"],
-        "preparation_time": 10,
-        "calculated_nutrition": {
-            "total": {
-                "calories": 140,
-                "protein": 12,
-                "carbs": 1.2,
-                "fat": 10,
-                "fiber": 0
-            },
-            "per_serving": {
-                "calories": 140,
-                "protein": 12,
-                "carbs": 1.2,
-                "fat": 10,
-                "fiber": 0
-            }
-        },
-        "servings": 1,
-        "category": "breakfast"
-    },
-    "is_saved": true
-}';
-
-CREATE TABLE IF NOT EXISTS public.recipe_usage (
+-- Recipe interactions table
+CREATE TABLE IF NOT EXISTS public.recipe_interactions (
     id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
-    recipe_id uuid REFERENCES public.recipes(id) ON DELETE CASCADE,
+    recipe_id uuid REFERENCES recipes(id) ON DELETE CASCADE,
     user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-    used_at timestamp with time zone DEFAULT now(),
-    servings_made integer NOT NULL,
-    ingredients_used jsonb NOT NULL,
-    notes text,
-    CONSTRAINT recipe_usage_servings_check CHECK (servings_made > 0)
+    type text NOT NULL,
+    data jsonb NOT NULL DEFAULT '{}'::jsonb,
+    created_at timestamptz DEFAULT now(),
+    
+    -- Computed columns for efficient querying
+    is_saved boolean GENERATED ALWAYS AS (
+        type = 'save'
+    ) STORED,
+    rating numeric GENERATED ALWAYS AS (
+        CASE WHEN type = 'rate' 
+        THEN (data->>'rating')::numeric 
+        ELSE NULL END
+    ) STORED,
+
+    CONSTRAINT valid_type CHECK (
+        type = ANY(ARRAY['save', 'rate', 'cook'])
+    ),
+    -- Ensure only one save/rate per user per recipe
+    CONSTRAINT idx_unique_save UNIQUE (user_id, recipe_id) WHERE type = 'save',
+    CONSTRAINT idx_unique_rate UNIQUE (user_id, recipe_id) WHERE type = 'rate'
 );
 
--- Add indexes
-CREATE INDEX idx_recipe_usage_user ON recipe_usage(user_id);
-CREATE INDEX idx_recipe_usage_recipe ON recipe_usage(recipe_id);
+-- Indexes
+CREATE INDEX idx_pantry_items_user ON pantry_items(user_id);
+CREATE INDEX idx_pantry_items_name ON pantry_items USING gin(((data->>'name')::text) gin_trgm_ops);
+CREATE INDEX idx_pantry_items_category ON pantry_items USING gin((data->>'category'));
+
+CREATE INDEX idx_recipes_user ON recipes(user_id);
+CREATE INDEX idx_recipes_public ON recipes(is_public) WHERE is_public = true;
+CREATE INDEX idx_recipes_name ON recipes USING gin(((data->>'name')::text) gin_trgm_ops);
+CREATE INDEX idx_recipes_category ON recipes USING gin((data->>'category'));
+
+CREATE INDEX idx_recipe_interactions_user ON recipe_interactions(user_id);
+CREATE INDEX idx_recipe_interactions_recipe ON recipe_interactions(recipe_id);
+CREATE INDEX idx_recipe_interactions_type ON recipe_interactions(type);
+CREATE INDEX idx_recipe_interactions_saved ON recipe_interactions(is_saved) WHERE is_saved = true;
+CREATE INDEX idx_recipe_interactions_rating ON recipe_interactions(rating) WHERE rating IS NOT NULL;
+
+-- RLS Policies
+ALTER TABLE public.pantry_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.recipes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.recipe_interactions ENABLE ROW LEVEL SECURITY;
+
+-- Pantry RLS
+CREATE POLICY "Users can manage their own pantry items" ON public.pantry_items 
+    FOR ALL USING (auth.uid() = user_id);
+
+-- Recipe RLS
+CREATE POLICY "Users can read own or public recipes" ON public.recipes 
+    FOR SELECT USING (auth.uid() = user_id OR is_public = true);
+
+CREATE POLICY "Users can manage their own recipes" ON public.recipes 
+    FOR ALL USING (auth.uid() = user_id);
+
+-- Interaction RLS
+CREATE POLICY "Users can manage their own interactions" ON public.recipe_interactions 
+    FOR ALL USING (auth.uid() = user_id);
+
+-- Add an index to improve join performance
+CREATE INDEX idx_recipe_interactions_recipe ON recipe_interactions(recipe_id);
+
+-- Add unique constraint to recipe_interactions
+ALTER TABLE recipe_interactions 
+ADD CONSTRAINT unique_user_recipe_interaction 
+UNIQUE (user_id, recipe_id, type);

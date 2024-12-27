@@ -1,15 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Recipe, PantryItem } from '@/types';
-import { recipeApi } from '@/lib/api';
-import RecipeCardPreview from './recipes/RecipeCardPreview';
 import RecipeDetailModal from './recipes/RecipeDetailModal';
 import RecipeUseModal from './recipes/use-recipe/RecipeUseModal';
-import { toast } from 'react-hot-toast';
-import { usePantryStore } from '@/stores/pantryStore';
 import { useRecipeStore } from '@/stores/recipeStore';
 import { RecipeCollectionHeader } from './recipes/RecipeCollectionHeader';
 import { RecipeGenerationGroup } from './recipes/RecipeGenerationGroup';
 import ElfModal from './modals/ElfModal';
+import { calculateRecipeAvailability } from '@/stores/recipeStore';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface RecipesTabProps {
   pantryItems: PantryItem[];
@@ -19,17 +17,14 @@ interface RecipesTabProps {
 export default function RecipesTab({
   pantryItems,
 }: RecipesTabProps) {
-  const { fetchItems } = usePantryStore();
   const { 
     recipes,
     preferences,
     isLoading,
     isGenerating,
     error,
-    setRecipes,
-    setIsLoading,
+    fetchRecipes,
     setIsGenerating,
-    setError,
   } = useRecipeStore();
   
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
@@ -37,67 +32,35 @@ export default function RecipesTab({
   const [showElfModal, setShowElfModal] = useState(false);
 
   useEffect(() => {
-    const fetchRecipes = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await recipeApi.getAll();
-        setRecipes(response);
-      } catch (error) {
-        console.error('Error fetching recipes:', error);
-        setError('Failed to load recipes');
-      } finally {
-        setIsLoading(false);
+    fetchRecipes().catch(console.error);
+  }, [fetchRecipes]);
+
+  // Group recipes by timestamp
+  const groupedRecipes = useMemo(() => {
+    return recipes.reduce((acc, recipe) => {
+      const timestamp = recipe.created_at;
+      if (!acc[timestamp]) {
+        acc[timestamp] = [];
       }
-    };
+      acc[timestamp].push(recipe);
+      return acc;
+    }, {} as Record<string, Recipe[]>);
+  }, [recipes]);
 
-    fetchRecipes();
-  }, [setIsLoading, setError, setRecipes]);
-
-  const handleUseRecipe = async (ingredientsUsed: Record<string, number>) => {
-    if (!usingRecipe) return;
-
-    try {
-      await recipeApi.use(usingRecipe.id, {
-        servings_made: usingRecipe.data.servings,
-        ingredients_used: ingredientsUsed,
-      });
-
-      await fetchItems();
-      setUsingRecipe(null);
-      setSelectedRecipe(null);
-    } catch (error) {
-      console.error('Error using recipe:', error);
-      toast.error('Failed to use recipe');
-    }
+  const handleRemoveRecipe = (recipeId: string) => {
+    useRecipeStore.getState().setRecipes(prevRecipes => 
+      prevRecipes.filter(recipe => recipe.id !== recipeId)
+    );
   };
-
-  // Group recipes by generation timestamp and sort within groups by availability
-  const groupedRecipes = recipes.reduce((groups, recipe) => {
-    const timestamp = recipe.created_at.split('T')[0];
-    if (!groups[timestamp]) groups[timestamp] = [];
-    groups[timestamp].push(recipe);
-    return groups;
-  }, {} as Record<string, Recipe[]>);
 
   // Sort recipes within each group by availability
   Object.values(groupedRecipes).forEach(recipeGroup => {
     recipeGroup.sort((a, b) => {
-      const calcAvailability = (recipe: Recipe) => {
-        const total = recipe.data.ingredients.length;
-        if (total === 0) return 0;
-        
-        const available = recipe.data.ingredients.filter(ing => 
-          pantryItems.some(item => 
-            item.data.name && 
-            item.data.name.toLowerCase() === ing.name.toLowerCase()
-          )
-        ).length;
-        
-        return available / total;
+      const getAvailability = (recipe: Recipe) => {
+        const { percentage } = calculateRecipeAvailability(recipe, pantryItems);
+        return percentage;
       };
-
-      return calcAvailability(b) - calcAvailability(a);
+      return getAvailability(b) - getAvailability(a);
     });
   });
 
@@ -111,8 +74,6 @@ export default function RecipesTab({
       <RecipeCollectionHeader
         recipesCount={recipes.length}
         lastGeneratedAt={sortedTimestamps[0]}
-        onGenerateNew={() => setShowElfModal(true)}
-        pantryItemsCount={pantryItems.length}
       />
 
       {error && (
@@ -129,16 +90,37 @@ export default function RecipesTab({
           </p>
         </div>
       ) : (
-        sortedTimestamps.map(timestamp => (
-          <RecipeGenerationGroup
-            key={timestamp}
-            timestamp={timestamp}
-            recipes={groupedRecipes[timestamp]}
-            pantryItems={pantryItems}
-            preferences={preferences}
-            onSelectRecipe={setSelectedRecipe}
-          />
-        ))
+        <div className="relative h-[500px] flex justify-center items-center">
+          <AnimatePresence>
+            {sortedTimestamps.map((timestamp, index) => (
+              <motion.div
+                key={timestamp}
+                className="absolute w-full max-w-2xl"
+                initial={{ scale: 0.8, y: 50, opacity: 0 }}
+                animate={{
+                  scale: 1,
+                  y: -index * 4, // Stack offset
+                  opacity: 1,
+                  rotateZ: (index - sortedTimestamps.length / 2) * 2, // Slight rotation
+                  zIndex: sortedTimestamps.length - index,
+                }}
+                exit={{ scale: 0.8, y: 50, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                style={{
+                  filter: `brightness(${100 - index * 5}%)`, // Darker cards in back
+                }}
+              >
+                <RecipeGenerationGroup
+                  timestamp={timestamp}
+                  recipes={groupedRecipes[timestamp]}
+                  pantryItems={pantryItems}
+                  preferences={preferences}
+                  onSelectRecipe={setSelectedRecipe}
+                />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
       )}
 
       {selectedRecipe && (
@@ -146,7 +128,11 @@ export default function RecipesTab({
           recipe={selectedRecipe}
           onClose={() => setSelectedRecipe(null)}
           onUse={() => setUsingRecipe(selectedRecipe)}
-          onRemove={() => setSelectedRecipe(null)}
+          onRemove={() => {
+            handleRemoveRecipe(selectedRecipe.id);
+            setSelectedRecipe(null);
+          }}
+          pantryItems={pantryItems}
         />
       )}
 
@@ -155,7 +141,6 @@ export default function RecipesTab({
           recipe={usingRecipe}
           pantryItems={pantryItems}
           onClose={() => setUsingRecipe(null)}
-          onConfirmUse={handleUseRecipe}
         />
       )}
 

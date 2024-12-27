@@ -1,5 +1,6 @@
 import { Recipe } from '@/types';
 import { PantryItem } from '@/types';
+import { calculateRecipeAvailability } from '@/stores/recipeStore';
 
 interface RecipeCardPreviewProps {
   recipe: Recipe;
@@ -8,26 +9,6 @@ interface RecipeCardPreviewProps {
 }
 
 export default function RecipeCardPreview({ recipe, pantryItems, onClick }: RecipeCardPreviewProps) {
-  // Calculate availability percentage based on name matching
-  const calculateAvailability = () => {
-    const total = recipe.data.ingredients.length;
-    if (total === 0) return { percentage: 0, available: 0, total };
-    
-    const available = recipe.data.ingredients.filter(ing => {
-      const matchingPantryItem = pantryItems.find(item => 
-        item.data.name && 
-        item.data.name.toLowerCase() === ing.name.toLowerCase()
-      );
-      return matchingPantryItem !== undefined;
-    }).length;
-    
-    return {
-      percentage: (available / total) * 100,
-      available,
-      total
-    };
-  };
-
   // Helper function to determine availability status
   const getAvailabilityColor = (percentage: number) => {
     if (percentage === 100) return 'bg-green-500/20 border-green-500/30';
@@ -35,7 +16,7 @@ export default function RecipeCardPreview({ recipe, pantryItems, onClick }: Reci
     return 'bg-red-500/20 border-red-500/30';
   };
 
-  const { percentage, available, total } = calculateAvailability();
+  const { percentage, available, total } = calculateRecipeAvailability(recipe, pantryItems);
   const availabilityColor = getAvailabilityColor(percentage);
 
   return (
@@ -68,10 +49,19 @@ export default function RecipeCardPreview({ recipe, pantryItems, onClick }: Reci
           ))}
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-gray-400">
-          <span>⏱️ {recipe.data.preparation_time} mins</span>
-          <span>•</span>
-          <span>{recipe.data.ingredients.length} ingredients</span>
+        <div className="space-y-2">
+          {/* Cooking time */}
+          <div className="flex items-center gap-2 text-sm text-gray-400">
+            <span>⏱️</span>
+            <span>{recipe.data.preparation_time} mins</span>
+          </div>
+
+          {/* Missing ingredients warning */}
+          {available < total && (
+            <div className="text-yellow-500 text-sm mt-2">
+              Missing {total - available} ingredients
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,4 +1,3 @@
-import { normalizeString } from '@/utils/pantry';
 import { Recipe, PantryItem } from '@/types';
 
 interface IngredientListProps {
@@ -14,7 +13,9 @@ export function IngredientList({ ingredients, pantryItems }: IngredientListProps
         {ingredients.map((ing, idx) => {
           const matchingPantryItem = pantryItems.find(item => 
             item.data.name &&
-            normalizeString(item.data.name) === normalizeString(ing.name)
+            item.data.name.toLowerCase() === ing.name.toLowerCase() &&
+            item.data.unit === ing.unit &&
+            item.data.quantity >= ing.quantity
           );
           
           return (

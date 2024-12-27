@@ -31,10 +31,22 @@ export interface RecipeData {
 
 export interface Recipe {
   id: string;
-  data: RecipeData;
+  data: {
+    name: string;
+    ingredients: Array<{
+      name: string;
+      quantity: number;
+      unit: string;
+      substitutes?: string[];
+    }>;
+    instructions: string[];
+    preparation_time: number;
+    servings: number;
+    category: string;
+  };
   created_at: string;
   updated_at: string;
-  is_saved: boolean;
+  user_id: string;
 }
 
 // Pantry types matching the database
@@ -127,14 +139,48 @@ export interface RecipePreferences {
   custom_preferences?: string;
 }
 
-export interface RecipeUsageCreate {
-  servings_made: number;
-  ingredients_used: Record<string, number>;
+export type InteractionType = 'save' | 'rate' | 'cook';
+
+interface BaseInteractionData {
+  created_at?: string;
+}
+
+export interface SaveData extends BaseInteractionData {
+  folder?: string;
   notes?: string;
 }
 
-export interface RecipeUsage extends RecipeUsageCreate {
+export interface RateData extends BaseInteractionData {
+  rating: number;
+  difficulty_rating?: number;
+  would_make_again?: boolean;
+  review?: string;
+}
+
+export interface CookData extends BaseInteractionData {
+  servings_made: number;
+  ingredients_used: Record<string, number>;
+  notes?: string;
+  modifications?: string[];
+}
+
+export interface RecipeInteractionCreate {
+  type: InteractionType;
+  data: SaveData | RateData | CookData;
+}
+
+export interface RecipeInteraction {
   id: string;
+  recipe_id: string;
   user_id: string;
-  used_at: string;
+  type: InteractionType;
+  data: SaveData | RateData | CookData;
+  created_at: string;
+  is_saved: boolean;
+  rating: number | null;
+  recipe?: Recipe;
+}
+
+export interface InteractionWithRecipe extends Omit<RecipeInteraction, 'recipe'> {
+  recipe: Recipe;
 }

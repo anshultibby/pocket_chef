@@ -20,7 +20,8 @@ interface PantryStore {
   reset: () => void;
 }
 
-export const usePantryStore = create<PantryStore>((set, get) => ({
+// Export both the store instance and the hook
+export const pantryStore = create<PantryStore>((set, get) => ({
   // Initial state
   items: [],
   isLoading: false,
@@ -86,6 +87,10 @@ export const usePantryStore = create<PantryStore>((set, get) => ({
   reset: () => set({ items: [], isLoading: false, error: null }),
 }));
 
+// Keep the hook export for component use
+export const usePantryStore = pantryStore;
+
 export const roundQuantity = (value: number): number => {
   return Math.round(value * 100) / 100;
 };
+
