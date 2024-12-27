@@ -10,7 +10,6 @@ import PantryControls from './pantry/PantryControls';
 import PantryGrid from './pantry/PantryGrid';
 import AddItemModal from '@/components/modals/AddItemModal';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
-import { useFileUpload } from '@/hooks/useFileUpload';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { ErrorMessage } from '@/components/shared/ErrorMessage';
 import { ERROR_MESSAGES } from '@/constants/messages';
@@ -34,7 +33,10 @@ export default function PantryTab() {
   const {
     isUploading,
     handleFileUpload,
-    error: uploadError
+    error: uploadError,
+    clearUpload,
+    pendingItems: uploadPendingItems,
+    receiptImage
   } = useReceiptStore();
 
   const {
