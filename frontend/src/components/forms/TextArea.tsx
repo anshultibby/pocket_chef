@@ -9,6 +9,7 @@ interface TextAreaProps {
   required?: boolean;
   disabled?: boolean;
   rows?: number;
+  className?: string;
 }
 
 export function TextArea({
@@ -18,7 +19,8 @@ export function TextArea({
   placeholder,
   required,
   disabled,
-  rows = 4
+  rows = 4,
+  className = ''
 }: TextAreaProps) {
   const {
     field: { value, onChange },
@@ -41,7 +43,8 @@ export function TextArea({
                    placeholder:text-gray-500 resize-vertical min-h-[100px]
                    disabled:opacity-50 disabled:cursor-not-allowed
                    focus:outline-none focus:ring-2 focus:ring-blue-500
-                   ${error ? 'ring-1 ring-red-500' : ''}`}
+                   ${error ? 'ring-1 ring-red-500' : ''}
+                   ${className}`}
       />
     </FormField>
   );

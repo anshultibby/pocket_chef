@@ -16,6 +16,7 @@ import { toast } from 'react-hot-toast';
 import { useDuplicateStore } from '@/stores/duplicateStore';
 import DuplicateItemModal from '@/components/modals/DuplicateItemModal';
 import AddItemModal from '@/components/modals/AddItemModal';
+import Link from 'next/link';
 
 type TabType = 'cook' | 'pantry' | 'cookbook';
 
@@ -200,6 +201,45 @@ export default function Home() {
                   <span>🧝‍♂️</span>
                   <span className="hidden sm:inline">Summon Elf</span>
                 </button>
+
+                <div className="relative">
+                  <button
+                    id="account-button"
+                    onClick={() => setIsAccountMenuOpen(!isAccountMenuOpen)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition-colors text-sm"
+                  >
+                    <span>👤</span>
+                    <span className="hidden sm:inline">Account</span>
+                  </button>
+
+                  {isAccountMenuOpen && (
+                    <div
+                      id="account-menu"
+                      className="absolute right-0 mt-2 w-48 bg-gray-900 rounded-lg shadow-lg py-1"
+                    >
+                      <Link
+                        href="/profile"
+                        className="block w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-800 text-sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsAccountMenuOpen(false);
+                        }}
+                      >
+                        Profile Settings
+                      </Link>
+                      
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSignOut();
+                        }}
+                        className="w-full px-4 py-2 text-left text-red-400 hover:bg-red-950/50 text-sm border-t border-gray-800"
+                      >
+                        Sign Out
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

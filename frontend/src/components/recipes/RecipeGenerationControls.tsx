@@ -81,21 +81,21 @@ export default function RecipeGenerationControls({
   };
 
   return (
-    <div className="bg-gray-900/50 rounded-xl p-6 backdrop-blur-sm border border-gray-800">
-      <div className="flex flex-col space-y-6">
-        {/* Header - More compact */}
-        <div className="flex items-center justify-between">
+    <div className="bg-gray-900/50 rounded-xl p-4 sm:p-6 backdrop-blur-sm border border-gray-800">
+      <div className="flex flex-col space-y-4 sm:space-y-6">
+        {/* Header - More mobile friendly */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-1">
             <h2 className="text-xl font-semibold text-white">Recipes</h2>
             <p className="text-sm text-gray-400">
               {getFilterSummary() || 'Set your preferences'}
             </p>
           </div>
-          
-          <div className="flex items-center gap-3">
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
             <button
               onClick={() => setActiveSection(activeSection ? null : 'preferences')}
-              className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 text-sm
+              className={`px-4 py-2 rounded-lg transition-all flex items-center justify-center gap-2 text-sm
                 ${activeSection 
                   ? 'bg-indigo-500/20 text-indigo-300 ring-1 ring-indigo-500/30' 
                   : 'bg-gray-800 text-gray-300 hover:bg-gray-700/80'}`}
@@ -107,7 +107,7 @@ export default function RecipeGenerationControls({
             <button
               onClick={handleGenerate}
               disabled={isLoading || isGenerating || pantryItemsCount === 0}
-              className={`px-4 py-2 rounded-lg transition-all text-sm font-medium flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-lg transition-all text-sm font-medium flex items-center justify-center gap-2 ${
                 isLoading || isGenerating || pantryItemsCount === 0
                   ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
                   : 'bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/20'
@@ -128,22 +128,22 @@ export default function RecipeGenerationControls({
           </div>
         </div>
 
-        {/* Additional Preferences - More integrated */}
+        {/* Additional Preferences - Mobile optimized */}
         <div className="relative">
           <textarea
-            placeholder="Add any additional preferences or requirements (e.g., spicy food preferred, no nuts, etc.)"
+            placeholder="Add any additional preferences or requirements..."
             value={preferences.custom_preferences || ''}
             onChange={(e) => handlePreferencesChange({ custom_preferences: e.target.value })}
-            className="w-full bg-gray-800/30 rounded-lg px-4 py-3 text-gray-200 placeholder-gray-500 
-              focus:ring-1 ring-indigo-500/30 focus:outline-none text-sm h-20 resize-none"
+            className="w-full bg-gray-800/30 rounded-lg px-3 py-2 text-gray-200 placeholder-gray-500 
+              focus:ring-1 ring-indigo-500/30 focus:outline-none text-sm h-16 sm:h-20 resize-none"
           />
         </div>
 
-        {/* Preferences Panel - Rest remains similar but with updated styling */}
+        {/* Preferences Panel - Mobile optimized */}
         {activeSection && (
-          <div className="space-y-6 mt-4 pt-4 border-t border-gray-800">
-            {/* Time and Serving Controls */}
-            <div className="grid grid-cols-2 gap-8">
+          <div className="space-y-4 sm:space-y-6 mt-4 pt-4 border-t border-gray-800">
+            {/* Time and Serving Controls - Stack on mobile */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <label className="text-sm font-medium text-gray-300">Max Preparation Time</label>
@@ -210,26 +210,44 @@ export default function RecipeGenerationControls({
               </div>
             </div>
 
-            {/* Simplified preference sections using the generic renderer */}
-            <div className="space-y-3">
-              <label className="text-sm font-medium text-gray-300">Meal Type</label>
-              {renderPreferenceButtons(options.mealTypes, 'meal_types', 'blue')}
-            </div>
-
-            <div className="space-y-3">
-              <label className="text-sm font-medium text-gray-300">Cuisine</label>
-              {renderPreferenceButtons(options.cuisine, 'cuisine', 'purple')}
-            </div>
-
-            <div className="grid grid-cols-2 gap-8">
-              <div className="space-y-3">
-                <label className="text-sm font-medium text-gray-300">Dietary Preferences</label>
-                {renderPreferenceButtons(options.dietary, 'dietary', 'green')}
+            {/* Preference sections with scrollable containers */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-300">Meal Type</label>
+                <div className="overflow-x-auto pb-2">
+                  <div className="flex flex-nowrap gap-2">
+                    {renderPreferenceButtons(options.mealTypes, 'meal_types', 'blue')}
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-3">
-                <label className="text-sm font-medium text-gray-300">Nutrition Goals</label>
-                {renderPreferenceButtons(options.nutritionGoals, 'nutrition_goals', 'orange')}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-300">Cuisine</label>
+                <div className="overflow-x-auto pb-2">
+                  <div className="flex flex-nowrap gap-2">
+                    {renderPreferenceButtons(options.cuisine, 'cuisine', 'purple')}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-300">Dietary Preferences</label>
+                  <div className="overflow-x-auto pb-2">
+                    <div className="flex flex-nowrap gap-2">
+                      {renderPreferenceButtons(options.dietary, 'dietary', 'green')}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-300">Nutrition Goals</label>
+                  <div className="overflow-x-auto pb-2">
+                    <div className="flex flex-nowrap gap-2">
+                      {renderPreferenceButtons(options.nutritionGoals, 'nutrition_goals', 'orange')}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
