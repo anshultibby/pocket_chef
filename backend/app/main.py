@@ -19,6 +19,7 @@ CORS_ORIGINS = [
     "http://localhost:3000",
     "https://kitchen-elf.vercel.app",
     "https://kitchen-elf.com",
+    "https://www.kitchen-elf.com",
 ]
 
 app = FastAPI(
