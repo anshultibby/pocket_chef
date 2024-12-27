@@ -7,7 +7,7 @@ import ElfModal from './modals/ElfModal';
 import { calculateRecipeAvailability } from '@/stores/recipeStore';
 import RecipeCardPreview from './recipes/RecipeCardPreview';
 import { toast } from 'react-hot-toast';
-import { LoadingSpinner } from './LoadingSpinner';
+import { FloatingElfButton } from './FloatingElfButton';
 
 interface RecipesTabProps {
   pantryItems: PantryItem[];
@@ -162,9 +162,17 @@ export default function RecipesTab({
           {/* Current Generation */}
           {sortedTimestamps[0] && (
             <div>
-              <h3 className="text-sm font-medium text-gray-400 mb-4">
-                Current Generation
-              </h3>
+              <div className="mb-4">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-medium text-gray-400">
+                    Current Generation
+                  </h3>
+                  <span className="text-gray-400">✨</span>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Recipes tailored to your {pantryItems.length} pantry items
+                </p>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {groupedRecipes[sortedTimestamps[0]].slice(0, 8).map((recipe) => (
                   <RecipeCardPreview
@@ -242,6 +250,12 @@ export default function RecipesTab({
           pantryItemsCount={pantryItems.length}
         />
       )}
+
+      <FloatingElfButton
+        onClick={() => setShowElfModal(true)}
+        pantryItemsCount={pantryItems.length}
+        isGenerating={isGenerating}
+      />
     </div>
   );
 }
