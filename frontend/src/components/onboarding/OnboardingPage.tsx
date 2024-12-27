@@ -24,6 +24,8 @@ export default function OnboardingPage() {
   const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome');
 
+  const handleExit = () => router.push('/home');
+
   const renderStep = () => {
     switch (currentStep) {
       case 'welcome':
@@ -31,6 +33,7 @@ export default function OnboardingPage() {
           <WelcomeStep
             userName={user?.user_metadata?.name || 'Chef'}
             onNext={() => setCurrentStep('add_items')}
+            onExit={handleExit}
           />
         );
       case 'add_items':
@@ -38,6 +41,7 @@ export default function OnboardingPage() {
           <AddItemsStep
             onNext={() => setCurrentStep('generate_recipes')}
             onBack={() => setCurrentStep('welcome')}
+            onExit={handleExit}
           />
         );
       case 'generate_recipes':
@@ -45,13 +49,15 @@ export default function OnboardingPage() {
           <GenerateRecipesStep
             onNext={() => setCurrentStep('use_recipes')}
             onBack={() => setCurrentStep('add_items')}
+            onExit={handleExit}
           />
         );
       case 'use_recipes':
         return (
           <UseRecipesStep
-            onComplete={() => window.location.reload()}
+            onComplete={() => router.push('/home')}
             onBack={() => setCurrentStep('generate_recipes')}
+            onExit={handleExit}
           />
         );
     }
@@ -64,7 +70,7 @@ export default function OnboardingPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-gray-900 rounded-xl p-8"
+            className="bg-gray-900 rounded-xl p-8 relative"
           >
             <ProgressIndicator 
               currentStep={steps.indexOf(currentStep)} 

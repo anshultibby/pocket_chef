@@ -5,9 +5,10 @@ import { OnboardingImage } from '../OnboardingImage';
 interface AddItemsStepProps {
   onNext: () => void;
   onBack: () => void;
+  onExit: () => void;
 }
 
-export function AddItemsStep({ onNext, onBack }: AddItemsStepProps) {
+export function AddItemsStep({ onNext, onBack, onExit }: AddItemsStepProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
@@ -69,6 +70,12 @@ export function AddItemsStep({ onNext, onBack }: AddItemsStepProps) {
           className="px-4 py-2 text-gray-400 hover:text-white"
         >
           Back
+        </button>
+        <button
+          onClick={onExit}
+          className="px-4 py-2 text-gray-400 hover:text-white"
+        >
+          Skip Tutorial
         </button>
         <button
           onClick={onNext}

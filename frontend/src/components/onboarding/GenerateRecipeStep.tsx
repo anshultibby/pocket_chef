@@ -5,9 +5,10 @@ import { OnboardingImage } from '../OnboardingImage';
 interface GenerateRecipesStepProps {
   onNext: () => void;
   onBack: () => void;
+  onExit: () => void;
 }
 
-export function GenerateRecipesStep({ onNext, onBack }: GenerateRecipesStepProps) {
+export function GenerateRecipesStep({ onNext, onBack, onExit }: GenerateRecipesStepProps) {
   const [currentFeature, setCurrentFeature] = useState(0);
 
   const features = [
@@ -96,17 +97,22 @@ export function GenerateRecipesStep({ onNext, onBack }: GenerateRecipesStepProps
 
       <div className="flex justify-between pt-4">
         <button
-          onClick={handlePrevious}
+          onClick={onBack}
           className="px-4 py-2 text-gray-400 hover:text-white"
         >
-          {currentFeature === 0 ? 'Previous' : 'Previous'}
+          Back
         </button>
-        
+        <button
+          onClick={onExit}
+          className="px-4 py-2 text-gray-400 hover:text-white"
+        >
+          Skip Tutorial
+        </button>
         <button
           onClick={handleNext}
           className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-400"
         >
-          {currentFeature === features.length - 1 ? 'Next' : 'Next'}
+          Continue
         </button>
       </div>
     </motion.div>

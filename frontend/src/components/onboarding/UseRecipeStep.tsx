@@ -5,9 +5,10 @@ import { OnboardingImage } from '../OnboardingImage';
 interface UseRecipesStepProps {
   onComplete: () => void;
   onBack: () => void;
+  onExit: () => void;
 }
 
-export function UseRecipesStep({ onComplete, onBack }: UseRecipesStepProps) {
+export function UseRecipesStep({ onComplete, onBack, onExit }: UseRecipesStepProps) {
   const [currentFeature, setCurrentFeature] = useState(0);
 
   const features = [
@@ -36,14 +37,6 @@ export function UseRecipesStep({ onComplete, onBack }: UseRecipesStepProps) {
       setCurrentFeature(prev => prev + 1);
     } else {
       onComplete();
-    }
-  };
-
-  const handlePrevious = () => {
-    if (currentFeature > 0) {
-      setCurrentFeature(prev => prev - 1);
-    } else {
-      onBack();
     }
   };
 
@@ -96,17 +89,22 @@ export function UseRecipesStep({ onComplete, onBack }: UseRecipesStepProps) {
 
       <div className="flex justify-between pt-4">
         <button
-          onClick={handlePrevious}
+          onClick={onBack}
           className="px-4 py-2 text-gray-400 hover:text-white"
         >
-          {currentFeature === 0 ? 'Previous' : 'Previous'}
+          Back
         </button>
-        
+        <button
+          onClick={onExit}
+          className="px-4 py-2 text-gray-400 hover:text-white"
+        >
+          Skip Tutorial
+        </button>
         <button
           onClick={handleNext}
           className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-400"
         >
-          {currentFeature === features.length - 1 ? 'Complete' : 'Next'}
+          {currentFeature === features.length - 1 ? 'Complete' : 'Continue'}
         </button>
       </div>
     </motion.div>
