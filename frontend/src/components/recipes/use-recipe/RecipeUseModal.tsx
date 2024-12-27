@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Dialog } from '@headlessui/react';
-import { usePantryStore } from '@/stores/pantryStore';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import toast from 'react-hot-toast';
 import { RecipeReviewStep } from './RecipeReviewStep';

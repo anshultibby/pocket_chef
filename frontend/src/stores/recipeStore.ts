@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import type { StateCreator } from 'zustand';
 import { PantryItem, Recipe, RecipePreferences } from '@/types';
 import { recipeApi } from '@/lib/api';
 import { pantryStore } from './pantryStore';

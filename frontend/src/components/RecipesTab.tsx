@@ -89,12 +89,10 @@ export default function RecipesTab({
 }: RecipesTabProps) {
   const { 
     recipes,
-    preferences,
     isLoading,
     isGenerating,
     error,
     fetchRecipes,
-    setIsGenerating,
     useRecipe,
   } = useRecipeStore();
   
@@ -224,7 +222,11 @@ export default function RecipesTab({
           onClose={() => setUsingRecipe(null)}
           onConfirmUse={async (ingredientsUsed) => {
             try {
-              await useRecipe(usingRecipe.id, usingRecipe.data.servings, ingredientsUsed);
+              await useRecipeStore.getState().useRecipe(
+                usingRecipe.id, 
+                usingRecipe.data.servings, 
+                ingredientsUsed
+              );
               setUsingRecipe(null);
             } catch (error) {
               console.error('Error using recipe:', error);
