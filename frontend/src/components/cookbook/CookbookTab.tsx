@@ -76,17 +76,16 @@ export function CookbookTab() {
   );
 
   return (
-    <div className="w-full px-2 py-16 sm:px-0">
+    <div className="w-full -mt-[1px]">
       <Tab.Group>
-        <Tab.List className="flex space-x-1 rounded-xl bg-gray-800 p-1">
+        <Tab.List className="flex border-b border-gray-800">
           <Tab
             className={({ selected }) =>
               classNames(
-                'w-full rounded-lg py-2.5 text-sm font-medium leading-5',
-                'ring-white ring-opacity-60 ring-offset-2 ring-offset-blue-400 focus:outline-none focus:ring-2',
+                'px-4 py-2 text-sm font-medium border-b-2 focus:outline-none -mb-[2px]',
                 selected
-                  ? 'bg-gray-700 text-white shadow'
-                  : 'text-gray-400 hover:bg-gray-700/30 hover:text-white'
+                  ? 'border-blue-500 text-blue-500'
+                  : 'border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-700'
               )
             }
           >
@@ -95,11 +94,10 @@ export function CookbookTab() {
           <Tab
             className={({ selected }) =>
               classNames(
-                'w-full rounded-lg py-2.5 text-sm font-medium leading-5',
-                'ring-white ring-opacity-60 ring-offset-2 ring-offset-blue-400 focus:outline-none focus:ring-2',
+                'px-4 py-2 text-sm font-medium border-b-2 focus:outline-none -mb-[2px]',
                 selected
-                  ? 'bg-gray-700 text-white shadow'
-                  : 'text-gray-400 hover:bg-gray-700/30 hover:text-white'
+                  ? 'border-blue-500 text-blue-500'
+                  : 'border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-700'
               )
             }
           >
@@ -108,11 +106,10 @@ export function CookbookTab() {
           <Tab
             className={({ selected }) =>
               classNames(
-                'w-full rounded-lg py-2.5 text-sm font-medium leading-5',
-                'ring-white ring-opacity-60 ring-offset-2 ring-offset-blue-400 focus:outline-none focus:ring-2',
+                'px-4 py-2 text-sm font-medium border-b-2 focus:outline-none -mb-[2px]',
                 selected
-                  ? 'bg-gray-700 text-white shadow'
-                  : 'text-gray-400 hover:bg-gray-700/30 hover:text-white'
+                  ? 'border-blue-500 text-blue-500'
+                  : 'border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-700'
               )
             }
           >
@@ -120,10 +117,10 @@ export function CookbookTab() {
           </Tab>
         </Tab.List>
 
-        <Tab.Panels className="mt-8">
+        <Tab.Panels className="mt-4">
           {isLoading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mb-4"></div>
+            <div className="text-center py-4">
+              <div className="animate-spin inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mb-2"></div>
               <p className="text-gray-400">Loading cookbook...</p>
             </div>
           ) : (

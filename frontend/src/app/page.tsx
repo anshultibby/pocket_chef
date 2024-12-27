@@ -246,7 +246,7 @@ export default function Home() {
             <div className="flex space-x-1">
               <button
                 onClick={() => handleTabChange('cook')}
-                className={`px-4 py-3 ${
+                className={`px-3 py-2 ${
                   activeTab === 'cook'
                     ? 'border-b-2 border-blue-500 text-blue-500'
                     : 'text-gray-400 hover:text-gray-200'
@@ -279,7 +279,7 @@ export default function Home() {
         </div>
 
         {/* Tab Content */}
-        <div className="max-w-4xl mx-auto px-4 py-12">
+        <div className="max-w-4xl mx-auto px-4 py-6">
           {activeTab === 'pantry' ? (
             <PantryTab />
           ) : activeTab === 'cookbook' ? (

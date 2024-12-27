@@ -11,15 +11,15 @@ export default function PantryControls({
   pantryItemsCount
 }: PantryControlsProps) {
   return (
-    <div className="flex items-center justify-center gap-4">
+    <div className="flex items-center justify-center gap-3">
       <div className="relative w-64">
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
         <input
           type="text"
           placeholder="Search items..."
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="bg-gray-800/50 rounded-lg px-10 py-2 text-white w-full focus:ring-2 ring-blue-500 focus:outline-none text-sm"
+          className="bg-gray-800/50 rounded-lg px-8 py-1.5 text-white w-full focus:ring-2 ring-blue-500 focus:outline-none text-sm"
         />
       </div>
   

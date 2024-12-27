@@ -26,41 +26,41 @@ export function PantryItemCard({ item, onSelect, onDelete }: PantryItemCardProps
       ref={setNodeRef}
       style={style}
       {...attributes}
-      className="bg-gray-800/50 rounded-lg p-4 group hover:bg-gray-700/80 relative border border-gray-700/50 will-change-transform"
+      className="bg-gray-800/50 rounded-lg p-2.5 group hover:bg-gray-700/80 relative border border-gray-700/50 will-change-transform"
     >
-      <div className="absolute right-3 top-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+      <div className="absolute right-2 top-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
         <button
           onClick={(e) => {
             e.stopPropagation();
             onSelect(item);
           }}
-          className="p-1.5 bg-gray-700/50 rounded-lg text-gray-400 hover:text-blue-400 hover:bg-blue-500/10"
+          className="p-1 bg-gray-700/50 rounded-lg text-gray-400 hover:text-blue-400 hover:bg-blue-500/10"
         >
-          <PencilIcon className="h-4 w-4" />
+          <PencilIcon className="h-3.5 w-3.5" />
         </button>
         <button
           onClick={(e) => {
             e.stopPropagation();
             onDelete(item.id);
           }}
-          className="p-1.5 bg-gray-700/50 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10"
+          className="p-1 bg-gray-700/50 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10"
         >
-          <TrashIcon className="h-4 w-4" />
+          <TrashIcon className="h-3.5 w-3.5" />
         </button>
       </div>
 
       <div {...listeners} className="cursor-move">
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <div>
-            <h4 className="text-lg font-medium text-white leading-tight">
+            <h4 className="text-base font-medium text-white leading-tight">
               {item.data.name}
             </h4>
-            <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-base text-gray-300">
+            <div className="flex items-baseline gap-2 mt-0.5">
+              <span className="text-sm text-gray-300">
                 {item.data.quantity} {item.data.unit}
               </span>
               {item.data.expiry_date && (
-                <span className="text-sm text-gray-500">
+                <span className="text-xs text-gray-500">
                   Expires: {new Date(item.data.expiry_date).toLocaleDateString()}
                 </span>
               )}
@@ -68,7 +68,7 @@ export function PantryItemCard({ item, onSelect, onDelete }: PantryItemCardProps
           </div>
           
           {item.data.notes && (
-            <p className="text-sm text-gray-400 italic">
+            <p className="text-xs text-gray-400 italic">
               {item.data.notes}
             </p>
           )}
