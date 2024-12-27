@@ -15,7 +15,7 @@ export default function RecipeUseModal({
   recipe, 
   pantryItems,
   onClose
-}: Omit<RecipeUseModalProps, 'onConfirmUse'>) {
+}: RecipeUseModalProps) {
   const recipeStore = useRecipeStore();
   const { handleError } = useErrorHandler();
   const [isSubmitting, setIsSubmitting] = useState(false);

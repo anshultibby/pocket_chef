@@ -134,15 +134,25 @@ def summarize_schema(schema: dict) -> str:
                     process_properties(ref_schema["properties"], f"{prefix}{name}[].")
 
     def get_field_type(details: dict, schema: dict) -> str:
+        """Extract the field type from schema details"""
         if "anyOf" in details:
-            return " | ".join(t["type"] for t in details["anyOf"])
-        elif details.get("type") == "array":
-            item_details = details["items"]
-            if "$ref" in item_details:
-                ref_name = item_details["$ref"].split("/")[-1]
-                return f"List[{ref_name}]"
-            return f"List[{item_details.get('type', 'any')}]"
-        return details.get("type", "")
+            # Handle cases where items in anyOf might not have explicit type
+            types = []
+            for t in details["anyOf"]:
+                if "type" in t:
+                    types.append(t["type"])
+                elif "$ref" in t:
+                    # Handle reference types
+                    ref_name = t["$ref"].split("/")[-1]
+                    types.append(ref_name)
+            return " | ".join(types) if types else "any"
+        elif "type" in details:
+            return details["type"]
+        elif "$ref" in details:
+            # Handle reference types
+            return details["$ref"].split("/")[-1]
+        else:
+            return "any"
 
     def get_ref_schema(ref: str, schema: dict) -> dict:
         ref_name = ref.split("/")[-1]

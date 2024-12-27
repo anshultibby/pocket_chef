@@ -1,29 +1,21 @@
-FROM node:18-alpine
+FROM node:18
 
 WORKDIR /app
 
-# Copy package files first
+# Copy package files
 COPY package*.json ./
 
-# Install dependencies with explicit installation of postcss and tailwind
-RUN npm cache clean --force && \
-    npm install -g postcss postcss-cli && \
-    npm install --no-cache
+# Install dependencies with legacy peer deps flag to avoid conflicts
+RUN npm install --legacy-peer-deps
 
-# Copy configuration files specifically
-COPY postcss.config.js .
-COPY tailwind.config.js .
-COPY tsconfig.json .
-COPY next.config.ts .
-
-# Copy the rest of the application
+# Copy the rest of the code
 COPY . .
 
-# Build the application
-RUN npm run build
+# Set permissions for node_modules
+RUN chown -R node:node /app/node_modules
 
-# Expose the port
+# Expose port
 EXPOSE 3000
 
-# Start the application
+# Start the app
 CMD ["npm", "run", "dev"]

@@ -30,6 +30,10 @@ class RecipeData(CustomBaseModel):
     preparation_time: int = Field(gt=0, description="Preparation time in minutes")
     servings: int = Field(ge=1, default=1)
     category: str = Field(description="Breakfast, Lunch, Dinner, or Snack")
+    price: Optional[float] = Field(
+        None, description="Price of the ingredients of the recipe"
+    )
+    nutrition: Optional[Nutrition] = Field(None, description="Nutrition of the recipe")
 
     def __str__(self) -> str:
         """Format recipe data in a readable way"""
@@ -43,6 +47,10 @@ class RecipeData(CustomBaseModel):
             "Instructions:",
             *[f"{i+1}. {step}" for i, step in enumerate(self.instructions)],
         ]
+        if self.price is not None:
+            parts.append(f"Price: ${self.price:.2f}")
+        if self.nutrition is not None:
+            parts.append(f"Nutrition: {self.nutrition}")
         return "\n".join(parts)
 
 

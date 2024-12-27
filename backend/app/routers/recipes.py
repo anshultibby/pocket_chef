@@ -29,13 +29,14 @@ async def generate_recipes(
     """Generate raw recipes based on preferences"""
     try:
         user_id = UUID(current_user["id"])
+        logger.debug(f"Generating recipes with preferences: {preferences}")
         recipe = await recipe_manager.generate_recipe(
             preferences=preferences,
             user_id=user_id,
         )
         return recipe
     except Exception as e:
-        logger.error(f"Recipe generation error: {str(e)}")
+        logger.error(f"Recipe generation error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=400, detail=str(e))
 
 

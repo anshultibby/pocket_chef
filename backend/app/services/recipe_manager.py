@@ -36,7 +36,8 @@ class RecipeManager:
         pantry_items = await pantry_manager.get_items(user_id)
         final_recipes = []
         ingredients = [
-            f"{item.data.name} ({item.data.quantity} {item.data.unit})"
+            f"{item.data.name} ({item.data.quantity} \
+{item.data.unit} ${item.data.price} )"
             for item in pantry_items
         ]
         list_of_recipe_data = await self.claude_service.generate_recipes(

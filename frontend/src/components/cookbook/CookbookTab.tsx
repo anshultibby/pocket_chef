@@ -158,7 +158,10 @@ export function CookbookTab() {
         <RecipeDetailModal
           recipe={selectedRecipe}
           onClose={() => setSelectedRecipe(null)}
-          onUse={() => setUsingRecipe(selectedRecipe)}
+          onUse={() => {
+            setUsingRecipe(selectedRecipe);
+            setSelectedRecipe(null);
+          }}
           onRemove={() => {
             // TODO: Implement recipe removal logic
             setSelectedRecipe(null);
@@ -171,7 +174,24 @@ export function CookbookTab() {
         <RecipeUseModal
           recipe={usingRecipe}
           pantryItems={pantryItems}
-          onClose={() => setUsingRecipe(null)}
+          onClose={() => {
+            setUsingRecipe(null);
+            setSelectedRecipe(null);
+          }}
+          onConfirmUse={async (ingredientsUsed) => {
+            try {
+              await recipeApi.use(usingRecipe.id, {
+                servings_made: usingRecipe.data.servings,
+                ingredients_used: ingredientsUsed
+              });
+              await fetchInteractionsWithRecipes(); // Refresh the interactions
+              setUsingRecipe(null);
+              setSelectedRecipe(null);
+            } catch (error) {
+              console.error('Error using recipe:', error);
+              toast.error('Failed to use recipe');
+            }
+          }}
         />
       )}
     </div>
