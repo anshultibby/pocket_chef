@@ -1,7 +1,7 @@
-import { Recipe } from '@/types';
+import { Recipe, RecipeInteraction } from '@/types';
 import { Dialog } from '@headlessui/react';
 import { PantryItem } from '@/types';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { recipeApi } from '@/lib/api';
 import { track } from '@vercel/analytics';
@@ -25,6 +25,34 @@ export default function RecipeDetailModal({ recipe, onClose, onUse, onRemove, pa
   const [isIngredientsExpanded, setIsIngredientsExpanded] = useState(true);
   const [isInstructionsExpanded, setIsInstructionsExpanded] = useState(true);
   const [isRatingHovered, setIsRatingHovered] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [existingInteractions, setExistingInteractions] = useState<RecipeInteraction[]>([]);
+
+  useEffect(() => {
+    const fetchInteractions = async () => {
+      try {
+        const interactions = await recipeApi.getInteractions(recipe.id);
+        setExistingInteractions(interactions);
+        
+        // Set initial states based on interactions
+        const saveInteraction = interactions.find(i => i.type === 'save');
+        const rateInteraction = interactions.find(i => i.type === 'rate');
+        
+        if (saveInteraction) {
+          setIsSaved(true);
+        }
+        
+        if (rateInteraction) {
+          setRating(rateInteraction.rating || 0);
+          setReview(rateInteraction.data.review || '');
+        }
+      } catch (error) {
+        console.error('Error fetching recipe interactions:', error);
+      }
+    };
+
+    fetchInteractions();
+  }, [recipe.id]);
 
   const getIngredientStatus = (ingredient: Recipe['data']['ingredients'][0]) => {
     const inPantry = pantryItems.find(item => 
@@ -41,6 +69,7 @@ export default function RecipeDetailModal({ recipe, onClose, onUse, onRemove, pa
     try {
       setIsSaving(true);
       await recipeApi.saveRecipe(recipe.id);
+      setIsSaved(true);
       track('save_recipe', {
         recipeName: recipe.data.name,
         ingredientCount: recipe.data.ingredients.length
@@ -48,7 +77,10 @@ export default function RecipeDetailModal({ recipe, onClose, onUse, onRemove, pa
       toast.success('Recipe saved to cookbook');
     } catch (error) {
       console.error('Error saving recipe:', error);
-      if (!(error instanceof Error && error.message.includes('duplicate key value'))) {
+      if (error instanceof Error && error.message.includes('duplicate key value')) {
+        setIsSaved(true);
+        toast.success('Recipe already in cookbook');
+      } else {
         toast.error('Failed to save recipe');
       }
     } finally {
@@ -106,16 +138,18 @@ export default function RecipeDetailModal({ recipe, onClose, onUse, onRemove, pa
                     <div className="flex items-center gap-4 text-sm">
                       <button 
                         onClick={() => setShowRatingInput(true)}
-                        className="text-gray-400 hover:text-yellow-400 transition-colors"
+                        className={`text-gray-400 transition-colors ${
+                          rating > 0 ? 'text-yellow-400' : 'hover:text-yellow-400'
+                        }`}
                       >
-                        {rating > 0 ? '★' : '☆'}
+                        {rating > 0 ? `★ ${rating}` : '☆'}
                       </button>
                       <button
                         onClick={handleSave}
                         disabled={isSaving}
                         className="text-gray-400 hover:text-red-400 transition-colors disabled:opacity-50"
                       >
-                        {isSaving ? '...' : '♡'}
+                        {isSaving ? '...' : (isSaved ? '❤️' : '♡')}
                       </button>
                     </div>
                   </div>

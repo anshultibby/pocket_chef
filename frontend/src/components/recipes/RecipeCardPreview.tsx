@@ -34,7 +34,11 @@ export default function RecipeCardPreview({ recipe, pantryItems, onClick }: Reci
       setTimeout(() => setShowSaveAnimation(false), 1000);
       toast.success('Recipe saved to cookbook');
     } catch (error) {
-      if (!(error instanceof Error && error.message.includes('duplicate key value'))) {
+      if (error instanceof Error && error.message.includes('duplicate key value')) {
+        setShowSaveAnimation(true);
+        setTimeout(() => setShowSaveAnimation(false), 1000);
+        toast.success('Recipe already in cookbook');
+      } else {
         toast.error('Failed to save recipe');
       }
     } finally {

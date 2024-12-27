@@ -189,11 +189,10 @@ export const recipeApi = {
         // Get the existing save interaction
         const interactions = await recipeApi.getInteractions(recipeId, 'save');
         if (interactions.length > 0) {
-          return interactions[0];
+          return interactions[0]; // Return the existing interaction
         }
       }
       // If it's any other error, or we couldn't find the existing interaction, rethrow
-      console.error('Error saving recipe:', error);
       throw error;
     }
   },
