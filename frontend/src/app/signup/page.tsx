@@ -21,8 +21,7 @@ export default function SignupPage() {
       
       if (session) {
         if (isNewUser) {
-          // New user - redirect to profile
-          router.push('/profile');
+          router.push('/onboarding');
         } else {
           // Email verification required
           setSuccess(true);

@@ -9,6 +9,7 @@ import { usePantryStore } from '@/stores/pantryStore';
 import ElfModal from '@/components/modals/ElfModal';
 import { CookbookTab } from '@/components/cookbook';
 import { track } from '@vercel/analytics';
+import { useRouter } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +22,7 @@ export default function Home() {
   const sessionStartTime = useRef(Date.now());
   const lastTabChange = useRef(Date.now());
   const isHidden = useRef(false);
+  const router = useRouter();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -132,6 +134,14 @@ export default function Home() {
               </div>
               
               <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => router.push('/onboarding')}
+                  className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  <span>🎯</span>
+                  <span>Redo Onboarding</span>
+                </button>
+
                 <button
                   onClick={() => setShowElfModal(true)}
                   className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"

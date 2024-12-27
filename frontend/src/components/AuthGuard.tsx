@@ -1,18 +1,20 @@
 'use client';
 
 import { useAuth } from '@/lib/auth-context';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    if (!loading && !user) {
+    const publicRoutes = ['/login', '/signup', '/onboarding'];
+    if (!loading && !user && !publicRoutes.includes(pathname)) {
       router.push('/login');
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, pathname]);
 
   if (loading) {
     return (
@@ -22,5 +24,5 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  return user ? <>{children}</> : null;
+  return <>{children}</>;
 }

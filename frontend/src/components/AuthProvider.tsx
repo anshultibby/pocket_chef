@@ -68,7 +68,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
         if (error) throw error;
         
-        // Set the session and user immediately after successful signup
         if (data.session) {
           setSession(data.session);
           setUser(data.session.user);
@@ -76,10 +75,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Create initial profile
           try {
             await profileApi.createProfile();
+            router.push('/onboarding'); // Redirect to onboarding immediately
             return { session: data.session, isNewUser: true };
           } catch (error) {
             console.error('Error creating profile:', error);
-            // Don't throw here - the user is still signed up
           }
         }
         return { session: data.session, isNewUser: true };

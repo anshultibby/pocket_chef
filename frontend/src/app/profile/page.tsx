@@ -146,13 +146,23 @@ export default function ProfilePage() {
               </div>
             </form>
 
-            <button
-              onClick={() => signOut()}
-              className="w-full bg-red-600/20 hover:bg-red-600/30 text-red-400 
-                       font-semibold py-3 px-4 rounded-lg transition-colors"
-            >
-              Sign Out
-            </button>
+            <div className="space-y-4">
+              <button
+                onClick={() => router.push('/onboarding')}
+                className="w-full bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 
+                         font-semibold py-3 px-4 rounded-lg transition-colors"
+              >
+                Redo Onboarding
+              </button>
+
+              <button
+                onClick={() => signOut()}
+                className="w-full bg-red-600/20 hover:bg-red-600/30 text-red-400 
+                         font-semibold py-3 px-4 rounded-lg transition-colors"
+              >
+                Sign Out
+              </button>
+            </div>
           </div>
         </div>
       </div>
