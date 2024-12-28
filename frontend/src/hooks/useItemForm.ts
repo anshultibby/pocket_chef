@@ -6,8 +6,8 @@ const defaultValues: PantryItemCreate = {
     name: '',
     original_name: '',
     quantity: 1,
-    unit: '',
-    category: '',
+    unit: 'units',
+    category: 'Pantry',
     notes: '',
     expiry_date: null,
     price: null
