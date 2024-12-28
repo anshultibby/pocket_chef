@@ -32,6 +32,10 @@ export default function AddItemModal({
     if (!values.data.category) {
       values.data.category = 'Pantry Staples';
     }
+    // Set default unit if not provided
+    if (!values.data.unit) {
+      values.data.unit = 'units';
+    }
     await Promise.resolve(onAdd(values));
   };
 
@@ -118,13 +122,14 @@ export default function AddItemModal({
                       <div>
                         <label className="text-sm text-gray-400">Unit</label>
                         <input
-                          list="unit-suggestions"
                           type="text"
-                          value={values.data.unit || 'units'}
+                          value={values.data.unit}
                           onChange={(e) => handleChange('unit', e.target.value)}
                           className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
-                          placeholder="Enter or select a unit"
-                          required
+                          placeholder="units"
+                          onFocus={() => handleChange('unit', '')}
+                          list="unit-suggestions"
+                          autoComplete="off"
                         />
                         <datalist id="unit-suggestions">
                           {SUGGESTED_UNITS.map(unit => (

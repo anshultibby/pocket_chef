@@ -14,13 +14,13 @@ export function GenerateRecipesStep({ onNext, onBack, onExit }: GenerateRecipesS
   const features = [
     {
       title: "Set Your Preferences",
-      description: "Choose cuisines, dietary restrictions, and meal types",
+      description: "Choose cuisines, dietary restrictions, and meal types to get personalized recipes",
       icon: "🎯",
       imagePath: { section: 'recipes', image: 'preferences' }
     },
     {
-      title: "View Generated Recipes",
-      description: "See recipes tailored to your pantry and preferences",
+      title: "Generate Recipes",
+      description: "Click generate to get AI-powered recipes based on your preferences and pantry",
       icon: "✨",
       imagePath: { section: 'recipes', image: 'generated' }
     },
@@ -54,7 +54,7 @@ export function GenerateRecipesStep({ onNext, onBack, onExit }: GenerateRecipesS
       animate={{ opacity: 1 }}
       className="space-y-6"
     >
-      <h2 className="text-2xl font-bold text-center">Generate Recipes</h2>
+      <h2 className="text-2xl font-bold text-center">Generate & Use Recipes</h2>
       
       <div className="bg-gray-800 rounded-lg p-6">
         <div className="flex justify-between mb-6">
