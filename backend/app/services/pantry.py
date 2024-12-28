@@ -4,7 +4,7 @@ from functools import lru_cache
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import BackgroundTasks, UploadFile
+from fastapi import UploadFile
 
 from ..db.crud import PantryCRUD
 from ..models.pantry import (

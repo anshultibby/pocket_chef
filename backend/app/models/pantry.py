@@ -64,20 +64,17 @@ class PantryItemData(CustomBaseModel):
     original_name: Optional[str] = Field(
         description="name of the ingredient as it appears on the receipt or user input"
     )
-    quantity: Optional[float] = Field(
-        default=0,
+    quantity: float = Field(
+        default=1.0,
         description="quantity of the ingredient",
         ge=0,
-        multiple_of=0.01,  # Ensures 2 decimal place precision
+        multiple_of=0.01,
     )
-    unit: str = Field(
-        description="unit of the ingredient, try use standard units, \
-            use the price to guess the standard unit and quantity correctly"
-    )
+    unit: str = Field(default="unit", description="unit of the ingredient")
     category: Optional[str] = Field(description="category of the ingredient")
     notes: Optional[str] = Field(description="notes about the ingredient")
     expiry_date: Optional[str] = Field(
-        description="expiry date of the ingredient in YYYY-MM-DD format"
+        default=None, description="expiry date of the ingredient in YYYY-MM-DD format"
     )
     price: Optional[float] = Field(description="price per unit")
 
