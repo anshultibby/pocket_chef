@@ -152,25 +152,6 @@ export default function AddItemModal({
 
                     {showAdditionalInfo && (
                       <div className="space-y-4">
-                        <FormInput
-                          label="Original Name"
-                          value={values.data.original_name || ''}
-                          onChange={(e) => handleChange('original_name', e.target.value)}
-                          error={errors['original_name']}
-                          placeholder="As scanned/entered (optional)"
-                        />
-
-                        <FormInput
-                          label="Price"
-                          error={errors.price}
-                          type="number"
-                          value={values.data.price?.toString() ?? ''}
-                          onChange={(e) => handleChange('price', e.target.value ? Number(e.target.value) : null)}
-                          min="0"
-                          step="0.01"
-                          placeholder="Enter price (optional)"
-                        />
-
                         <div>
                           <label className="text-sm text-gray-400">Category</label>
                           <input
@@ -192,6 +173,25 @@ export default function AddItemModal({
                             className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
                           />
                         </div>
+
+                        <FormInput
+                          label="Price"
+                          error={errors.price}
+                          type="number"
+                          value={values.data.price?.toString() ?? ''}
+                          onChange={(e) => handleChange('price', e.target.value ? Number(e.target.value) : null)}
+                          min="0"
+                          step="0.01"
+                          placeholder="Enter price (optional)"
+                        />
+
+                        <FormInput
+                          label="Original Name"
+                          value={values.data.original_name || ''}
+                          onChange={(e) => handleChange('original_name', e.target.value)}
+                          error={errors['original_name']}
+                          placeholder="As scanned/entered (optional)"
+                        />
                       </div>
                     )}
                   </div>
