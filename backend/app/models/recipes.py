@@ -97,7 +97,7 @@ class RecipePreferences(CustomBaseModel):
     )
     serving_size: int = Field(default=2, ge=1, le=12, description="Number of servings")
     recipes_per_meal: int = Field(
-        default=3, ge=1, le=5, description="Number of recipes to generate per meal type"
+        default=4, ge=1, le=8, description="Number of recipes to generate per meal type"
     )
     custom_preferences: Optional[str] = Field(
         None, description="Additional custom preferences in text form"
