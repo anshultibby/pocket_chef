@@ -175,9 +175,10 @@ export default function RecipeDetailModal({ recipe, onClose, onUse, onRemove, pa
                 </div>
                 <button 
                   onClick={onClose}
-                  className="text-gray-400 hover:text-white"
+                  className="p-3 -mr-2 text-gray-400 hover:text-white sm:p-0"
+                  aria-label="Close modal"
                 >
-                  ✕
+                  <span className="text-xl sm:text-base">✕</span>
                 </button>
               </div>
             </div>

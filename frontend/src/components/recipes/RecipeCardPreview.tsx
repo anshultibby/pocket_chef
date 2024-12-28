@@ -48,7 +48,11 @@ export default function RecipeCardPreview({ recipe, pantryItems, onClick }: Reci
 
   return (
     <motion.div 
-      onClick={onClick}
+      onClick={(e) => {
+        if (!(e.target as HTMLElement).closest('button')) {
+          onClick?.();
+        }
+      }}
       className={`backdrop-blur-sm p-5 rounded-lg cursor-pointer transition-colors min-h-[140px] flex flex-col justify-between group relative
         ${getAvailabilityStyle(percentage)}`}
       whileHover={{ scale: 1.02 }}
