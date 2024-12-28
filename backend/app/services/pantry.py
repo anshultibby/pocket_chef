@@ -1,9 +1,10 @@
+import asyncio
 import logging
 from functools import lru_cache
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import UploadFile
+from fastapi import BackgroundTasks, UploadFile
 
 from ..db.crud import PantryCRUD
 from ..models.pantry import (
@@ -31,22 +32,22 @@ class PantryManager:
     ) -> PantryItem:
         """Helper method to process and add a single pantry item"""
         try:
+            # Create item immediately
             partial_item = await self.pantry.create_item(user_id=user_id, item=item)
 
-            # Skip Claude enrichment if nutrition is already provided
-            if not item.nutrition or not any(vars(item.nutrition).values()):
-                ingredient_text = str(item)
-                logger.info(f"Ingredient text: {ingredient_text}")
-                enriched_item: PantryItemCreate = (
-                    await self.claude.parse_ingredient_text(
-                        PantryItemCreate, ingredient_text
-                    )
-                )
-                updates = PantryItemUpdate(
-                    data=enriched_item.data,
-                    nutrition=enriched_item.nutrition,
-                )
-                return await self.pantry.update_item(partial_item.id, updates)
+            # Start enrichment in background task if needed
+            needs_enrichment = False
+            if item.nutrition:
+                nutrition_dict = item.nutrition.model_dump()
+                nutrition_dict.pop("standard_unit", None)
+                if all(value == 0 for value in nutrition_dict.values()):
+                    needs_enrichment = True
+            else:
+                needs_enrichment = True
+
+            if needs_enrichment:
+                # Return partial item immediately
+                asyncio.create_task(self._enrich_item(partial_item.id, str(item)))
 
             return partial_item
 
@@ -54,6 +55,20 @@ class PantryManager:
             logger.error(f"Error processing item: {str(e)}")
             logger.exception("Full traceback:")
             raise ValueError(f"Failed to process item: {str(e)}")
+
+    async def _enrich_item(self, item_id: UUID, ingredient_text: str):
+        """Background task to enrich item with Claude data"""
+        try:
+            enriched_item = await self.claude.parse_ingredient_text(
+                PantryItemCreate, ingredient_text
+            )
+            updates = PantryItemUpdate(
+                data=enriched_item.data,
+                nutrition=enriched_item.nutrition,
+            )
+            await self.pantry.update_item(item_id, updates)
+        except Exception as e:
+            logger.error(f"Error enriching item {item_id}: {str(e)}")
 
     async def add_single_item(
         self, item: PantryItemCreate, user_id: UUID

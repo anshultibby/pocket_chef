@@ -5,8 +5,6 @@ from typing import Dict, Generic, List, Optional, Type, TypeVar, Union
 from anthropic import Anthropic
 from pydantic import BaseModel
 
-from ...models.pantry import ListOfPantryItemsCreate, PantryItemCreate
-from ...models.recipes import RecipeData
 from .handlers import parse_claude_response
 from .prompts import (
     INGREDIENT_ANALYSIS_PROMPT_TEMPLATE,
@@ -105,6 +103,7 @@ class ClaudeService:
             "model": MODEL,
             "max_tokens": MAX_TOKENS,
             "messages": messages,
+            "temperature": 0.6,
         }
         if system_prompt:
             params["system"] = system_prompt

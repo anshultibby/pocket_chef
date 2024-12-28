@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 T = TypeVar("T", bound=BaseModel)
 
-MODEL = "claude-3-5-sonnet-20240620"
+MODEL = "claude-3-5-sonnet-20241022"
 MAX_TOKENS = 4096
 
 
@@ -40,12 +40,16 @@ $ingredients
 
 Use your best guess for nutritional information 
 and make sure to use the standard unit for scaling the nutritional information
+In notes add an icon to indicate the type of ingredient
+just reply with the json object
 """
 
 INGREDIENT_ANALYSIS_PROMPT_TEMPLATE = Template(INGREDIENT_ANALYSIS_PROMPT)
 
 RECIPE_GENERATION_PROMPT = """
 Generate recipes based on these requirements and available ingredients.
+Feel free to generate international recipes. 
+And be liberal with using non-english names.
 Return recipes that exactly match this schema:
 
 <model>
@@ -68,7 +72,8 @@ Important:
 - Ensure quantities and units are specific and measurable
 - Consider dietary restrictions and nutrition goals
 - Recipes should be practical and achievable
-- Assume a few common ingredients (such as salt, pepper, oil) are available
+- Assume a few common ingredients (such as salt, pepper, oil, spices) are available
+- Add an icon to each step to indicate the type of step
 """
 
 RECIPE_GENERATION_PROMPT_TEMPLATE = Template(RECIPE_GENERATION_PROMPT)

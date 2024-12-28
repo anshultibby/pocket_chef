@@ -53,3 +53,16 @@ class RecipeInteraction(RecipeInteractionCreate):
 
 class RecipeInteractionResponse(RecipeInteraction):
     recipe: RecipeResponse
+
+
+class RecipeInteractionUpdate(BaseModel):
+    type: Optional[InteractionType] = None
+    data: Optional[Dict] = None
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "type": "rate",
+                "data": {"rating": 4, "review": "Great recipe!"},
+            }
+        }
