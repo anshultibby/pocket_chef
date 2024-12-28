@@ -55,10 +55,13 @@ export function PreferenceControls({
           className={`
             px-4 py-2 rounded-lg text-sm transition-all
             ${(preferences[type] as string[]).includes(option)
-              ? `bg-${colorClass}-500/20 text-${colorClass}-400 
-                 ring-1 ring-${colorClass}-500/50
-                 shadow-lg shadow-${colorClass}-500/10
-                 bg-gradient-to-br from-${colorClass}-500/30 to-${colorClass}-500/10`
+              ? colorClass === 'orange'
+                ? 'bg-orange-500/20 text-orange-400 ring-1 ring-orange-500/50 shadow-lg shadow-orange-500/10 bg-gradient-to-br from-orange-500/30 to-orange-500/10'
+                : colorClass === 'blue'
+                ? 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/50 shadow-lg shadow-blue-500/10 bg-gradient-to-br from-blue-500/30 to-blue-500/10'
+                : colorClass === 'purple'
+                ? 'bg-purple-500/20 text-purple-400 ring-1 ring-purple-500/50 shadow-lg shadow-purple-500/10 bg-gradient-to-br from-purple-500/30 to-purple-500/10'
+                : 'bg-green-500/20 text-green-400 ring-1 ring-green-500/50 shadow-lg shadow-green-500/10 bg-gradient-to-br from-green-500/30 to-green-500/10'
               : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:shadow-md'
             }
           `}
