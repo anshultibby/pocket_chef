@@ -18,6 +18,8 @@ import { usePantryStore } from '@/stores/pantryStore';
 import { CATEGORIES, getCategoryLabel } from '@/constants/categories';
 import { useReceiptStore } from '@/stores/receiptStore';
 import { track } from '@vercel/analytics';
+import { findMatchingItem } from '@/utils/pantry';
+import { toast } from 'react-hot-toast';
 
 export default function PantryTab() {
   const { 
@@ -41,7 +43,6 @@ export default function PantryTab() {
     duplicateItem,
     isProcessing,
     isEditing,
-    handleItems,
     handleDuplicateResolution,
     handleEditComplete,
     clearDuplicates,
@@ -60,7 +61,8 @@ export default function PantryTab() {
   // Simplified single item add
   const handleAddItem = async (item: PantryItemCreate) => {
     try {
-      await handleItems([item], pantryItems);
+      // Use handleItems for single item addition
+      await useDuplicateStore.getState().handleItems([item], pantryItems);
     } catch (error) {
       handleError(error);
     }
@@ -209,9 +211,12 @@ export default function PantryTab() {
           existingItem={duplicateItem.existing}
           newItem={duplicateItem.new}
           onMergeQuantities={() => handleDuplicateResolution('merge', addItems, updateItem)}
-          onMergeAndEdit={handleMergeAndEdit}
+          onMergeAndEdit={() => handleDuplicateResolution('mergeEdit', addItems, updateItem)}
           onCreateNew={() => handleDuplicateResolution('create', addItems, updateItem)}
-          onCancel={clearDuplicates}
+          onCancel={() => {
+            clearDuplicates();
+            setShowAddItemForm(false);
+          }}
           isProcessing={isProcessing}
         />
       )}
@@ -226,11 +231,18 @@ export default function PantryTab() {
             nutrition: duplicateItem.existing.nutrition
           }}
           onAdd={async (updatedItem) => {
-            await handleEditComplete(updatedItem, updateItem);
+            try {
+              await handleEditComplete(updatedItem, updateItem);
+              setShowAddItemForm(false);
+            } catch (error) {
+              toast.error('Failed to update item');
+              useDuplicateStore.getState().setIsProcessing(false);
+            }
           }}
           onClose={() => {
-            clearDuplicates();
-            clearUpload();
+            useDuplicateStore.getState().setIsEditing(false);
+            useDuplicateStore.getState().setIsProcessing(false);
+            setShowAddItemForm(false);
           }}
           isEditing={true}
         />

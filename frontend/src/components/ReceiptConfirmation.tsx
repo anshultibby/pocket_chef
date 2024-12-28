@@ -21,6 +21,7 @@ export default function ReceiptConfirmation({
   const [editableItems, setEditableItems] = useState<PantryItemCreate[]>(items);
   const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const handleItemUpdate = (index: number, updatedItem: PantryItemCreate) => {
     setEditableItems(prev => prev.map((item, i) => 
@@ -36,6 +37,15 @@ export default function ReceiptConfirmation({
 
   const handleDeleteItem = (index: number) => {
     setEditableItems(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleConfirm = async () => {
+    setIsSubmitting(true);
+    try {
+      await onConfirm(editableItems);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -96,26 +106,34 @@ export default function ReceiptConfirmation({
                     className="text-red-400 hover:text-red-300 p-2 opacity-0 group-hover:opacity-100 transition-opacity"
                     title="Delete item"
                   >
-                    ��
+                    🗑️
                   </button>
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="flex justify-end space-x-4 mt-6">
+          <div className="flex justify-end gap-4 mt-6">
             <button
               onClick={onCancel}
-              className="px-4 py-2 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600"
+              disabled={isSubmitting}
+              className="px-4 py-2 text-gray-400 hover:text-white disabled:opacity-50"
             >
               Cancel
             </button>
             <button
-              onClick={() => onConfirm(editableItems)}
-              disabled={editableItems.length === 0}
-              className="px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-400 disabled:opacity-50"
+              onClick={handleConfirm}
+              disabled={isSubmitting || editableItems.length === 0}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 disabled:opacity-50 disabled:hover:bg-green-600 flex items-center gap-2"
             >
-              Confirm Items ({editableItems.length})
+              {isSubmitting ? (
+                <>
+                  <span className="animate-spin">⏳</span>
+                  <span>Submitting...</span>
+                </>
+              ) : (
+                'Confirm Items'
+              )}
             </button>
           </div>
         </div>

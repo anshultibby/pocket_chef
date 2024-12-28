@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { PantryItem, PantryItemCreate } from '@/types';
 import { pantryApi } from '@/lib/api';
 import { toast } from 'react-hot-toast';
+import { usePantryStore } from './pantryStore';
 
 type DuplicateItem = {
   existing: PantryItem;
@@ -69,7 +70,18 @@ export const useDuplicateStore = create<DuplicateStore>((set, get) => ({
       }
     });
 
+    // Add new items first if there are any
+    if (newItems.length > 0) {
+      try {
+        const createdItems = await pantryApi.addItems(newItems);
+        await usePantryStore.getState().addItems(createdItems);
+      } catch (error) {
+        console.error('Error adding new items:', error);
+        throw error;
+      }
+    }
 
+    // Then handle duplicates if any exist
     if (duplicates.length > 0) {
       set({ 
         pendingDuplicates: duplicates,

@@ -49,6 +49,14 @@ export default function PantryControls({
           />
         </div>
 
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={onUploadReceipt}
+          className="hidden"
+          accept="image/*"
+        />
+
         <div className="flex items-center gap-2">
           <button
             onClick={onAddItem}
@@ -142,6 +150,14 @@ export default function PantryControls({
             </button>
           </Tooltip>
         </div>
+
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={onUploadReceipt}
+          className="hidden"
+          accept="image/*"
+        />
       </div>
     </div>
   );
