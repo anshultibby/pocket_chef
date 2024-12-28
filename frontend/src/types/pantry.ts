@@ -15,6 +15,10 @@ export interface PantryControlsProps {
   isUploading: boolean;
   fileInputRef: React.RefObject<HTMLInputElement>;
   pantryItemsCount: number;
+  showSearch: boolean;
+  setShowSearch: (show: boolean) => void;
+  showFilters: boolean;
+  setShowFilters: (show: boolean) => void;
 }
 
 export interface CategoryFiltersProps {

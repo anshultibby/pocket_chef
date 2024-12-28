@@ -20,6 +20,15 @@ import { useReceiptStore } from '@/stores/receiptStore';
 import { track } from '@vercel/analytics';
 import { findMatchingItem } from '@/utils/pantry';
 import { toast } from 'react-hot-toast';
+import { 
+  PlusIcon, 
+  DocumentArrowUpIcon, 
+  TrashIcon, 
+  ArrowPathIcon,
+  MagnifyingGlassIcon,
+  XMarkIcon,
+  FunnelIcon
+} from '@heroicons/react/24/outline';
 
 export default function PantryTab() {
   const { 
@@ -53,6 +62,8 @@ export default function PantryTab() {
   const [showAddItemForm, setShowAddItemForm] = useState(false);
   const [selectedItem, setSelectedItem] = useState<PantryItem | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showSearch, setShowSearch] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   if (isLoading) {
     return <LoadingSpinner message="Loading pantry items..." />;
@@ -176,23 +187,107 @@ export default function PantryTab() {
         />
       )}
 
-      <PantryControls
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        onAddItem={() => setShowAddItemForm(true)}
-        onUploadReceipt={handleUploadReceipt}
-        onClearPantry={handleClearPantry}
-        isUploading={isUploading}
-        fileInputRef={fileInputRef}
-        pantryItemsCount={pantryItems.length}
-      />
+      {/* Mobile Controls */}
+      <div className="sm:hidden">
+        {showSearch && (
+          <div className="relative w-full animate-slideDown mb-2">
+            <input
+              type="text"
+              placeholder="Search items..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="bg-gray-800/50 rounded-lg px-4 py-2 text-white w-full focus:ring-2 ring-blue-500 focus:outline-none text-base"
+              autoFocus
+            />
+            <button 
+              onClick={() => {
+                setShowSearch(false);
+                setSearchTerm(''); // Clear search when closing
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white p-1"
+            >
+              <XMarkIcon className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+        
+        <div className="flex gap-2 justify-start">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`w-10 h-10 rounded-full flex items-center justify-center ${
+              showFilters 
+                ? 'bg-blue-600/20 text-blue-400' 
+                : 'bg-gray-800/50 text-gray-400 hover:text-white'
+            }`}
+          >
+            <FunnelIcon className="w-5 h-5" />
+          </button>
+          
+          <button
+            onClick={() => setShowSearch(true)}
+            className="w-10 h-10 rounded-full bg-gray-800/50 text-gray-400 hover:text-white flex items-center justify-center"
+          >
+            <MagnifyingGlassIcon className="w-5 h-5" />
+          </button>
 
-      <CategoryFilters
-        categories={categories}
-        selectedCategories={selectedCategories}
-        onSelectCategory={handleCategorySelect}
-        onClearCategories={() => setSelectedCategories([])}
-      />
+          <button
+            onClick={() => setShowAddItemForm(true)}
+            className="w-10 h-10 rounded-full bg-green-600/20 text-green-400 hover:bg-green-600/30 flex items-center justify-center"
+          >
+            <PlusIcon className="w-5 h-5" />
+          </button>
+
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className={`w-10 h-10 rounded-full flex items-center justify-center ${
+              isUploading 
+                ? 'bg-gray-700/50 text-gray-400' 
+                : 'bg-blue-600/20 text-blue-400 hover:bg-blue-600/30'
+            }`}
+          >
+            {isUploading ? 
+              <ArrowPathIcon className="w-5 h-5 animate-spin" /> : 
+              <DocumentArrowUpIcon className="w-5 h-5" />
+            }
+          </button>
+
+          <button
+            onClick={handleClearPantry}
+            disabled={pantryItems.length === 0}
+            className="w-10 h-10 rounded-full bg-red-900/20 text-red-300/70 hover:bg-red-900/30 disabled:opacity-50 flex items-center justify-center"
+          >
+            <TrashIcon className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Desktop Controls */}
+      <div className="hidden sm:block">
+        <PantryControls
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          onAddItem={() => setShowAddItemForm(true)}
+          onUploadReceipt={handleUploadReceipt}
+          onClearPantry={handleClearPantry}
+          isUploading={isUploading}
+          fileInputRef={fileInputRef}
+          pantryItemsCount={pantryItems.length}
+          showSearch={showSearch}
+          setShowSearch={setShowSearch}
+          showFilters={showFilters}
+          setShowFilters={setShowFilters}
+        />
+      </div>
+
+      {showFilters && (
+        <CategoryFilters
+          categories={categories}
+          selectedCategories={selectedCategories}
+          onSelectCategory={handleCategorySelect}
+          onClearCategories={() => setSelectedCategories([])}
+        />
+      )}
 
       <PantryGrid
         groupedItems={sortedGroupedItems}
