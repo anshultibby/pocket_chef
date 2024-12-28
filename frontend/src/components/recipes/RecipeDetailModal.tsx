@@ -1,4 +1,4 @@
-import { Recipe, RecipeInteraction } from '@/types';
+import { CookData, RateData, Recipe, RecipeInteraction, SaveData } from '@/types';
 import { Dialog } from '@headlessui/react';
 import { PantryItem } from '@/types';
 import { useState, useEffect } from 'react';
@@ -7,6 +7,7 @@ import { recipeApi } from '@/lib/api';
 import { track } from '@vercel/analytics';
 import { StarRating } from './StarRating';
 import { motion } from 'framer-motion';
+import { calculateRecipeAvailability } from '@/stores/recipeStore';
 
 interface RecipeDetailModalProps {
   recipe: Recipe;
@@ -24,7 +25,6 @@ export default function RecipeDetailModal({ recipe, onClose, onUse, onRemove, pa
   const [showRatingInput, setShowRatingInput] = useState(false);
   const [isIngredientsExpanded, setIsIngredientsExpanded] = useState(true);
   const [isInstructionsExpanded, setIsInstructionsExpanded] = useState(true);
-  const [isRatingHovered, setIsRatingHovered] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [existingInteractions, setExistingInteractions] = useState<RecipeInteraction[]>([]);
 
@@ -42,7 +42,7 @@ export default function RecipeDetailModal({ recipe, onClose, onUse, onRemove, pa
           setIsSaved(true);
         }
         
-        if (rateInteraction) {
+        if (rateInteraction && isRateData(rateInteraction.data)) {
           setRating(rateInteraction.rating || 0);
           setReview(rateInteraction.data.review || '');
         }
@@ -53,6 +53,11 @@ export default function RecipeDetailModal({ recipe, onClose, onUse, onRemove, pa
 
     fetchInteractions();
   }, [recipe.id]);
+
+  // Add type guard function
+  const isRateData = (data: SaveData | RateData | CookData): data is RateData => {
+    return 'rating' in data;
+  };
 
   const getIngredientStatus = (ingredient: Recipe['data']['ingredients'][0]) => {
     const inPantry = pantryItems.find(item => 
@@ -138,19 +143,33 @@ export default function RecipeDetailModal({ recipe, onClose, onUse, onRemove, pa
                     <div className="flex items-center gap-4 text-sm">
                       <button 
                         onClick={() => setShowRatingInput(true)}
-                        className={`text-gray-400 transition-colors ${
-                          rating > 0 ? 'text-yellow-400' : 'hover:text-yellow-400'
-                        }`}
+                        className="flex items-center gap-1 text-gray-400 hover:text-yellow-400"
                       >
-                        {rating > 0 ? `★ ${rating}` : '☆'}
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <span 
+                            key={star} 
+                            className={star <= rating ? 'text-yellow-400' : 'text-gray-400'}
+                          >
+                            {star <= rating ? '★' : '☆'}
+                          </span>
+                        ))}
                       </button>
                       <button
                         onClick={handleSave}
                         disabled={isSaving}
-                        className="text-gray-400 hover:text-red-400 transition-colors disabled:opacity-50"
+                        className={`flex items-center gap-1 disabled:opacity-50 ${
+                          isSaved ? 'text-red-400' : 'text-gray-400 hover:text-red-400'
+                        }`}
                       >
                         {isSaving ? '...' : (isSaved ? '❤️' : '♡')}
                       </button>
+                      <span className={
+                        calculateRecipeAvailability(recipe, pantryItems).percentage >= 75 ? 'text-green-400' : 
+                        calculateRecipeAvailability(recipe, pantryItems).percentage >= 50 ? 'text-yellow-400' : 
+                        'text-red-400'
+                      }>
+                        {calculateRecipeAvailability(recipe, pantryItems).percentage}%
+                      </span>
                     </div>
                   </div>
                 </div>
