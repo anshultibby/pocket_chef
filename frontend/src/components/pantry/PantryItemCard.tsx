@@ -28,15 +28,15 @@ export function PantryItemCard({ item, onSelect, onDelete }: PantryItemCardProps
       {...attributes}
       className="bg-gray-800/50 rounded-lg p-2 group hover:bg-gray-700/80 relative border border-gray-700/50 will-change-transform active:bg-gray-700/80"
     >
-      <div className="absolute right-2 top-2 flex gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-active:opacity-100 transition-opacity z-10">
+      <div className="absolute top-2.5 right-2.5 flex gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-active:opacity-100 transition-opacity z-10">
         <button
           onClick={(e) => {
             e.stopPropagation();
             onDelete(item.id);
           }}
-          className="p-1.5 sm:p-1 bg-gray-700/50 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10"
+          className="p-0.5 rounded-lg text-gray-400 hover:text-red-400"
         >
-          <TrashIcon className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+          <TrashIcon className="h-4 w-4" />
         </button>
       </div>
 
@@ -71,12 +71,12 @@ export function PantryItemCard({ item, onSelect, onDelete }: PantryItemCardProps
 
       <div 
         {...listeners} 
-        className="absolute bottom-2 right-2 cursor-move opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-active:opacity-100 transition-opacity"
+        className="absolute bottom-3 right-3 cursor-move opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-active:opacity-100 transition-opacity"
       >
-        <svg className="w-4 h-4 text-gray-400" viewBox="0 0 20 20">
+        <svg className="w-4 h-4 text-gray-400 hover:text-gray-300" viewBox="0 0 20 20">
           <path 
             fill="currentColor" 
-            d="M10 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"
+            d="M7 2a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm6 0a2 2 0 1 1 0 4 2 2 0 0 1 0-4zM7 8a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm6 0a2 2 0 1 1 0 4 2 2 0 0 1 0-4zM7 14a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm6 0a2 2 0 1 1 0 4 2 2 0 0 1 0-4z"
           />
         </svg>
       </div>
