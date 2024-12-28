@@ -202,6 +202,26 @@ export const recipeApi = {
     rating: number, 
     review?: string
   ): Promise<RecipeInteraction> => {
+    // Check if rating already exists
+    const interactions = await recipeApi.getInteractions(recipeId);
+    const existingRating = interactions.find(i => i.type === 'rate');
+
+    if (existingRating) {
+      // Update existing rating
+      return fetchApi<RecipeInteraction>(`/recipes/${recipeId}/interactions/${existingRating.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${await getAuthToken()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          type: 'rate',
+          data: { rating, review }
+        })
+      });
+    }
+
+    // Create new rating
     return recipeApi.interact(recipeId, {
       type: 'rate',
       data: { rating, review }
