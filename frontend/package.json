@@ -8,9 +8,16 @@
     "start": "next start",
     "lint": "next lint",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch"
+    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
+    "build-static": "rm -rf dist && next build",
+    "prepare-mobile": "npm run build-static && npx cap sync",
+    "add-ios": "npm run build-static && npx cap add ios"
   },
   "dependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/cli": "^6.2.0",
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/ios": "^6.2.0",
     "@dnd-kit/core": "^6.3.1",
     "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.2.0",
