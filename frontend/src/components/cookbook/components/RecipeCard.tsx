@@ -3,6 +3,8 @@ import { formatDate } from '@/lib/utils';
 import { InteractionWithRecipe } from '../types';
 import { calculateRecipeAvailability } from '@/stores/recipeStore';
 import { motion } from 'framer-motion';
+import { StarIcon } from '@heroicons/react/24/solid';
+import { StarIcon as StarIconOutline } from '@heroicons/react/24/outline';
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -26,6 +28,28 @@ export function RecipeCard({ recipe, interaction, pantryItems, onClick }: Recipe
   };
 
   const { percentage: availability } = calculateRecipeAvailability(recipe, pantryItems);
+
+  const getAvailabilityColor = (percentage: number) => {
+    if (percentage >= 80) return "text-green-400";
+    if (percentage >= 50) return "text-yellow-400";
+    return "text-red-400";
+  };
+
+  const StarRating = ({ rating }: { rating: number }) => {
+    return (
+      <div className="flex">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <span key={star}>
+            {star <= (rating ?? 0) ? (
+              <StarIcon className="h-5 w-5 text-yellow-400" />
+            ) : (
+              <StarIconOutline className="h-5 w-5 text-yellow-400" />
+            )}
+          </span>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <motion.div 
@@ -55,16 +79,7 @@ export function RecipeCard({ recipe, interaction, pantryItems, onClick }: Recipe
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.1 }}
             >
-              <motion.span 
-                className="text-yellow-400"
-                whileHover={{ scale: 1.2, rotate: 180 }}
-                transition={{ duration: 0.3 }}
-              >
-                ★
-              </motion.span>
-              <span className="text-white">
-                {interaction.data.rating}
-              </span>
+              <StarRating rating={interaction.data.rating} />
             </motion.div>
           )}
         </div>
@@ -81,6 +96,7 @@ export function RecipeCard({ recipe, interaction, pantryItems, onClick }: Recipe
               initial={{ x: 20 }}
               animate={{ x: 0 }}
               transition={{ delay: 0.3 }}
+              className={getAvailabilityColor(availability)}
             >
               {availability}% available
             </motion.span>
