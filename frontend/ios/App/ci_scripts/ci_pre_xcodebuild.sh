@@ -1,20 +1,38 @@
 #!/bin/bash
+set -e # Exit on error
 
-# Navigate to the frontend directory
-cd "$(dirname "$0")/../../../"
+echo "🚀 Pre-build script started..."
 
-# Debug: Print current directory
-echo "Current directory: $(pwd)"
+# Load NVM
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
-# Install dependencies
-npm install --legacy-peer-deps
+# Navigate to frontend directory
+cd "$CI_WORKSPACE/frontend"
 
-# Build the static files
+# Build static files
+echo "🏗 Building static files..."
 npm run build-static
 
 # Sync capacitor
+echo "🔄 Syncing Capacitor..."
 npx cap sync ios
 
-# Debug: List generated files
-echo "Contents of dist directory:"
-ls -la dist
+# Install pods with special handling
+echo "📦 Installing Pods..."
+cd ios/App
+
+# Clean existing pods
+rm -rf Pods
+rm -rf Podfile.lock
+
+# Install pods with verbose logging
+pod install --verbose
+
+# Fix permissions for framework scripts
+if [ -f "Pods/Target Support Files/Pods-App/Pods-App-frameworks.sh" ]; then
+    chmod +x "Pods/Target Support Files/Pods-App/Pods-App-frameworks.sh"
+    echo "✅ Fixed permissions for framework script"
+fi
+
+echo "✅ Pre-build script completed"

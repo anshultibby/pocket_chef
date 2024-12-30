@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { OnboardingImage } from '@/components/OnboardingImage';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function LandingPage() {
   const features = [
@@ -29,28 +30,38 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       {/* Hero Section */}
-      <div className="max-w-6xl mx-auto px-4 py-20 text-center">
+      <div className="max-w-6xl mx-auto px-4 py-12 sm:py-20 text-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="space-y-6"
+          className="space-y-4 sm:space-y-6"
         >
-          <h1 className="text-5xl font-bold">Kitchen Elf</h1>
-          <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-            Your AI-powered kitchen assistant that helps you manage your pantry and discover recipes you can make right now.
+          <div className="flex items-center justify-center gap-3">
+            <Image
+              src="/images/elf2.webp"
+              alt="Kitchen Elf Logo"
+              width={40}
+              height={40}
+              className="w-[40px] h-[40px] sm:w-[50px] sm:h-[50px]"
+              priority
+            />
+            <h1 className="text-4xl sm:text-5xl font-bold">Kitchen Elf</h1>
+          </div>
+          <p className="text-lg sm:text-xl text-gray-300 max-w-2xl mx-auto">
+            Save time and money by getting AI-powered recipe suggestions based on what you already have. No more wasted ingredients or endless recipe searching.
           </p>
           <div className="flex gap-4 justify-center">
             <Link
               href="/signup"
-              className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-400"
+              className="px-8 py-4 bg-blue-500 text-white rounded-lg hover:bg-blue-400 transform hover:scale-105 transition-all font-medium"
             >
-              Get Started
+              Start Cooking Smarter
             </Link>
             <Link
               href="/login"
-              className="px-6 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700"
+              className="px-8 py-4 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-all"
             >
-              Sign In
+              Already have an account?
             </Link>
           </div>
         </motion.div>
@@ -79,6 +90,20 @@ export default function LandingPage() {
             </motion.div>
           ))}
         </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4 py-12 grid grid-cols-4 gap-8 text-center">
+        {[
+          { stat: '100+', label: 'Recipes Generated' },
+          { stat: '10+', label: 'Happy Cooks' },
+          { stat: '10 mins', label: 'Saved per Meal' },
+          { stat: '10%', label: 'Less Food Waste' },
+        ].map(({ stat, label }) => (
+          <div key={label} className="space-y-2">
+            <p className="text-3xl font-bold text-blue-500">{stat}</p>
+            <p className="text-gray-400">{label}</p>
+          </div>
+        ))}
       </div>
     </div>
   );
