@@ -122,7 +122,15 @@ export default function RecipesTab({
   }, [groupedRecipes]);
 
   useEffect(() => {
-    fetchRecipes().catch(console.error);
+    const loadRecipes = async () => {
+      try {
+        await fetchRecipes();
+      } catch (error) {
+        console.error('Error fetching recipes:', error);
+      }
+    };
+    
+    loadRecipes();
   }, [fetchRecipes]);
 
   const handleRemoveRecipe = (recipeId: string) => {
@@ -142,7 +150,7 @@ export default function RecipesTab({
     );
   }
 
-  if (error) {
+  if (error && !error.includes('404')) {
     return (
       <div className="bg-red-500/20 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg">
         {error}
