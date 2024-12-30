@@ -10,9 +10,21 @@ echo "PWD: $(pwd)"
 # Navigate to project root
 cd "$(dirname "${BASH_SOURCE[0]}")/../../../"
 
-# Use Node.js directly (Xcode Cloud has Node pre-installed)
-echo "📦 Setting up Node.js..."
-export NODE_OPTIONS="--max_old_space_size=4096"
+# Check if Node.js is installed, if not install it
+if ! command -v node &> /dev/null; then
+    echo "📦 Node.js not found, installing via Homebrew..."
+    
+    # Check if Homebrew is installed, install if not
+    if ! command -v brew &> /dev/null; then
+        echo "🍺 Installing Homebrew..."
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zshrc
+        eval "$(/opt/homebrew/bin/brew shellenv)"
+    fi
+    
+    # Install Node.js
+    brew install node
+fi
 
 # Debug: Print versions
 echo "Node version: $(node -v)"
