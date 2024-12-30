@@ -1,56 +1,39 @@
-name: iOS Build
+name: iOS App Store
 
-on:
-  push:
-    branches: [ main ]
-    paths:
-      - 'frontend/**'
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'frontend/**'
+# Triggers
+trigger:
+  branch:
+    - main
+  event:
+    - push
+    - pull_request
 
-jobs:
-  build:
-    name: Build and Test
-    runs-on: macos-latest
+# Environment
+environment:
+  node: 18
+  xcode: latest
+  cocoapods: latest
 
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+# Build Configuration
+build:
+  commands:
+    pre:
+      - npm install -g npm@latest
+    main:
+      - npm install --legacy-peer-deps
+      - npm run build-static
+      - npx cap sync ios
+    post:
+      - cd ios/App && pod install
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
+# Archive Configuration
+archive:
+  scheme: App
+  configuration: Release
+  destination: generic/platform=iOS
 
-      - name: Install Frontend Dependencies
-        working-directory: frontend
-        run: npm install --legacy-peer-deps
-
-      - name: Build Static Files
-        working-directory: frontend
-        run: npm run build-static
-
-      - name: Set up Ruby for CocoaPods
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.0'
-          bundler-cache: true
-
-      - name: Install CocoaPods
-        working-directory: frontend/ios/App
-        run: |
-          pod install
-          chmod +x Pods/Target\ Support\ Files/Pods-App/Pods-App-frameworks.sh
-
-      - name: Build iOS App
-        working-directory: frontend/ios/App
-        run: |
-          xcodebuild clean build \
-            -workspace App.xcworkspace \
-            -scheme App \
-            -destination 'platform=iOS Simulator,name=iPhone 15' \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+# Export Configuration
+export:
+  method: app-store
+  teamId: RYA34L6PN4
+  bundleIdentifier: com.kitchenelf.app
