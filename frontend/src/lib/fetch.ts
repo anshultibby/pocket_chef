@@ -126,7 +126,7 @@ const fetchWithRetry = async <T>(url: string, options: RequestInit, retries = 3)
   try {
     return await fetchApi<T>(url, options);
   } catch (error) {
-    if (retries > 0 && error instanceof ApiException && error.status >= 500) {
+    if (retries > 0 && error instanceof ApiException && error.error.status >= 500) {
       await new Promise(resolve => setTimeout(resolve, 1000));
       return fetchWithRetry<T>(url, options, retries - 1);
     }
