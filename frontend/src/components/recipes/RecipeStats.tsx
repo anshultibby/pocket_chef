@@ -8,27 +8,27 @@ interface RecipeStatsProps {
 
 export function RecipeStats({ recipe, availability, className = '' }: RecipeStatsProps) {
   return (
-    <div className={`flex items-center justify-between text-sm ${className}`}>
-      <div className="flex items-center gap-3 text-gray-400">
-        <span>⏱️ {recipe.data.preparation_time}m</span>
+    <div className={`grid grid-cols-2 items-center text-sm ${className}`}>
+      <div className="flex flex-wrap items-center gap-2 text-gray-400">
+        <span className="whitespace-nowrap">⏱️ {recipe.data.preparation_time}m</span>
         {recipe.data.nutrition?.calories && (
-          <span>🔥 {recipe.data.nutrition.calories}cal</span>
+          <span className="whitespace-nowrap">🔥 {recipe.data.nutrition.calories}cal</span>
         )}
         {recipe.data.nutrition?.protein && (
-          <span>💪 {recipe.data.nutrition.protein}g</span>
+          <span className="whitespace-nowrap">💪 {recipe.data.nutrition.protein}g</span>
         )}
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2 justify-end text-gray-400">
         {recipe.data.price && (
-          <span className="text-gray-400">${recipe.data.price.toFixed(2)}</span>
+          <span className="whitespace-nowrap">${recipe.data.price.toFixed(2)}</span>
         )}
         {availability !== undefined && (
-          <span className={
+          <span className={`whitespace-nowrap flex items-center gap-1 ${
             availability >= 75 ? 'text-green-400' : 
             availability >= 50 ? 'text-yellow-400' : 
             'text-red-400'
-          }>
-            {Math.round(availability)}%
+          }`}>
+            🥫 {Math.round(availability)}%
           </span>
         )}
       </div>
