@@ -184,15 +184,9 @@ export default function RecipesTab({
       <div className="text-center py-12 space-y-4">
         <div className="bg-gray-800/50 rounded-xl p-8 backdrop-blur-sm max-w-lg mx-auto">
           <h3 className="text-xl font-medium text-white mb-2">No Recipes Yet</h3>
-          <p className="text-gray-400 mb-6">
-            Get started by generating your first batch of AI-powered recipes based on your pantry items.
+          <p className="text-gray-400">
+            Get started by clicking the wand to generate your first batch of AI-powered recipes based on your pantry items.
           </p>
-          <button
-            onClick={() => setShowElfModal(true)}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-          >
-            Generate Recipes
-          </button>
         </div>
       </div>
     );
