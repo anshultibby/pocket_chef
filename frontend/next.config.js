@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
+  // output: 'export',
   distDir: 'dist',
   images: {
     unoptimized: true
@@ -12,7 +12,8 @@ const nextConfig = {
     ...(process.env.NODE_ENV === 'production' 
       ? { ignoreBuildErrors: true }
       : {})
-  }
+  },
+  reactStrictMode: true
 };
 
 module.exports = nextConfig;

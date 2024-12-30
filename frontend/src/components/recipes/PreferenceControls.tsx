@@ -1,3 +1,4 @@
+import React from 'react';
 import { useRecipeStore } from '@/stores/recipeStore';
 import { RecipePreferences } from '@/types';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -250,21 +251,48 @@ export function PreferenceControls({
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-300">
-                  Serving Size
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="12"
-                  value={preferences.serving_size || ''}
-                  onChange={(e) => handlePreferencesChange({ 
-                    serving_size: e.target.value ? parseInt(e.target.value) : undefined 
-                  })}
-                  className="w-full bg-gray-800 rounded-lg px-3 py-2 text-white"
-                  placeholder="e.g., 4"
-                />
+              <div className="flex gap-4 items-start">
+                <div className="space-y-2 flex-1">
+                  <label className="text-sm font-medium text-gray-300">
+                    Serving Size
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="12"
+                    value={preferences.serving_size || ''}
+                    onChange={(e) => handlePreferencesChange({ 
+                      serving_size: e.target.value ? parseInt(e.target.value) : undefined 
+                    })}
+                    className="w-full bg-gray-800 rounded-lg px-3 py-2 text-white"
+                    placeholder="e.g., 4"
+                  />
+                </div>
+
+                <div className="space-y-2 flex-1">
+                  <label className="text-sm font-medium text-gray-300">
+                    Additional Options
+                  </label>
+                  <button
+                    onClick={() => handlePreferencesChange({ 
+                      custom_preferences: preferences.custom_preferences 
+                        ? preferences.custom_preferences.replace("its ok to suggest ingredients not in the pantry", "").trim()
+                        : "its ok to suggest ingredients not in the pantry"
+                    })}
+                    className={`
+                      px-3 py-2 rounded-lg text-sm transition-all w-full text-left
+                      ${preferences.custom_preferences?.includes("its ok to suggest ingredients not in the pantry")
+                        ? 'bg-purple-500/20 text-purple-400 ring-1 ring-purple-500/50 shadow-lg shadow-purple-500/10'
+                        : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:shadow-md'
+                      }
+                    `}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>🛒</span>
+                      <span>Allow missing ingredients</span>
+                    </div>
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-2">

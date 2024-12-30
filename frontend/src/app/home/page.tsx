@@ -19,16 +19,17 @@ import AddItemModal from '@/components/modals/AddItemModal';
 import Link from 'next/link';
 import { FloatingElfButton } from '@/components/FloatingElfButton';
 import FeedbackModal from '@/components/modals/FeedbackModal';
+import ShoppingTab from '@/components/shopping/ShoppingTab';
 
-type TabType = 'cook' | 'pantry' | 'cookbook';
+type TabType = 'cook' | 'pantry' | 'cookbook' | 'shopping';
 
 export const dynamic = 'force-dynamic';
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<'cook' | 'pantry' | 'cookbook'>(() => {
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
     // Try to get saved tab from localStorage, default to 'cook' if not found
     if (typeof window !== 'undefined') {
-      return (localStorage.getItem('activeTab') as 'cook' | 'pantry' | 'cookbook') || 'cook';
+      return (localStorage.getItem('activeTab') as TabType) || 'cook';
     }
     return 'cook';
   });
@@ -288,13 +289,25 @@ export default function Home() {
               >
                 Cookbook
               </button>
+              <button
+                onClick={() => handleTabChange('shopping')}
+                className={`px-4 py-3 ${
+                  activeTab === 'shopping'
+                    ? 'border-b-2 border-blue-500 text-blue-500'
+                    : 'text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                Shopping
+              </button>
             </div>
           </div>
         </div>
 
         {/* Tab Content */}
         <div className="max-w-4xl mx-auto px-4 py-6">
-          {activeTab === 'pantry' ? (
+          {activeTab === 'shopping' ? (
+            <ShoppingTab />
+          ) : activeTab === 'pantry' ? (
             <PantryTab />
           ) : activeTab === 'cookbook' ? (
             <CookbookTab />

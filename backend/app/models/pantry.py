@@ -70,7 +70,11 @@ class PantryItemData(CustomBaseModel):
         ge=0,
         multiple_of=0.01,
     )
-    unit: str = Field(default="unit", description="unit of the ingredient")
+    unit: str = Field(
+        default="unit",
+        description="unit of the ingredient, \
+            use most standard unit which will be present in supermarket api",
+    )
     category: Optional[str] = Field(description="category of the ingredient")
     notes: Optional[str] = Field(description="notes about the ingredient")
     expiry_date: Optional[str] = Field(

@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 import { fetchApi } from './fetch';
 import type { Recipe, RecipePreferences, PantryItemCreate, 
   PantryItem, PantryItemUpdate, RecipeInteractionCreate, 
-  RecipeInteraction, InteractionType, SaveData, RateData, CookData, UserProfile, UserProfileUpdate } from '@/types';
+  RecipeInteraction, InteractionType, SaveData, RateData, CookData, UserProfile, UserProfileUpdate, KrogerProfile, KrogerCartItem } from '@/types';
 
 // Helper function to get auth token
 const getAuthToken = async () => {
@@ -311,4 +311,23 @@ export const feedbackApi = {
       body: JSON.stringify({ content }),
     });
   }
+};
+
+// Kroger API operations
+export const krogerApi = {
+  async getProfile(): Promise<KrogerProfile> {
+    return fetchApi('/api/kroger/profile');
+  },
+
+  async addToCart(items: KrogerCartItem[]): Promise<void> {
+    return fetchApi('/kroger/cart', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(items)
+    });
+  },
+
+  // Add other Kroger operations as needed
 };
