@@ -102,6 +102,7 @@ export default function AddItemModal({
                       error={errors['name']}
                       required
                       placeholder="Common name (e.g., bread)"
+                      className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-1 ring-blue-500 focus:outline-none"
                     />
 
                     <div className="grid grid-cols-2 gap-4">
