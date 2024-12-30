@@ -55,13 +55,13 @@ export default function LandingPage() {
               href="/signup"
               className="px-8 py-4 bg-blue-500 text-white rounded-lg hover:bg-blue-400 transform hover:scale-105 transition-all font-medium"
             >
-              Start Cooking Smarter
+              Sign up
             </Link>
             <Link
               href="/login"
               className="px-8 py-4 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-all"
             >
-              Already have an account?
+              Login
             </Link>
           </div>
         </motion.div>
