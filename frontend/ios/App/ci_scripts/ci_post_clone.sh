@@ -10,12 +10,18 @@ export NVM_DIR="$HOME/.nvm"
 nvm install 18
 nvm use 18
 
-# Debug: Print versions
+# Debug: Print versions and current directory
 echo "Node version: $(node -v)"
 echo "NPM version: $(npm -v)"
+echo "Current directory: $(pwd)"
+echo "CI_WORKSPACE: ${CI_WORKSPACE}"
 
-# Navigate to frontend directory
-cd "$CI_WORKSPACE/frontend"
+# Navigate to frontend directory using relative path
+cd "${CI_WORKSPACE}/../../../"
+
+# Debug: Confirm we're in the right directory
+echo "Directory after cd: $(pwd)"
+ls -la
 
 # Install dependencies
 echo "📦 Installing dependencies..."
