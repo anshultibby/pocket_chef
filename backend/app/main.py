@@ -20,6 +20,7 @@ CORS_ORIGINS = [
     "capacitor://localhost",
     "http://localhost",
     "http://127.0.0.1",
+    "app://localhost",
 ]
 
 app = FastAPI(

@@ -9,7 +9,9 @@ const config: CapacitorConfig = {
     allowNavigation: [
       'localhost:*',
       '127.0.0.1:*',
-      'pocketchef-production.up.railway.app'
+      'pocketchef-production.up.railway.app',
+      '*.supabase.co',
+      'kitchen-elf.vercel.app'
     ],
     cleartext: true
   },

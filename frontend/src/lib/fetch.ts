@@ -17,20 +17,29 @@ export const fetchApi = async <T>(url: string, options: RequestInit = {}): Promi
       });
     }
 
+    // Create base headers
     const headers = new Headers({
       'Authorization': `Bearer ${session.access_token}`,
       'Content-Type': 'application/json',
-      ...options.headers,
     });
+
+    // Merge with any provided headers
+    if (options.headers) {
+      Object.entries(options.headers).forEach(([key, value]) => {
+        headers.set(key, value);
+      });
+    }
 
     // Always use Railway for mobile
     if (Capacitor.isNativePlatform()) {
       console.log('Mobile detected, using Railway');
+      console.log('Request headers:', Object.fromEntries(headers.entries())); // Debug log
+      
       const response = await fetch(`${RAILWAY_URL}${url}`, {
         ...options,
         headers,
-        credentials: 'include',
-        mode: 'cors'
+        mode: 'cors',
+        credentials: 'include'
       });
 
       console.log('Railway response status:', response.status);
