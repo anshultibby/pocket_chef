@@ -6,11 +6,16 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     androidScheme: 'https',
-    errorPath: "index.html"
+    allowNavigation: [
+      'localhost:*',
+      '127.0.0.1:*',
+      'pocketchef-production.up.railway.app'
+    ],
+    cleartext: true
   },
   ios: {
     contentInset: 'automatic',
-    limitsNavigationsToAppBoundDomains: true,
+    limitsNavigationsToAppBoundDomains: false,
     backgroundColor: "#000000"
   }
 };

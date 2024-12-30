@@ -1,53 +1,89 @@
 import { ApiException } from '@/types/api';
 import { supabase } from './supabase';
+import { Capacitor } from '@capacitor/core';
 
-// Default to production URL if not defined
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://pocketchef-production.up.railway.app';
+const RAILWAY_URL = 'https://pocketchef-production.up.railway.app';
+const LOCAL_URL = 'http://127.0.0.1:8000';
 
 export const fetchApi = async <T>(url: string, options: RequestInit = {}): Promise<T> => {
   try {
-    // Get current session
     const { data: { session } } = await supabase.auth.getSession();
     
     if (!session?.access_token) {
+      console.error('No active session');
       throw new ApiException({
         status: 401,
         message: 'No active session'
       });
     }
 
-    // Add auth header
-    const headers = new Headers(options.headers);
-    headers.set('Authorization', `Bearer ${session.access_token}`);
-    
-    const response = await fetch(`${API_BASE_URL}${url}`, {
+    const headers = new Headers({
+      'Authorization': `Bearer ${session.access_token}`,
+      'Content-Type': 'application/json',
+      ...options.headers,
+    });
+
+    // Always use Railway for mobile
+    if (Capacitor.isNativePlatform()) {
+      console.log('Mobile detected, using Railway');
+      const response = await fetch(`${RAILWAY_URL}${url}`, {
+        ...options,
+        headers,
+        credentials: 'include',
+        mode: 'cors'
+      });
+
+      console.log('Railway response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Railway API Error:', response.status, errorText);
+        throw new ApiException({
+          status: response.status,
+          message: errorText || 'Request failed'
+        });
+      }
+
+      return response.json();
+    }
+
+    // For web development, try localhost first
+    if (process.env.NODE_ENV === 'development') {
+      try {
+        console.log('Web development, trying localhost first...');
+        const localResponse = await fetch(`${LOCAL_URL}${url}`, {
+          ...options,
+          headers,
+          credentials: 'include'
+        });
+        
+        if (localResponse.ok) {
+          return localResponse.json();
+        }
+      } catch (error) {
+        console.log('Localhost failed, falling back to Railway...');
+      }
+    }
+
+    // Fallback to Railway for web production
+    const response = await fetch(`${RAILWAY_URL}${url}`, {
       ...options,
       headers,
       credentials: 'include'
     });
 
-    if (response.status === 401) {
-      // Try to refresh the session
-      const { data: { session: newSession } } = await supabase.auth.refreshSession();
-      if (newSession?.access_token) {
-        headers.set('Authorization', `Bearer ${newSession.access_token}`);
-        return fetchApi<T>(url, options);
-      }
-      throw new ApiException({
-        status: 401,
-        message: 'Session expired'
-      });
-    }
-
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API Error:', response.status, errorText);
       throw new ApiException({
         status: response.status,
-        message: 'Request failed'
+        message: errorText || 'Request failed'
       });
     }
 
     return response.json();
   } catch (error) {
+    console.error('Fetch error:', error);
     if (error instanceof ApiException) throw error;
     throw new ApiException({
       status: 500,
@@ -62,3 +98,29 @@ export const createAuthHeaders = (token: string, contentType = 'application/json
   'Authorization': `Bearer ${token}`,
   ...(contentType ? { 'Content-Type': contentType } : {})
 });
+
+const fetchWithRetry = async <T>(url: string, options: RequestInit, retries = 3): Promise<T> => {
+  try {
+    return await fetchApi<T>(url, options);
+  } catch (error) {
+    if (retries > 0 && error instanceof ApiException && error.status >= 500) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return fetchWithRetry<T>(url, options, retries - 1);
+    }
+    throw error;
+  }
+};
+
+const fetchWithTimeout = async <T>(url: string, options: RequestInit = {}, timeout = 10000): Promise<T> => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  
+  try {
+    return await fetchApi<T>(url, {
+      ...options,
+      signal: controller.signal
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};

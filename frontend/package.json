@@ -9,7 +9,7 @@
     "lint": "next lint",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
-    "build-static": "rm -rf dist && next build",
+    "build-static": "NODE_ENV=production rm -rf dist && next build",
     "prepare-mobile": "npm run build-static && npx cap sync",
     "add-ios": "npm run build-static && npx cap add ios"
   },

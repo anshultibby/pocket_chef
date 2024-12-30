@@ -17,6 +17,9 @@ CORS_ORIGINS = [
     "https://kitchen-elf.vercel.app",
     "https://kitchen-elf.com",
     "https://www.kitchen-elf.com",
+    "capacitor://localhost",
+    "http://localhost",
+    "http://127.0.0.1",
 ]
 
 app = FastAPI(
@@ -25,15 +28,16 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Configure CORS with more permissive settings for Vercel preview deployments
+# Configure CORS with settings for mobile
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
     allow_origin_regex=r"https://.*\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["*", "Authorization"],
     expose_headers=["*"],
+    max_age=3600,
 )
 
 # Include routers
