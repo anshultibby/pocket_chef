@@ -51,7 +51,7 @@ export default function ProfilePage() {
   const onSubmit = async (data: UserProfileUpdate) => {
     try {
       await updateProfile(data);
-      router.push('/');
+      router.push('/home');
     } catch (error) {
       console.error('Error updating profile:', error);
     }
