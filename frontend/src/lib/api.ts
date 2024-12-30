@@ -298,3 +298,17 @@ export const profileApi = {
     });
   }
 };
+
+export const feedbackApi = {
+  submit: async (content: string): Promise<void> => {
+    const token = await getAuthToken();
+    return fetchApi<void>('/feedback', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ content }),
+    });
+  }
+};

@@ -181,3 +181,30 @@ CREATE POLICY "Users can view and update their own profile" ON public.user_profi
 
 -- Create index
 CREATE INDEX idx_user_profiles_user ON user_profiles(user_id);
+
+
+-- Generic user content table
+CREATE TABLE IF NOT EXISTS public.user_content (
+    id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    type text NOT NULL,
+    data jsonb NOT NULL DEFAULT '{}'::jsonb,
+    metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+    created_at timestamptz DEFAULT now(),
+    updated_at timestamptz DEFAULT now(),
+    
+    -- Add an index on type for efficient filtering
+    CONSTRAINT valid_type CHECK (
+        type = ANY(ARRAY['feedback', 'receipt', 'note', 'shopping_list'])
+    )
+);
+
+-- Add RLS policy
+ALTER TABLE public.user_content ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can manage their own content" ON public.user_content
+    FOR ALL USING (auth.uid() = user_id);
+
+-- Create indexes
+CREATE INDEX idx_user_content_user ON user_content(user_id);
+CREATE INDEX idx_user_content_type ON user_content(type);

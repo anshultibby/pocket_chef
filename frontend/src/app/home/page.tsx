@@ -18,6 +18,7 @@ import DuplicateItemModal from '@/components/modals/DuplicateItemModal';
 import AddItemModal from '@/components/modals/AddItemModal';
 import Link from 'next/link';
 import { FloatingElfButton } from '@/components/FloatingElfButton';
+import FeedbackModal from '@/components/modals/FeedbackModal';
 
 type TabType = 'cook' | 'pantry' | 'cookbook';
 
@@ -61,6 +62,7 @@ export default function Home() {
     receiptImage, 
     clearUpload,
   } = useReceiptStore();
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
   // Save active tab to localStorage whenever it changes
   useEffect(() => {
@@ -233,6 +235,17 @@ export default function Home() {
                       >
                         Sign Out
                       </button>
+                      
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsAccountMenuOpen(false);
+                          setShowFeedbackModal(true);
+                        }}
+                        className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-800 text-sm"
+                      >
+                        Share Feedback
+                      </button>
                     </div>
                   )}
                 </div>
@@ -376,6 +389,10 @@ export default function Home() {
             }}
             isEditing={true}
           />
+        )}
+
+        {showFeedbackModal && (
+          <FeedbackModal onClose={() => setShowFeedbackModal(false)} />
         )}
       </main>
     </AuthGuard>

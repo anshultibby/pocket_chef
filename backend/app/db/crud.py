@@ -378,3 +378,55 @@ class ProfileCRUD(BaseCRUD):
         except Exception as e:
             logger.error(f"Error creating user profile: {str(e)}")
             raise
+
+
+class UserContentCRUD(BaseCRUD):
+    async def create_content(
+        self, user_id: UUID, type: str, data: dict, metadata: dict = None
+    ) -> dict:
+        try:
+            result = (
+                self.supabase.table("user_content")
+                .insert(
+                    {
+                        "user_id": str(user_id),
+                        "type": type,
+                        "data": data,
+                        "metadata": metadata or {},
+                        "updated_at": datetime.utcnow().isoformat(),
+                    }
+                )
+                .execute()
+            )
+
+            if not result.data:
+                raise ValueError("Failed to create user content")
+
+            return result.data[0]
+
+        except Exception as e:
+            logger.error(f"Error creating user content: {str(e)}")
+            raise
+
+    async def get_user_content(
+        self, user_id: UUID, type: str = None, limit: int = 100, offset: int = 0
+    ) -> List[dict]:
+        try:
+            query = self.supabase.table("user_content").select("*")
+
+            if type:
+                query = query.eq("type", type)
+
+            result = (
+                query.eq("user_id", str(user_id))
+                .order("created_at", desc=True)
+                .limit(limit)
+                .offset(offset)
+                .execute()
+            )
+
+            return result.data or []
+
+        except Exception as e:
+            logger.error(f"Error fetching user content: {str(e)}")
+            raise

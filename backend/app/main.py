@@ -5,7 +5,7 @@ import traceback
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routers import pantry, profile, recipes
+from .routers import feedback, pantry, profile, recipes
 
 # Add logging configuration
 logging.basicConfig(level=logging.INFO)
@@ -45,6 +45,7 @@ app.add_middleware(
 app.include_router(pantry.router)
 app.include_router(recipes.router)
 app.include_router(profile.router)
+app.include_router(feedback.router)
 
 
 # Add a simple root endpoint for testing
