@@ -100,9 +100,36 @@ export default function RecipesTab({
   const [usingRecipe, setUsingRecipe] = useState<Recipe | null>(null);
   const [showElfModal, setShowElfModal] = useState(false);
 
+  const groupedRecipes = useMemo(() => {
+    return recipes.reduce((acc: Record<string, Recipe[]>, recipe: Recipe) => {
+      const date = new Date(recipe.created_at);
+      const dateString = date.toISOString().split('T')[0];
+      
+      if (!acc[dateString]) {
+        acc[dateString] = [];
+      }
+      if (acc[dateString].length < 10) {
+        acc[dateString].push(recipe);
+      }
+      return acc;
+    }, {});
+  }, [recipes]);
+
+  const sortedTimestamps = useMemo(() => {
+    return Object.keys(groupedRecipes)
+      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
+      .slice(0, 5);
+  }, [groupedRecipes]);
+
   useEffect(() => {
     fetchRecipes().catch(console.error);
   }, [fetchRecipes]);
+
+  const handleRemoveRecipe = (recipeId: string) => {
+    useRecipeStore.getState().setRecipes((prevRecipes: Recipe[]) => 
+      prevRecipes.filter(recipe => recipe.id !== recipeId)
+    );
+  };
 
   if (isLoading || isGenerating) {
     return (
@@ -141,44 +168,6 @@ export default function RecipesTab({
       </div>
     );
   }
-
-  // Group recipes by timestamp
-  const groupedRecipes = useMemo(() => {
-    return recipes.reduce((acc: Record<string, Recipe[]>, recipe: Recipe) => {
-      const date = new Date(recipe.created_at);
-      const dateString = date.toISOString().split('T')[0];
-      
-      if (!acc[dateString]) {
-        acc[dateString] = [];
-      }
-      if (acc[dateString].length < 10) {
-        acc[dateString].push(recipe);
-      }
-      return acc;
-    }, {});
-  }, [recipes]);
-
-  const handleRemoveRecipe = (recipeId: string) => {
-    useRecipeStore.getState().setRecipes((prevRecipes: Recipe[]) => 
-      prevRecipes.filter(recipe => recipe.id !== recipeId)
-    );
-  };
-
-  // Sort recipes within each group by availability
-  (Object.values(groupedRecipes) as Recipe[][]).forEach(recipeGroup => {
-    recipeGroup.sort((a, b) => {
-      const getAvailability = (recipe: Recipe) => {
-        const { percentage } = calculateRecipeAvailability(recipe, pantryItems);
-        return percentage;
-      };
-      return getAvailability(b) - getAvailability(a);
-    });
-  });
-
-  // Sort timestamps in reverse chronological order and limit to last 5 dates
-  const sortedTimestamps = Object.keys(groupedRecipes)
-    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
-    .slice(0, 5);
 
   return (
     <div className="space-y-8">
