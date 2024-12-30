@@ -33,7 +33,12 @@ class RecipeData(CustomBaseModel):
     price: Optional[float] = Field(
         None, description="Price of the ingredients of the recipe"
     )
-    nutrition: Optional[Nutrition] = Field(None, description="Nutrition of the recipe")
+    nutrition: Optional[Nutrition] = Field(
+        None,
+        description="Nutrition stats of the recipe, \
+            use standard unit, something like 100 calories, 10 grams of protein, \
+                20 g of carbs, etc per serving size",
+    )
 
     def __str__(self) -> str:
         """Format recipe data in a readable way"""
@@ -95,6 +100,12 @@ class RecipePreferences(CustomBaseModel):
     max_prep_time: Optional[int] = Field(
         None, description="Maximum preparation time in minutes", ge=0
     )
+    max_calories: Optional[int] = Field(
+        None, description="Maximum calories per serving", ge=0
+    )
+    min_protein: Optional[int] = Field(
+        None, description="Minimum protein per serving in grams", ge=0
+    )
     serving_size: int = Field(default=2, ge=1, le=12, description="Number of servings")
     recipes_per_meal: int = Field(
         default=4, ge=1, le=8, description="Number of recipes to generate per meal type"
@@ -106,20 +117,31 @@ class RecipePreferences(CustomBaseModel):
     def __str__(self) -> str:
         """Format preferences in a readable way"""
         parts = []
-        if self.cuisine:
-            parts.append(f"Cuisines: {', '.join(self.cuisine)}")
-        if self.meal_types:
-            parts.append(f"Meal Types: {', '.join(self.meal_types)}")
-        if self.dietary:
-            parts.append(f"Dietary: {', '.join(self.dietary)}")
-        if self.nutrition_goals:
-            parts.append(f"Nutrition Goals: {', '.join(self.nutrition_goals)}")
-        if self.max_prep_time:
-            parts.append(f"Max Prep Time: {self.max_prep_time} mins")
-        parts.append(f"Serving Size: {self.serving_size}")
-        parts.append(f"Recipes Per Meal: {self.recipes_per_meal}")
+
+        # Handle list fields
+        for field_name in ["cuisine", "meal_types", "dietary", "nutrition_goals"]:
+            if values := getattr(self, field_name):
+                parts.append(
+                    f"{field_name.replace('_', ' ').title()}: {', '.join(values)}"
+                )
+
+        # Handle numeric fields with units
+        units = {
+            "max_prep_time": "mins",
+            "max_calories": "kcal",
+            "min_protein": "g",
+            "serving_size": "servings",
+            "recipes_per_meal": "recipes",
+        }
+
+        for field_name, unit in units.items():
+            if value := getattr(self, field_name):
+                parts.append(f"{field_name.replace('_', ' ').title()}: {value} {unit}")
+
+        # Handle custom preferences
         if self.custom_preferences:
             parts.append(f"Custom: {self.custom_preferences}")
+
         return "\n".join(parts)
 
     class Config:

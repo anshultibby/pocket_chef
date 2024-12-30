@@ -5,6 +5,7 @@ import { calculateRecipeAvailability } from '@/stores/recipeStore';
 import { motion } from 'framer-motion';
 import { StarIcon } from '@heroicons/react/24/solid';
 import { StarIcon as StarIconOutline } from '@heroicons/react/24/outline';
+import { RecipeStats } from '@/components/recipes/RecipeStats';
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -90,17 +91,10 @@ export function RecipeCard({ recipe, interaction, pantryItems, onClick }: Recipe
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
         >
-          <div className="flex justify-between text-sm text-gray-400">
-            <span>{recipe.data.preparation_time} mins</span>
-            <motion.span
-              initial={{ x: 20 }}
-              animate={{ x: 0 }}
-              transition={{ delay: 0.3 }}
-              className={getAvailabilityColor(availability)}
-            >
-              {availability}% available
-            </motion.span>
-          </div>
+          <RecipeStats 
+            recipe={recipe} 
+            availability={availability}
+          />
 
           {isSaveData(interaction.data) && interaction.data.folder && (
             <motion.div 

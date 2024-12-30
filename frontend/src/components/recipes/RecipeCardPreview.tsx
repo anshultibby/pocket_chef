@@ -5,6 +5,7 @@ import { recipeApi } from '@/lib/api';
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import { RecipeStats } from './RecipeStats';
 
 interface RecipeCardPreviewProps {
   recipe: Recipe;
@@ -29,15 +30,15 @@ export default function RecipeCardPreview({ recipe, pantryItems, onClick }: Reci
       whileHover={{ scale: 1.02 }}
       transition={{ type: "spring", stiffness: 300 }}
     >
-      <h4 className="font-medium text-white text-base leading-snug line-clamp-3">
-        {recipe.data.name}
-      </h4>
-
-      <div className="flex items-center justify-between text-sm mt-3">
-        <div className="text-gray-400">⏱️ {recipe.data.preparation_time}m</div>
-        <div className="text-gray-300">
-          {Math.round(percentage)}%
-        </div>
+      <div className="flex flex-col justify-between h-full">
+        <h4 className="font-medium text-white text-base leading-snug line-clamp-3">
+          {recipe.data.name}
+        </h4>
+        <RecipeStats 
+          recipe={recipe} 
+          availability={percentage}
+          className="mt-3"
+        />
       </div>
     </motion.div>
   );

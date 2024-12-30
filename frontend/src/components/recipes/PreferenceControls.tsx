@@ -130,6 +130,88 @@ export function PreferenceControls({
             className="overflow-hidden"
           >
             <div className="space-y-4 pt-4 border-t border-gray-800">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-300">
+                    Max Preparation Time
+                  </label>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-400">
+                      {preferences.max_prep_time ? `${preferences.max_prep_time} mins` : 'Any time'}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="120"
+                    step="5"
+                    value={preferences.max_prep_time || 0}
+                    onChange={(e) => handlePreferencesChange({ 
+                      max_prep_time: parseInt(e.target.value) || undefined 
+                    })}
+                    className="w-full accent-indigo-500 bg-gray-700 rounded-lg h-2 appearance-none cursor-pointer"
+                  />
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>Any time</span>
+                    <span>2 hours</span>
+                  </div>
+                </div>
+
+                {/* Max Calories Slider */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-300">
+                    Max Calories per Serving
+                  </label>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-400">
+                      {preferences.max_calories ? `${preferences.max_calories} kcal` : 'Any'}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1200"
+                    step="50"
+                    value={preferences.max_calories || 0}
+                    onChange={(e) => handlePreferencesChange({ 
+                      max_calories: parseInt(e.target.value) || undefined 
+                    })}
+                    className="w-full accent-indigo-500 bg-gray-700 rounded-lg h-2 appearance-none cursor-pointer"
+                  />
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>Any</span>
+                    <span>1200 kcal</span>
+                  </div>
+                </div>
+
+                {/* Min Protein Slider */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-300">
+                    Min Protein per Serving
+                  </label>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-400">
+                      {preferences.min_protein ? `${preferences.min_protein}g` : 'Any'}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="5"
+                    value={preferences.min_protein || 0}
+                    onChange={(e) => handlePreferencesChange({ 
+                      min_protein: parseInt(e.target.value) || undefined 
+                    })}
+                    className="w-full accent-indigo-500 bg-gray-700 rounded-lg h-2 appearance-none cursor-pointer"
+                  />
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>Any</span>
+                    <span>100g</span>
+                  </div>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-300">Meal Type</label>
                 <div className="overflow-x-auto pb-2">
@@ -168,49 +250,21 @@ export function PreferenceControls({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-300">
-                    Max Preparation Time
-                  </label>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-400">
-                      {preferences.max_prep_time ? `${preferences.max_prep_time} mins` : 'Any time'}
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="120"
-                    step="5"
-                    value={preferences.max_prep_time || 0}
-                    onChange={(e) => handlePreferencesChange({ 
-                      max_prep_time: parseInt(e.target.value) || undefined 
-                    })}
-                    className="w-full accent-indigo-500 bg-gray-700 rounded-lg h-2 appearance-none cursor-pointer"
-                  />
-                  <div className="flex justify-between text-xs text-gray-500">
-                    <span>Any time</span>
-                    <span>2 hours</span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-300">
-                    Serving Size
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="12"
-                    value={preferences.serving_size || ''}
-                    onChange={(e) => handlePreferencesChange({ 
-                      serving_size: e.target.value ? parseInt(e.target.value) : undefined 
-                    })}
-                    className="w-full bg-gray-800 rounded-lg px-3 py-2 text-white"
-                    placeholder="e.g., 4"
-                  />
-                </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-300">
+                  Serving Size
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="12"
+                  value={preferences.serving_size || ''}
+                  onChange={(e) => handlePreferencesChange({ 
+                    serving_size: e.target.value ? parseInt(e.target.value) : undefined 
+                  })}
+                  className="w-full bg-gray-800 rounded-lg px-3 py-2 text-white"
+                  placeholder="e.g., 4"
+                />
               </div>
 
               <div className="space-y-2">

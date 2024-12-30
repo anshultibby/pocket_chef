@@ -22,31 +22,29 @@ export interface RecipeIngredient {
 
 export interface RecipeData {
   name: string;
-  ingredients: RecipeIngredient[];
-  instructions: string[];
+  description?: string;
   preparation_time: number;
   servings: number;
   category: string;
+  ingredients: RecipeIngredient[];
+  instructions: string[];
+  price?: number;
+  nutrition?: {
+    calories?: number;
+    protein?: number;
+    carbs?: number;
+    fat?: number;
+    fiber?: number;
+  };
 }
 
 export interface Recipe {
   id: string;
-  data: {
-    name: string;
-    ingredients: Array<{
-      name: string;
-      quantity: number;
-      unit: string;
-      substitutes?: string[];
-    }>;
-    instructions: string[];
-    preparation_time: number;
-    servings: number;
-    category: string;
-  };
+  data: RecipeData;
+  user_id: string;
+  is_public: boolean;
   created_at: string;
   updated_at: string;
-  user_id: string;
 }
 
 // Pantry types matching the database
@@ -137,6 +135,8 @@ export interface RecipePreferences {
   serving_size: number;
   recipes_per_meal: number;
   custom_preferences?: string;
+  max_calories?: number;
+  min_protein?: number;
 }
 
 export type InteractionType = 'save' | 'rate' | 'cook';

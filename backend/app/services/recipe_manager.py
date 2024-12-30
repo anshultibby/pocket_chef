@@ -32,6 +32,9 @@ class RecipeManager:
         self, preferences: RecipePreferences, user_id: UUID
     ) -> List[RecipeResponse]:
         """Generate recipe and link ingredients to pantry items"""
+        logger.info(
+            f"Generating recipe for user {user_id} with preferences: {preferences}"
+        )
         pantry_manager = get_pantry_manager()
         pantry_items = await pantry_manager.get_items(user_id)
         final_recipes = []

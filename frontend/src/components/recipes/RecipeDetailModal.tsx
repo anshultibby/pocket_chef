@@ -27,6 +27,7 @@ export default function RecipeDetailModal({ recipe, onClose, onUse, onRemove, pa
   const [isInstructionsExpanded, setIsInstructionsExpanded] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
   const [existingInteractions, setExistingInteractions] = useState<RecipeInteraction[]>([]);
+  const [isNutritionExpanded, setIsNutritionExpanded] = useState(false);
 
   useEffect(() => {
     const fetchInteractions = async () => {
@@ -170,6 +171,11 @@ export default function RecipeDetailModal({ recipe, onClose, onUse, onRemove, pa
                       }>
                         {calculateRecipeAvailability(recipe, pantryItems).percentage}%
                       </span>
+                      {recipe.data.price && (
+                        <span className="text-gray-400">
+                          ${recipe.data.price.toFixed(2)}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -286,6 +292,46 @@ export default function RecipeDetailModal({ recipe, onClose, onUse, onRemove, pa
                   </ol>
                 </div>
               </div>
+
+              {/* Divider */}
+              <div className="border-t border-gray-800" />
+
+              {/* Nutrition Section */}
+              {recipe.data.nutrition && (
+                <div>
+                  <button 
+                    onClick={() => setIsNutritionExpanded(!isNutritionExpanded)}
+                    className="w-full flex justify-between items-center p-3 -mx-3 hover:bg-gray-800/50 rounded-lg transition-colors"
+                  >
+                    <h4 className="font-semibold text-gray-200">Nutrition (per serving)</h4>
+                    <span className="text-gray-400">
+                      {isNutritionExpanded ? '−' : '+'}
+                    </span>
+                  </button>
+                  <div className={`
+                    overflow-hidden transition-all duration-300 ease-in-out
+                    ${isNutritionExpanded ? 'max-h-[500px] opacity-100 mt-4' : 'max-h-0 opacity-0 mt-0'}
+                  `}>
+                    <div className="space-y-2 text-sm text-gray-300">
+                      {recipe.data.nutrition.calories && (
+                        <p>Calories: {recipe.data.nutrition.calories} kcal</p>
+                      )}
+                      {recipe.data.nutrition.protein && (
+                        <p>Protein: {recipe.data.nutrition.protein}g</p>
+                      )}
+                      {recipe.data.nutrition.carbs && (
+                        <p>Carbs: {recipe.data.nutrition.carbs}g</p>
+                      )}
+                      {recipe.data.nutrition.fat && (
+                        <p>Fat: {recipe.data.nutrition.fat}g</p>
+                      )}
+                      {recipe.data.nutrition.fiber && (
+                        <p>Fiber: {recipe.data.nutrition.fiber}g</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Action Buttons */}
