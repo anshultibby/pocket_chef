@@ -116,7 +116,7 @@ export default function AddItemModal({
                         disabled={isSubmitting}
                         error={errors['quantity']}
                         placeholder="Enter quantity"
-                        className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-1 ring-blue-500 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
                       
                       <div>
@@ -125,7 +125,7 @@ export default function AddItemModal({
                           type="text"
                           value={values.data.unit}
                           onChange={(e) => handleChange('unit', e.target.value)}
-                          className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
+                          className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-1 ring-blue-500 focus:outline-none"
                           placeholder="units"
                           onFocus={() => handleChange('unit', '')}
                           list="unit-suggestions"
