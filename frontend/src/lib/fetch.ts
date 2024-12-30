@@ -5,9 +5,22 @@ import { Capacitor } from '@capacitor/core';
 const RAILWAY_URL = 'https://pocketchef-production.up.railway.app';
 const LOCAL_URL = 'http://127.0.0.1:8000';
 
+const sanitizeUrl = (url: string) => {
+  // Don't convert localhost URLs to HTTPS
+  if (url.includes('127.0.0.1') || url.includes('localhost')) {
+    return url;
+  }
+  return url.replace('http://', 'https://');
+};
+
 export const fetchApi = async <T>(url: string, options: RequestInit = {}): Promise<T> => {
   try {
     const { data: { session } } = await supabase.auth.getSession();
+    
+    // Add debug logging
+    console.log('Request URL:', url);
+    console.log('Full URL:', `${RAILWAY_URL}${url}`);
+    console.log('Environment:', process.env.NODE_ENV);
     
     if (!session?.access_token) {
       console.error('No active session');
@@ -63,6 +76,7 @@ export const fetchApi = async <T>(url: string, options: RequestInit = {}): Promi
         const localResponse = await fetch(`${LOCAL_URL}${url}`, {
           ...options,
           headers,
+          mode: 'cors',
           credentials: 'include'
         });
         
@@ -70,12 +84,12 @@ export const fetchApi = async <T>(url: string, options: RequestInit = {}): Promi
           return localResponse.json();
         }
       } catch (error) {
-        console.log('Localhost failed, falling back to Railway...');
+        console.log('Localhost failed, falling back to Railway...', error);
       }
     }
 
     // Fallback to Railway for web production
-    const response = await fetch(`${RAILWAY_URL}${url}`, {
+    const response = await fetch(sanitizeUrl(`${RAILWAY_URL}${url}`), {
       ...options,
       headers,
       credentials: 'include'

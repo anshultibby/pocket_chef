@@ -4,10 +4,10 @@ import RecipeDetailModal from './recipes/RecipeDetailModal';
 import RecipeUseModal from './recipes/use-recipe/RecipeUseModal';
 import { useRecipeStore } from '@/stores/recipeStore';
 import ElfModal from './modals/ElfModal';
-import { calculateRecipeAvailability } from '@/stores/recipeStore';
 import RecipeCardPreview from './recipes/RecipeCardPreview';
 import { toast } from 'react-hot-toast';
 import { FloatingElfButton } from './FloatingElfButton';
+import { ApiException } from '@/types/api';
 
 interface RecipesTabProps {
   pantryItems: PantryItem[];
@@ -99,6 +99,7 @@ export default function RecipesTab({
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [usingRecipe, setUsingRecipe] = useState<Recipe | null>(null);
   const [showElfModal, setShowElfModal] = useState(false);
+  const [errorState, setError] = useState<string | null>(null);
 
   const groupedRecipes = useMemo(() => {
     return recipes.reduce((acc: Record<string, Recipe[]>, recipe: Recipe) => {
@@ -127,6 +128,15 @@ export default function RecipesTab({
         await fetchRecipes();
       } catch (error) {
         console.error('Error fetching recipes:', error);
+        if (error instanceof ApiException) {
+          if (error.error.status !== 404) {
+            setError(error.error.message);
+            toast.error('Failed to load recipes');
+          }
+        } else {
+          setError('Failed to load recipes. Please check your connection and try again.');
+          toast.error('Failed to load recipes');
+        }
       }
     };
     
@@ -150,10 +160,21 @@ export default function RecipesTab({
     );
   }
 
-  if (error && !error.includes('404')) {
+  if (errorState && !errorState.includes('404')) {
     return (
-      <div className="bg-red-500/20 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg">
-        {error}
+      <div className="text-center py-8">
+        <div className="bg-red-500/20 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg mb-4">
+          {errorState}
+        </div>
+        <button
+          onClick={() => {
+            setError(null);
+            fetchRecipes();
+          }}
+          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+        >
+          Try Again
+        </button>
       </div>
     );
   }
