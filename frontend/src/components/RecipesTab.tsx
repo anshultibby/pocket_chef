@@ -104,6 +104,44 @@ export default function RecipesTab({
     fetchRecipes().catch(console.error);
   }, [fetchRecipes]);
 
+  if (isLoading || isGenerating) {
+    return (
+      <div className="text-center py-8">
+        <div className="animate-spin inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mb-4"></div>
+        <p className="text-gray-400">
+          {isGenerating ? 'Generating your recipes...' : 'Loading recipes...'}
+        </p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-500/20 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg">
+        {error}
+      </div>
+    );
+  }
+
+  if (recipes.length === 0) {
+    return (
+      <div className="text-center py-12 space-y-4">
+        <div className="bg-gray-800/50 rounded-xl p-8 backdrop-blur-sm max-w-lg mx-auto">
+          <h3 className="text-xl font-medium text-white mb-2">No Recipes Yet</h3>
+          <p className="text-gray-400 mb-6">
+            Get started by generating your first batch of AI-powered recipes based on your pantry items.
+          </p>
+          <button
+            onClick={() => setShowElfModal(true)}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            Generate Recipes
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // Group recipes by timestamp
   const groupedRecipes = useMemo(() => {
     return recipes.reduce((acc: Record<string, Recipe[]>, recipe: Recipe) => {
@@ -144,68 +182,51 @@ export default function RecipesTab({
 
   return (
     <div className="space-y-8">
-      {error && (
-        <div className="bg-red-500/20 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg">
-          {error}
-        </div>
-      )}
-
-      {(isLoading || isGenerating) ? (
-        <div className="text-center py-8">
-          <div className="animate-spin inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mb-4"></div>
-          <p className="text-gray-400">
-            {isGenerating ? 'Generating your recipes...' : 'Loading recipes...'}
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-8">
-          {/* Current Generation */}
-          {sortedTimestamps[0] && (
-            <div>
-              <div className="mb-4">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-medium text-gray-400">
-                    Current Generation
-                  </h3>
-                  <span className="text-gray-400">✨</span>
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  Recipes tailored to your {pantryItems.length} pantry items
-                </p>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {groupedRecipes[sortedTimestamps[0]].slice(0, 8).map((recipe) => (
-                  <RecipeCardPreview
-                    key={recipe.id}
-                    recipe={recipe}
-                    pantryItems={pantryItems}
-                    onClick={() => setSelectedRecipe(recipe)}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Previous Generations */}
-          {sortedTimestamps.slice(1).map((timestamp) => (
-            <div key={timestamp}>
-              <h3 className="text-sm font-medium text-gray-400 mb-4">
-                {new Date(timestamp).toLocaleDateString()}
+      {/* Current Generation */}
+      {sortedTimestamps[0] && (
+        <div>
+          <div className="mb-4">
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-medium text-gray-400">
+                Current Generation
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {groupedRecipes[timestamp].slice(0, 4).map((recipe) => (
-                  <RecipeCardPreview
-                    key={recipe.id}
-                    recipe={recipe}
-                    pantryItems={pantryItems}
-                    onClick={() => setSelectedRecipe(recipe)}
-                  />
-                ))}
-              </div>
+              <span className="text-gray-400">✨</span>
             </div>
-          ))}
+            <p className="text-xs text-gray-500 mt-1">
+              Recipes tailored to your {pantryItems.length} pantry items
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {groupedRecipes[sortedTimestamps[0]].slice(0, 8).map((recipe) => (
+              <RecipeCardPreview
+                key={recipe.id}
+                recipe={recipe}
+                pantryItems={pantryItems}
+                onClick={() => setSelectedRecipe(recipe)}
+              />
+            ))}
+          </div>
         </div>
       )}
+
+      {/* Previous Generations */}
+      {sortedTimestamps.slice(1).map((timestamp) => (
+        <div key={timestamp}>
+          <h3 className="text-sm font-medium text-gray-400 mb-4">
+            {new Date(timestamp).toLocaleDateString()}
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {groupedRecipes[timestamp].slice(0, 4).map((recipe) => (
+              <RecipeCardPreview
+                key={recipe.id}
+                recipe={recipe}
+                pantryItems={pantryItems}
+                onClick={() => setSelectedRecipe(recipe)}
+              />
+            ))}
+          </div>
+        </div>
+      ))}
 
       {selectedRecipe && (
         <RecipeDetailModal
