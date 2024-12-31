@@ -67,13 +67,14 @@ $preferences
 </preferences>
 
 Important:
-- Each recipe must use at least 3 ingredients from the available list
-- Include detailed step-by-step instructions
+- Make good recipes, should be balanced, nutritious, and delicious
+- Include detailed step-by-step instructions, each step should have sufficient detail
 - Ensure quantities and units are specific and measurable
-- Consider dietary restrictions and nutrition goals
-- Recipes should be practical and achievable
 - Assume a few common ingredients (such as salt, pepper, oil, spices) are available
 - Add an icon to each step to indicate the type of step
+- When asked for multiple recipes, 
+return a couple totally doable with the ingredients in the pantry 
+but atleast one that requires 1 or 2 ingredients user may not have
 """
 
 RECIPE_GENERATION_PROMPT_TEMPLATE = Template(RECIPE_GENERATION_PROMPT)
