@@ -409,7 +409,11 @@ class UserContentCRUD(BaseCRUD):
             raise
 
     async def get_user_content(
-        self, user_id: UUID, type: str = None, limit: int = 100, offset: int = 0
+        self,
+        user_id: Optional[UUID] = None,
+        type: str = None,
+        limit: int = 100,
+        offset: int = 0,
     ) -> List[dict]:
         try:
             query = self.supabase.table("user_content").select("*")
@@ -417,9 +421,11 @@ class UserContentCRUD(BaseCRUD):
             if type:
                 query = query.eq("type", type)
 
+            if user_id:  # Only filter by user_id if provided
+                query = query.eq("user_id", str(user_id))
+
             result = (
-                query.eq("user_id", str(user_id))
-                .order("created_at", desc=True)
+                query.order("created_at", desc=True)
                 .limit(limit)
                 .offset(offset)
                 .execute()

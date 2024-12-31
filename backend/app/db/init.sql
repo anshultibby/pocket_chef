@@ -192,11 +192,7 @@ CREATE TABLE IF NOT EXISTS public.user_content (
     metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
     created_at timestamptz DEFAULT now(),
     updated_at timestamptz DEFAULT now(),
-    
-    -- Add an index on type for efficient filtering
-    CONSTRAINT valid_type CHECK (
-        type = ANY(ARRAY['feedback', 'receipt', 'note', 'shopping_list'])
-    )
+
 );
 
 -- Add RLS policy

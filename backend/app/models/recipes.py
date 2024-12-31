@@ -20,6 +20,12 @@ class RecipeIngredient(CustomBaseModel):
         default=None, description="dont generate this, we will link to db later"
     )
     is_optional: bool = False
+    protein: Optional[float] = Field(
+        None, description="Protein content per serving of dish"
+    )
+    calories: Optional[float] = Field(
+        None, description="Calories content of per serving of dish"
+    )
     substitutes: List[str] = Field(default_factory=list)
 
 
@@ -36,8 +42,8 @@ class RecipeData(CustomBaseModel):
     nutrition: Optional[Nutrition] = Field(
         None,
         description="Nutrition stats of the recipe, \
-            use standard unit, something like 100 calories, 10 grams of protein, \
-                20 g of carbs, etc per serving size",
+use standard unit, something like 100 calories, 10 grams of protein, \
+20 g of carbs, etc per serving size",
     )
 
     def __str__(self) -> str:

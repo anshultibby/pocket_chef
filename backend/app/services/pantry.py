@@ -15,7 +15,7 @@ from ..models.pantry import (
     PantryItemData,
     PantryItemUpdate,
 )
-from .claude.service import ClaudeService
+from .llm.providers.claude import ClaudeService
 from .receipt import ReceiptParser
 
 logger = logging.getLogger(__name__)
@@ -47,7 +47,9 @@ class PantryManager:
 
             if needs_enrichment:
                 # Return partial item immediately
-                asyncio.create_task(self._enrich_item(partial_item.id, str(item)))
+                asyncio.create_task(
+                    self._enrich_item(partial_item.id, str(item), user_id)
+                )
 
             return partial_item
 
@@ -56,11 +58,11 @@ class PantryManager:
             logger.exception("Full traceback:")
             raise ValueError(f"Failed to process item: {str(e)}")
 
-    async def _enrich_item(self, item_id: UUID, ingredient_text: str):
+    async def _enrich_item(self, item_id: UUID, ingredient_text: str, user_id: UUID):
         """Background task to enrich item with Claude data"""
         try:
             enriched_item = await self.claude.parse_ingredient_text(
-                PantryItemCreate, ingredient_text
+                PantryItemCreate, ingredient_text, user_id=user_id
             )
             updates = PantryItemUpdate(
                 data=enriched_item.data,

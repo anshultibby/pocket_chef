@@ -6,7 +6,7 @@ from fastapi import UploadFile
 from google.cloud import vision
 
 from ..models.pantry import ListOfPantryItemsCreate
-from .claude import ClaudeService
+from .llm.providers.claude import ClaudeService
 
 logger = logging.getLogger(__name__)
 

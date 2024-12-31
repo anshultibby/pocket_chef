@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -62,7 +62,8 @@ class PantryItemData(CustomBaseModel):
         description="common name of the ingredient, this should be simple (for example, 'bread' instead of 'sourdough bread')"
     )
     original_name: Optional[str] = Field(
-        description="name of the ingredient as it appears on the receipt or user input"
+        default=None,
+        description="name of the ingredient as it appears on the receipt or user input",
     )
     quantity: float = Field(
         default=1.0,
@@ -76,7 +77,7 @@ class PantryItemData(CustomBaseModel):
     expiry_date: Optional[str] = Field(
         default=None, description="expiry date of the ingredient in YYYY-MM-DD format"
     )
-    price: Optional[float] = Field(description="price per unit")
+    price: Optional[float] = Field(default=None, description="price per unit")
 
 
 class PantryItem(CustomBaseModel):

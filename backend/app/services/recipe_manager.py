@@ -11,7 +11,7 @@ from ..models.recipe_interactions import (
     RecipeInteractionCreate,
 )
 from ..models.recipes import ListOfRecipeData, RecipePreferences, RecipeResponse
-from .claude import ClaudeService
+from .llm.providers.claude import ClaudeService
 from .pantry import get_pantry_manager
 
 logger = logging.getLogger(__name__)
@@ -47,6 +47,8 @@ class RecipeManager:
             ListOfRecipeData,
             ingredients=ingredients,
             preferences=preferences,
+            user_id=user_id,
+            use_cache=True,
         )
         for recipe_data in list_of_recipe_data.recipes:
             recipe_crud = await self.recipe_crud.create_recipe(
