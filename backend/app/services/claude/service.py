@@ -103,7 +103,7 @@ class ClaudeService:
             "model": MODEL,
             "max_tokens": MAX_TOKENS,
             "messages": messages,
-            "temperature": 0.6,
+            "temperature": 1.0,
         }
         if system_prompt:
             params["system"] = system_prompt
