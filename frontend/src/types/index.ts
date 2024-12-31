@@ -18,6 +18,11 @@ export interface RecipeIngredient {
   pantry_item_id?: string;
   is_optional: boolean;
   substitutes: string[];
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
+  fiber?: number;
 }
 
 export interface RecipeData {

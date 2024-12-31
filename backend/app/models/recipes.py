@@ -21,11 +21,15 @@ class RecipeIngredient(CustomBaseModel):
     )
     is_optional: bool = False
     protein: Optional[float] = Field(
-        None, description="Protein content per serving of dish"
+        None,
+        description="Total protein content of the ingredient (so for 4 eggs itll be 4*protein per egg)",
     )
     calories: Optional[float] = Field(
-        None, description="Calories content of per serving of dish"
+        None, description="Total calories content of the ingredient"
     )
+    fat: Optional[float] = Field(None, description="Total fat")
+    carbs: Optional[float] = Field(None, description="Total carbs")
+    fiber: Optional[float] = Field(None, description="Total fiber")
     substitutes: List[str] = Field(default_factory=list)
 
 

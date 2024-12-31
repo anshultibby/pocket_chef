@@ -327,6 +327,23 @@ class RecipeCRUD(BaseCRUD):
             logger.error(f"Error getting recipe: {str(e)}")
             raise
 
+    async def get_recipes_since(
+        self, user_id: UUID, since: datetime
+    ) -> List[RecipeResponse]:
+        """Get all recipes created since the given datetime"""
+        try:
+            result = (
+                self.supabase.table(self.table)
+                .select("*")
+                .eq("user_id", str(user_id))
+                .gte("created_at", since.isoformat())
+                .execute()
+            )
+            return [RecipeResponse(**item) for item in result.data]
+        except Exception as e:
+            logger.error(f"Error getting recent recipes: {str(e)}")
+            raise
+
 
 class ProfileCRUD(BaseCRUD):
     def __init__(self):

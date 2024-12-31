@@ -38,10 +38,12 @@ Here are the ingredients to format:
 $ingredients
 </ingredients>
 
-Use your best guess for nutritional information 
-and make sure to use the standard unit for scaling the nutritional information
-In notes add an icon to indicate the type of ingredient
-just reply with the json object
+
+- Use your best guess for nutritional information 
+- make sure to use the standard unit for scaling the nutritional information
+- In notes add an icon to indicate the type of ingredient
+- fill in the expiration date, assume standard shelf life todays date is $today
+- just reply with the json object
 """
 
 INGREDIENT_ANALYSIS_PROMPT_TEMPLATE = Template(INGREDIENT_ANALYSIS_PROMPT)
@@ -68,10 +70,13 @@ $preferences
 
 Important:
 - Make good recipes, should be balanced, nutritious, and delicious
+- Compare nutritional information on recipe to that on ingredients and be consistent
 - Include detailed step-by-step instructions, each step should have sufficient detail
 - Ensure quantities and units are specific and measurable
 - Assume a few common ingredients (such as salt, pepper, oil, spices) are available
 - Add an icon to each step to indicate the type of step
+- Try fill in the protein, calories for each ingredient
+- Always try to fill in the price, estimate if ingredients are not available
 - When asked for multiple recipes, 
 return a couple totally doable with the ingredients in the pantry 
 but atleast one that requires 1 or 2 ingredients user may not have

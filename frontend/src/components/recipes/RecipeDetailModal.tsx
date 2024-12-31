@@ -259,6 +259,25 @@ export default function RecipeDetailModal({ recipe, onClose, onUse, onRemove, pa
                             Substitutes: {ingredient.substitutes.join(', ')}
                           </div>
                         )}
+                        {(ingredient.calories || ingredient.protein || ingredient.carbs || ingredient.fat || ingredient.fiber) && (
+                          <div className="text-xs text-gray-400 mt-1 flex flex-wrap gap-2">
+                            {ingredient.calories && (
+                              <span>🔥 {ingredient.calories} cal</span>
+                            )}
+                            {ingredient.protein && (
+                              <span>💪 {ingredient.protein}g protein</span>
+                            )}
+                            {ingredient.carbs && (
+                              <span>🍚 {ingredient.carbs}g carbs</span>
+                            )}
+                            {ingredient.fat && (
+                              <span>🥑 {ingredient.fat}g fat</span>
+                            )}
+                            {ingredient.fiber && (
+                              <span>🌾 {ingredient.fiber}g fiber</span>
+                            )}
+                          </div>
+                        )}
                       </li>
                     ))}
                   </ul>

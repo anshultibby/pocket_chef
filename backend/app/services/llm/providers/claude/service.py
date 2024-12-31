@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from typing import List, Optional, Type, TypeVar, Union
 from uuid import UUID
 
@@ -32,10 +33,11 @@ class ClaudeService(BaseLLMService):
         use_cache: bool = True,
     ) -> T:
         """Parse and standardize items from receipt text"""
+        today = datetime.now().strftime("%Y-%m-%d")
         return await self.process_request(
             prompt_template=INGREDIENT_ANALYSIS_PROMPT_TEMPLATE,
             model=model,
-            template_vars={"ingredients": ingredient},
+            template_vars={"ingredients": ingredient, "today": today},
             user_id=user_id,
             use_cache=use_cache,
             metadata={"type": "ingredient_analysis"},
