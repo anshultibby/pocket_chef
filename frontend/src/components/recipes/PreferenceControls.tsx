@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useRecipeStore } from '@/stores/recipeStore';
 import { RecipePreferences } from '@/types';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -21,6 +21,38 @@ export function PreferenceControls({
   pantryItemsCount
 }: PreferenceControlsProps) {
   const { preferences, setPreferences } = useRecipeStore();
+  const PANTRY_INSTRUCTION = "its ok to suggest ingredients not in the pantry";
+
+  // When pantry is empty, automatically add instruction
+  useEffect(() => {
+    if (pantryItemsCount === 0 && !preferences.custom_preferences?.includes(PANTRY_INSTRUCTION)) {
+      setPreferences({ 
+        custom_preferences: (preferences.custom_preferences || '') + 
+          (preferences.custom_preferences ? '\n' : '') + 
+          PANTRY_INSTRUCTION
+      });
+    }
+  }, [pantryItemsCount, preferences.custom_preferences, setPreferences]);
+
+  const handlePantryConstraintChange = (checked: boolean) => {
+    const currentInstructions = preferences.custom_preferences || '';
+    if (checked && !currentInstructions.includes(PANTRY_INSTRUCTION)) {
+      setPreferences({ 
+        custom_preferences: currentInstructions + 
+          (currentInstructions ? '\n' : '') + 
+          PANTRY_INSTRUCTION
+      });
+    } else if (!checked) {
+      setPreferences({
+        custom_preferences: currentInstructions
+          .replace('\n' + PANTRY_INSTRUCTION, '')
+          .replace(PANTRY_INSTRUCTION, '')
+          .trim()
+      });
+    }
+  };
+
+  const isIgnoringPantry = preferences.custom_preferences?.includes(PANTRY_INSTRUCTION);
 
   const handlePreferencesChange = (updates: Partial<RecipePreferences>) => {
     setPreferences({ ...preferences, ...updates });
@@ -95,12 +127,12 @@ export function PreferenceControls({
         
         <button
           onClick={onGenerate}
-          disabled={isGenerating || isLoading || pantryItemsCount === 0}
+          disabled={isGenerating || isLoading}
           className={`
             px-4 py-2 rounded-lg transition-all text-sm font-medium 
             flex items-center justify-center gap-1.5
             transform hover:scale-105 active:scale-95
-            ${isGenerating || isLoading || pantryItemsCount === 0
+            ${isGenerating || isLoading
               ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
               : 'bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/20'
             }
@@ -276,16 +308,17 @@ export function PreferenceControls({
                   <button
                     onClick={() => handlePreferencesChange({ 
                       custom_preferences: preferences.custom_preferences 
-                        ? preferences.custom_preferences.replace("its ok to suggest ingredients not in the pantry", "").trim()
-                        : "its ok to suggest ingredients not in the pantry"
+                        ? preferences.custom_preferences.replace(PANTRY_INSTRUCTION, "").trim()
+                        : PANTRY_INSTRUCTION
                     })}
                     className={`
                       px-3 py-2 rounded-lg text-sm transition-all w-full text-left
-                      ${preferences.custom_preferences?.includes("its ok to suggest ingredients not in the pantry")
+                      ${preferences.custom_preferences?.includes(PANTRY_INSTRUCTION)
                         ? 'bg-purple-500/20 text-purple-400 ring-1 ring-purple-500/50 shadow-lg shadow-purple-500/10'
                         : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:shadow-md'
                       }
                     `}
+                    disabled={pantryItemsCount === 0}
                   >
                     <div className="flex items-center gap-1.5">
                       <span>🛒</span>
@@ -307,6 +340,28 @@ export function PreferenceControls({
                   placeholder="Any specific preferences, allergies, or dietary restrictions..."
                   className="w-full bg-gray-800 rounded-lg px-3 py-2 text-white min-h-[80px]"
                 />
+              </div>
+
+              {/* Show info when pantry is empty */}
+              {pantryItemsCount === 0 && (
+                <div className="text-blue-400/80 text-sm flex items-center gap-2">
+                  <span>ℹ️</span>
+                  <span>No pantry items found. I will suggest recipes with any ingredients.</span>
+                </div>
+              )}
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="pantryConstraint"
+                  checked={isIgnoringPantry || pantryItemsCount === 0}
+                  disabled={pantryItemsCount === 0}
+                  onChange={(e) => handlePantryConstraintChange(e.target.checked)}
+                  className="rounded border-gray-700 bg-gray-800 text-blue-500 focus:ring-blue-500"
+                />
+                <label htmlFor="pantryConstraint" className="text-sm text-gray-400">
+                  Include ingredients not in my pantry
+                </label>
               </div>
             </div>
           </motion.div>

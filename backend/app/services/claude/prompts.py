@@ -74,6 +74,8 @@ Important:
 - Recipes should be practical and achievable
 - Assume a few common ingredients (such as salt, pepper, oil, spices) are available
 - Add an icon to each step to indicate the type of step
+- Sometimes user may want recipe to not include all ingredients from the pantry, thats ok
+- you must always return the total number of recipes requested
 """
 
 RECIPE_GENERATION_PROMPT_TEMPLATE = Template(RECIPE_GENERATION_PROMPT)

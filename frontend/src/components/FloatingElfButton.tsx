@@ -2,13 +2,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 interface FloatingElfButtonProps {
   onClick: () => void;
-  pantryItemsCount: number;
   isGenerating?: boolean;
 }
 
 export function FloatingElfButton({ 
   onClick, 
-  pantryItemsCount,
   isGenerating 
 }: FloatingElfButtonProps) {
   return (
@@ -21,7 +19,7 @@ export function FloatingElfButton({
       >
         <motion.button
           onClick={onClick}
-          disabled={pantryItemsCount === 0 || isGenerating}
+          disabled={isGenerating}
           className={`
             relative flex items-center gap-2 px-6 py-3 rounded-full
             bg-gradient-to-r from-green-600 to-blue-600

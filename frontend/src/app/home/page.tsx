@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { AuthGuard } from '@/components/AuthGuard';
 import { useAuth } from '@/lib/auth-context';
-import RecipesTab from '@/components/RecipesTab';
 import PantryTab from '@/components/PantryTab';
 import { usePantryStore } from '@/stores/pantryStore';
 import ElfModal from '@/components/modals/ElfModal';
@@ -20,8 +19,9 @@ import Link from 'next/link';
 import { FloatingElfButton } from '@/components/FloatingElfButton';
 import FeedbackModal from '@/components/modals/FeedbackModal';
 import ShoppingTab from '@/components/shopping/ShoppingTab';
+import MealPlanTab from '@/components/MealPlanTab';
 
-type TabType = 'cook' | 'pantry' | 'cookbook' | 'shopping';
+type TabType = 'meal-plan' | 'pantry' | 'cookbook' | 'shopping';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,7 +31,7 @@ export default function Home() {
     if (typeof window !== 'undefined') {
       return (localStorage.getItem('activeTab') as TabType) || 'cook';
     }
-    return 'cook';
+    return 'meal-plan';
   });
   const { 
     items: pantryItems, 
@@ -260,14 +260,14 @@ export default function Home() {
           <div className="max-w-4xl mx-auto px-4">
             <div className="flex space-x-1">
               <button
-                onClick={() => handleTabChange('cook')}
+                onClick={() => handleTabChange('meal-plan')}
                 className={`px-3 py-1.5 ${
-                  activeTab === 'cook'
+                  activeTab === 'meal-plan'
                     ? 'border-b-2 border-blue-500 text-blue-500'
                     : 'text-gray-400 hover:text-gray-200'
                 }`}
               >
-                Recipe Suggestions
+                Meal Plan
               </button>
               <button
                 onClick={() => handleTabChange('pantry')}
@@ -312,7 +312,7 @@ export default function Home() {
           ) : activeTab === 'cookbook' ? (
             <CookbookTab />
           ) : (
-            <RecipesTab
+            <MealPlanTab
               loading={isLoading}
               pantryItems={pantryItems}
             />
@@ -320,7 +320,7 @@ export default function Home() {
         </div>
 
         {/* Add Floating Elf Button */}
-        {activeTab === 'cook' && (
+        {activeTab === 'meal-plan' && (
           <FloatingElfButton
             onClick={() => setShowElfModal(true)}
             pantryItemsCount={pantryItems.length}

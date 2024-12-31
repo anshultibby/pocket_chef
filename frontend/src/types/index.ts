@@ -208,3 +208,17 @@ export interface UserProfileUpdate {
 }
 
 export type { KrogerProfile, KrogerCartItem } from './kroger';
+
+export interface MealPlan {
+  [key: string]: {
+    breakfast?: Recipe[];
+    lunch?: Recipe[];
+    dinner?: Recipe[];
+    snack?: Recipe[];
+  };
+}
+
+export interface MealPlanPreferences extends RecipePreferences {
+  meals_per_day: number;
+  days: number;
+}
