@@ -45,5 +45,7 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>We use this data to provide personalized recipe recommendations and improve your experience with Kitchen Elf.</string>
 </dict>
 </plist>
