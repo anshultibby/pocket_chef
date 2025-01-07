@@ -59,7 +59,7 @@ export default function ProfilePage() {
   };
 
   const handleCancel = () => {
-    router.push('/');
+    router.push('/home');
   };
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
