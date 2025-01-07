@@ -13,12 +13,12 @@ const config: CapacitorConfig = {
       '*.supabase.co',
       'kitchen-elf.vercel.app'
     ],
-    cleartext: true
+    cleartext: true,
   },
   ios: {
     contentInset: 'automatic',
     limitsNavigationsToAppBoundDomains: false,
-    backgroundColor: "#000000"
+    backgroundColor: "#000000",
   }
 };
 

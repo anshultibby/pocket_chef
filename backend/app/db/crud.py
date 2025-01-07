@@ -97,7 +97,7 @@ class PantryCRUD(BaseCRUD):
                 .eq("user_id", str(user_id))
                 .execute()
             )
-            return len(result.data) > 0
+            return True
         except Exception as e:
             logger.error(f"Error clearing pantry: {str(e)}")
             raise
@@ -141,6 +141,7 @@ class RecipeCRUD(BaseCRUD):
     def __init__(self):
         super().__init__()
         self.table = "recipes"
+        self.interactions_table = "recipe_interactions"
 
     def get_recipes_by_categories(
         self, user_id: UUID, min_per_category: dict[str, int]
@@ -344,6 +345,26 @@ class RecipeCRUD(BaseCRUD):
             logger.error(f"Error getting recent recipes: {str(e)}")
             raise
 
+    async def delete_user_recipes(self, user_id: UUID) -> bool:
+        try:
+            # Delete recipe interactions first (due to foreign key constraints)
+            self.supabase.table(self.interactions_table).delete().eq(
+                "user_id", str(user_id)
+            ).execute()
+
+            # Then delete recipes
+            result = (
+                self.supabase.table(self.table)
+                .delete()
+                .eq("user_id", str(user_id))
+                .execute()
+            )
+
+            return True
+        except Exception as e:
+            logger.error(f"Error deleting user recipes: {str(e)}")
+            raise
+
 
 class ProfileCRUD(BaseCRUD):
     def __init__(self):
@@ -394,6 +415,19 @@ class ProfileCRUD(BaseCRUD):
             return UserProfile(**result.data[0])
         except Exception as e:
             logger.error(f"Error creating user profile: {str(e)}")
+            raise
+
+    async def delete_profile(self, user_id: UUID) -> bool:
+        try:
+            result = (
+                self.supabase.table(self.table)
+                .delete()
+                .eq("user_id", str(user_id))
+                .execute()
+            )
+            return True
+        except Exception as e:
+            logger.error(f"Error deleting user profile: {str(e)}")
             raise
 
 

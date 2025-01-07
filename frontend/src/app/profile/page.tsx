@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { AuthGuard } from '@/components/AuthGuard';
 import { useAuth } from '@/lib/auth-context';
@@ -15,6 +15,7 @@ import {
 import type { UserProfileUpdate } from '@/types';
 import { useRouter } from 'next/navigation';
 import { PreferenceButton, ServingsButton, ExperienceButton } from '@/components/forms/Buttons';
+import DeleteAccountModal from '@/components/modals/DeleteAccountModal';
 
 const defaultProfileData: UserProfileUpdate = {
   dietary_preferences: [],
@@ -61,11 +62,13 @@ export default function ProfilePage() {
     router.push('/');
   };
 
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
   return (
     <AuthGuard>
       <div className="min-h-screen bg-gray-950 text-white">
         <div className="max-w-4xl mx-auto px-4 py-12">
-          <form onSubmit={handleSubmit(onSubmit)} className="bg-gray-900 rounded-lg">
+          <form onSubmit={handleSubmit(onSubmit)} className="bg-gray-900 rounded-lg mb-8">
             <div className="sticky top-0 z-10 bg-gray-900 p-8 border-b border-gray-800 rounded-t-lg">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h1 className="text-2xl sm:text-3xl font-bold text-white">Profile Settings</h1>
@@ -198,6 +201,33 @@ export default function ProfilePage() {
               </div>
             </div>
           </form>
+
+          <div className="mt-8 space-y-6 bg-gray-900 rounded-lg p-6">
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-red-400">Danger Zone</h2>
+              <div className="border border-red-500/20 rounded-lg p-4 bg-red-950/20">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-medium text-red-200">Delete Account</h3>
+                    <p className="text-sm text-red-200/70">
+                      Permanently delete your account and all associated data
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteModal(true)}
+                    className="px-4 py-2 bg-red-600/20 text-red-400 rounded-lg hover:bg-red-600/30 transition-colors"
+                  >
+                    Delete Account
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {showDeleteModal && (
+            <DeleteAccountModal onClose={() => setShowDeleteModal(false)} />
+          )}
         </div>
       </div>
     </AuthGuard>

@@ -3,7 +3,7 @@ import { supabase } from './supabase';
 import { Capacitor } from '@capacitor/core';
 
 const RAILWAY_URL = 'https://pocketchef-production.up.railway.app';
-const LOCAL_URL = 'http://127.0.0.1:8000';
+const LOCAL_URL = 'http://localhost:8000';
 
 const sanitizeUrl = (url: string) => {
   // Don't convert localhost URLs to HTTPS
@@ -51,8 +51,6 @@ export const fetchApi = async <T>(url: string, options: RequestInit = {}): Promi
       const response = await fetch(`${RAILWAY_URL}${url}`, {
         ...options,
         headers,
-        mode: 'cors',
-        credentials: 'include'
       });
 
       console.log('Railway response status:', response.status);

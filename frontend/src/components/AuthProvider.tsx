@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { AuthContext} from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { profileApi } from '@/lib/api';
+import { userApi } from '@/lib/api';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -87,6 +88,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
         router.push('/login');
+      },
+      deleteAccount: async () => {
+        try {
+          // First delete all user data
+          await userApi.deleteAccount();
+          
+          // Then sign out
+          await supabase.auth.signOut();
+          
+          router.push('/login?message=account-deleted');
+        } catch (error) {
+          console.error('Error deleting account:', error);
+          throw error;
+        }
       }
     }),
     [user, session, loading, error, router]

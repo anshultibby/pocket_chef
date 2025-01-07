@@ -5,6 +5,7 @@ import traceback
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from .api import users
 from .routers import feedback, pantry, profile, recipes
 
 # Add logging configuration
@@ -46,6 +47,7 @@ app.include_router(pantry.router)
 app.include_router(recipes.router)
 app.include_router(profile.router)
 app.include_router(feedback.router)
+app.include_router(users.router, prefix="/users", tags=["users"])
 
 
 # Add a simple root endpoint for testing

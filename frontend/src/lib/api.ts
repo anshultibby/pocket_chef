@@ -312,3 +312,15 @@ export const feedbackApi = {
     });
   }
 };
+
+export const userApi = {
+  deleteAccount: async (): Promise<void> => {
+    const token = await getAuthToken();
+    return fetchApi('/users/me', {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  }
+};
