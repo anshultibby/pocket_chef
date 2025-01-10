@@ -14,11 +14,14 @@ const config: CapacitorConfig = {
       'kitchen-elf.vercel.app'
     ],
     cleartext: true,
+    iosScheme: 'https',
+    hostname: '*',
   },
   ios: {
     contentInset: 'automatic',
     limitsNavigationsToAppBoundDomains: false,
     backgroundColor: "#000000",
+    webContentsDebuggingEnabled: true,
   }
 };
 
