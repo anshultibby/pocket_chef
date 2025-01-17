@@ -138,7 +138,7 @@ export interface RecipePreferences {
   dietary: string[];
   nutrition_goals: string[];
   serving_size: number;
-  recipes_per_meal: number;
+  num_recipes: number;
   custom_preferences?: string;
   max_calories?: number;
   min_protein?: number;

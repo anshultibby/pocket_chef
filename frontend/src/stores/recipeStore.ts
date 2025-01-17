@@ -42,7 +42,7 @@ export const useRecipeStore = create<RecipeStore>((set, get) => ({
     meal_types: [],
     nutrition_goals: [],
     custom_preferences: '',
-    recipes_per_meal: 6,
+    num_recipes: 6,
     max_calories: undefined,
     min_protein: undefined
   },

@@ -116,8 +116,8 @@ class RecipePreferences(CustomBaseModel):
         None, description="Minimum protein per serving in grams", ge=0
     )
     serving_size: int = Field(default=2, ge=1, le=12, description="Number of servings")
-    recipes_per_meal: int = Field(
-        default=4, ge=1, le=8, description="Number of recipes to generate per meal type"
+    num_recipes: int = Field(
+        default=6, ge=1, le=8, description="Number of recipes to generate"
     )
     custom_preferences: Optional[str] = Field(
         None, description="Additional custom preferences in text form"
@@ -140,7 +140,7 @@ class RecipePreferences(CustomBaseModel):
             "max_calories": "kcal",
             "min_protein": "g",
             "serving_size": "servings",
-            "recipes_per_meal": "recipes",
+            "num_recipes": "recipes",
         }
 
         for field_name, unit in units.items():
@@ -162,7 +162,7 @@ class RecipePreferences(CustomBaseModel):
                 "nutrition_goals": ["High Protein", "Low Carb"],
                 "max_prep_time": 30,
                 "serving_size": 4,
-                "recipes_per_meal": 3,
+                "num_recipes": 3,
                 "custom_preferences": "Spicy food preferred",
             }
         }
