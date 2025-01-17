@@ -3,7 +3,7 @@ import { supabase } from './supabase';
 
 const API_BASE = process.env.NODE_ENV === 'development' 
   ? 'http://localhost:8000'
-  : process.env.NEXT_PUBLIC_API_URL;
+  : 'https://pocketchef-production.up.railway.app';
 
 export const fetchApi = async <T>(url: string, options: RequestInit = {}): Promise<T> => {
   try {
