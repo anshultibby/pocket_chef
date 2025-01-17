@@ -77,9 +77,7 @@ Important:
 - Add an icon to each step to indicate the type of step
 - Try fill in the protein, calories for each ingredient
 - Always try to fill in the price, estimate if ingredients are not available
-- When asked for multiple recipes, 
-return a couple totally doable with the ingredients in the pantry 
-but atleast one that requires 1 or 2 ingredients user may not have
+- Try return a variety of recipes so that the user has a good selection
 """
 
 RECIPE_GENERATION_PROMPT_TEMPLATE = Template(RECIPE_GENERATION_PROMPT)

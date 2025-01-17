@@ -25,8 +25,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         prefs.allowsContentJavaScript = true
         config.defaultWebpagePreferences = prefs
         
-        // Enable local storage and cookies
-        config.websiteDataStore = WKWebsiteDataStore.default()
+        // Explicitly set data persistence
+        let dataStore = WKWebsiteDataStore.default()
+        config.websiteDataStore = dataStore
         
         // Create the bridge view controller
         let bridgeViewController = CAPBridgeViewController()

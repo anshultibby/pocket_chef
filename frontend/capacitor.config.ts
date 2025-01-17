@@ -8,7 +8,7 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     androidScheme: 'https',
-    iosScheme: isDevMode ? 'http' : 'https',
+    iosScheme: 'https',
     hostname: isDevMode ? 'localhost' : 'com.kitchenelf.app',
     allowNavigation: [
       'localhost',
@@ -22,6 +22,7 @@ const config: CapacitorConfig = {
     contentInset: 'automatic',
     limitsNavigationsToAppBoundDomains: false,
     backgroundColor: "#000000",
+    preferredContentMode: 'mobile',
   }
 };
 
