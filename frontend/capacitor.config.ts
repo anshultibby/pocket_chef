@@ -10,7 +10,7 @@ const config: CapacitorConfig = {
   server: {
     androidScheme: 'https',
     iosScheme: isDevMode ? 'http' : 'https',
-    hostname: isDevMode ? localIp : 'kitchen-elf.com',
+    hostname: isDevMode ? localIp : 'com.kitchenelf.app',
     allowNavigation: [
       'localhost',
       '*.kitchen-elf.com',

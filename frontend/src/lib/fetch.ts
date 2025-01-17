@@ -23,13 +23,6 @@ export const fetchApi = async <T>(url: string, options: RequestInit = {}): Promi
     });
 
     const fullUrl = `${API_BASE}${url}`;
-    console.log('Making request:', {
-      url: fullUrl,
-      protocol: new URL(fullUrl).protocol,
-      method: options.method || 'GET',
-      headers: Object.fromEntries(headers.entries()),
-      body: options.body ? JSON.parse(options.body as string) : undefined
-    });
 
     const response = await fetch(fullUrl, {
       ...options,
