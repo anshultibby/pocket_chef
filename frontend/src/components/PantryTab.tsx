@@ -65,7 +65,7 @@ export default function PantryTab() {
   const [showSearch, setShowSearch] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
-  if (isLoading) {
+  if (isLoading && pantryItems.length === 0) {
     return <LoadingSpinner message="Loading pantry items..." />;
   }
 
@@ -182,6 +182,13 @@ export default function PantryTab() {
 
   return (
     <div className="space-y-6">
+      {isLoading && (
+        <div className="fixed top-4 right-4 flex items-center gap-2 bg-blue-500/20 text-blue-300 px-3 py-2 rounded-full">
+          <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full" />
+          <span className="text-sm">Refreshing...</span>
+        </div>
+      )}
+
       {(error || uploadError) && (
         <ErrorMessage 
           message={error || uploadError || ERROR_MESSAGES.GENERIC} 

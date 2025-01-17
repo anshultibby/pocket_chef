@@ -148,7 +148,7 @@ export default function RecipesTab({
     );
   };
 
-  if (isLoading || isGenerating) {
+  if ((isLoading || isGenerating) && recipes.length === 0) {
     return (
       <div className="text-center py-8">
         <div className="animate-spin inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mb-4"></div>
@@ -192,7 +192,16 @@ export default function RecipesTab({
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 relative">
+      {(isLoading || isGenerating) && (
+        <div className="fixed top-4 right-4 flex items-center gap-2 bg-blue-500/20 text-blue-300 px-3 py-2 rounded-full">
+          <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full" />
+          <span className="text-sm">
+            {isGenerating ? 'Generating...' : 'Refreshing...'}
+          </span>
+        </div>
+      )}
+      
       {/* Current Generation */}
       {sortedTimestamps[0] && (
         <div>
