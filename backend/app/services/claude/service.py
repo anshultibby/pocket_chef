@@ -12,7 +12,8 @@ from .prompts import (
     INGREDIENT_ANALYSIS_PROMPT_TEMPLATE,
     MAX_TOKENS,
     MODEL,
-    RECIPE_GENERATION_PROMPT_TEMPLATE,
+    RECIPE_PANTRY_PROMPT_TEMPLATE,
+    RECIPE_SHOPPING_PROMPT_TEMPLATE,
 )
 
 logger = logging.getLogger(__name__)
@@ -62,7 +63,7 @@ class ClaudeService:
         """Generate recipes using structured prompt"""
         model_text = summarize_schema(model.model_json_schema())
         ingredients_text = "\n".join(f"- {item}" for item in ingredients)
-        prompt = RECIPE_GENERATION_PROMPT_TEMPLATE.substitute(
+        prompt = RECIPE_PANTRY_PROMPT_TEMPLATE.substitute(
             model=model_text,
             ingredients=ingredients_text,
             preferences=preferences,
@@ -72,6 +73,23 @@ class ClaudeService:
             prompt=prompt,
             response_model=model,
             system_prompt="You are a culinary expert. Generate creative, practical recipes that exactly match the schema.",
+        )
+
+    async def generate_recipes_from_market(
+        self,
+        model: Type[T],
+        ingredients,
+        preferences,
+    ):
+        model_text = summarize_schema(model.model_json_schema())
+        ingredients_text = "\n".join(f"- {item}" for item in ingredients)
+        prompt = RECIPE_SHOPPING_PROMPT_TEMPLATE(
+            model=model_text, ingredients=ingredients_text, preferences=preferences
+        )
+        logger.info(f"Prompt: {prompt}")
+        return await self._process_request(
+            prompt=prompt,
+            response_model=model,
         )
 
     async def _process_request(

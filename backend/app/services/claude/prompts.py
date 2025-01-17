@@ -44,7 +44,7 @@ and make sure to use the standard unit for scaling the nutritional information
 
 INGREDIENT_ANALYSIS_PROMPT_TEMPLATE = Template(INGREDIENT_ANALYSIS_PROMPT)
 
-RECIPE_GENERATION_PROMPT = """
+RECIPE_PANTRY_PROMPT = """
 Generate recipes based on these requirements and available ingredients.
 Return recipes that exactly match this schema:
 
@@ -71,4 +71,52 @@ Important:
 - Assume a few common ingredients (such as salt, pepper, oil) are available
 """
 
-RECIPE_GENERATION_PROMPT_TEMPLATE = Template(RECIPE_GENERATION_PROMPT)
+RECIPE_PANTRY_PROMPT_TEMPLATE = Template(RECIPE_PANTRY_PROMPT)
+
+
+RECIPE_SHOPPING_PROMPT = """
+You part of an intelligent system which takes in items in a user's pantry
+and an api for calling grocery store search and then suggests recipes to the user.
+
+These recipes are fed into the next block which makes calls to grocery api to compute full cost
+of the meals and allow user to shop for the missing ingredients.
+
+Your job is to suggest recipes to the user matching their preferences using
+a combination of items in their pantry and in the shopping store
+
+You should come up with recipes that use ingredients that user already has. 
+For each recipe you can come up with you may encounter one of these two cases:
+1. User has sufficient ingredients for a recipe.
+2. User may need to buy a few ingredients to be able to cook a recipe.
+
+Both of these cases are ok. We will just return the recipe to the user and mark which ingredients they have 
+vs which ones they will need to buy.
+
+The recipes themeselves dont have to be in too much detail, 
+we will use a block later to fill in all the details.
+You can just focus on writing the name, 
+brief instructions on how to cook it
+and a list of all ingredients required for the recipe.
+
+Here are currently available ingredients in user pantry:
+<ingredients>
+$ingredients
+</ingredients>
+
+Here are the user preferences for the recipes:
+<preferences>
+$preferences
+</preferences>
+
+Here is the output format you should return your answer in
+<model>
+$model
+</model>
+
+Follow a few guidelines:
+1. Make sure recipes are nutritious and delicious. 
+2. Make sure you suggest ingredient quantities in units
+that can be found when shopping on some online grocery api
+"""
+
+RECIPE_SHOPPING_PROMPT_TEMPLATE = Template(RECIPE_SHOPPING_PROMPT)

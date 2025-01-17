@@ -53,6 +53,28 @@ class RecipeManager:
             final_recipes.append(recipe_crud)
         return final_recipes
 
+    async def generate_shoppable_recipes(
+        self, preferences: RecipePreferences, user_id: UUID
+    ):
+        pantry_manager = get_pantry_manager()
+        pantry_items = pantry_manager.get_items()
+        ingredients = [
+            f"{item.data.name} ({item.data.quantity} \
+{item.data.unit} ${item.data.price} )"
+            for item in pantry_items
+        ]
+        list_of_recipes = await self.claude_service.generate_recipes_from_market(
+            ListOfRecipeData,
+            ingredients=ingredients,
+            preferences=preferences,
+        )
+
+        ingredients_to_shop = []
+        for recipe in list_of_recipes:
+            for ingredient in recipe.ingredients:
+                if ingredient.is_available == False:
+                    ingredients_to_shop.append(ingredient)
+
     async def link_recipe_ingredients(
         self, recipe_id: str, user_id: UUID
     ) -> RecipeResponse:

@@ -20,6 +20,11 @@ class RecipeIngredient(CustomBaseModel):
         default=None, description="dont generate this, we will link to db later"
     )
     is_optional: bool = False
+    is_available: bool = Field(
+        default=True,
+        description="this field keeps track of \
+whether the ingredient is in user pantry or needs to be bought",
+    )
     substitutes: List[str] = Field(default_factory=list)
 
 
