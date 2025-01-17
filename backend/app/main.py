@@ -23,6 +23,7 @@ CORS_ORIGINS = [
     "http://localhost",
     "http://127.0.0.1",
     "app://localhost",
+    "https://pocketchef-production.up.railway.app",
 ]
 
 app = FastAPI(
