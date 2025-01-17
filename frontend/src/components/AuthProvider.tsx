@@ -18,15 +18,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        // Get initial session
-        const { data: { session: initialSession }, error: sessionError } = 
-          await supabase.auth.getSession();
+        // Enable session persistence
+        await supabase.auth.getSession();
         
-        if (sessionError) throw sessionError;
-        
-        setSession(initialSession);
-        setUser(initialSession?.user ?? null);
-
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           async (_event, currentSession) => {

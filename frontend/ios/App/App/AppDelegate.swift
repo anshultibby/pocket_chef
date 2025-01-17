@@ -19,8 +19,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Initialize tracking with the temporary WebView
         tracking = Tracking(webView: tempWebView)
         
-        // Create the bridge view controller
-        let bridgeViewController = CAPBridgeViewController()
+        // Configure WKWebView for persistence
+        let config = WKWebViewConfiguration()
+        let prefs = WKWebpagePreferences()
+        prefs.allowsContentJavaScript = true
+        config.defaultWebpagePreferences = prefs
+        
+        // Enable local storage and cookies
+        config.websiteDataStore = WKWebsiteDataStore.default()
+        
+        // Create the bridge view controller with the configuration
+        let bridgeViewController = CAPBridgeViewController(configuration: config)
         
         // Update tracking with the real WebView once it's available
         if let webView = bridgeViewController.webView {

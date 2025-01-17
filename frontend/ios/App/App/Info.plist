@@ -53,6 +53,10 @@
 	<string>Kitchen Elf needs access to your camera to take photos of receipts and food items.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Kitchen Elf needs permission to save photos to your library.</string>
+	<key>WKAppBoundDomains</key>
+	<array>
+		<string>supabase.co</string>
+	</array>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
