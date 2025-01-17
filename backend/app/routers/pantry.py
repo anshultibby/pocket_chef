@@ -110,9 +110,21 @@ async def process_receipt(
     file: UploadFile = File(...), current_user: dict = Depends(get_current_user)
 ) -> List[PantryItemCreate]:
     """Process receipt and return suggested items without storing"""
-    try:
-        return await pantry_manager.process_receipt(
-            file=file, user_id=UUID(current_user["id"])
+    if not file or not file.filename:
+        raise HTTPException(status_code=422, detail="No file provided")
+
+    # Check file type
+    if not file.content_type:
+        raise HTTPException(status_code=422, detail="File type could not be determined")
+
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=422,
+            detail=f"Invalid file type: {file.content_type}. Please upload an image file.",
         )
+
+    try:
+        return await pantry_manager.process_receipt(file, UUID(current_user["id"]))
     except Exception as e:
+        logger.error(f"Error processing receipt: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))

@@ -9,6 +9,8 @@ import {
   ArrowPathIcon,
   FunnelIcon
 } from '@heroicons/react/24/outline';
+import { Camera } from '@capacitor/camera';
+import { Capacitor } from '@capacitor/core';
 
 export default function PantryControls({
   searchTerm,
@@ -24,6 +26,40 @@ export default function PantryControls({
   showFilters,
   setShowFilters
 }: PantryControlsProps) {
+  const checkPhotoPermissions = async () => {
+    if (!Capacitor.isNativePlatform()) {
+      return true;
+    }
+
+    try {
+      const permissionState = await Camera.checkPermissions();
+      
+      if (permissionState.photos === 'prompt' || permissionState.photos === 'denied') {
+        const request = await Camera.requestPermissions({
+          permissions: ['photos']
+        });
+        return request.photos === 'granted';
+      }
+      
+      return permissionState.photos === 'granted';
+    } catch (err) {
+      console.error('Permission check failed:', err);
+      return false;
+    }
+  };
+
+  const handleUploadClick = async () => {
+    if (isUploading) return;
+    
+    const hasPermission = await checkPhotoPermissions();
+    if (!hasPermission) {
+      // You might want to show a toast or alert here
+      return;
+    }
+    
+    fileInputRef.current?.click();
+  };
+
   return (
     <div className="space-y-1 sm:space-y-0">
       {/* Mobile Search Expandable */}
@@ -94,7 +130,7 @@ export default function PantryControls({
           </button>
           
           <button
-            onClick={() => fileInputRef.current?.click()}
+            onClick={handleUploadClick}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors text-sm ${
               isUploading 
                 ? 'bg-gray-700/50 text-gray-400 cursor-not-allowed' 
@@ -164,7 +200,7 @@ export default function PantryControls({
 
           <Tooltip content="Upload Receipt">
             <button
-              onClick={() => fileInputRef.current?.click()}
+              onClick={handleUploadClick}
               disabled={isUploading}
               className={`w-10 h-10 rounded-full flex items-center justify-center ${
                 isUploading 

@@ -18,6 +18,7 @@ from .prompts import (
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
+TODAY = datetime.now().strftime("%Y-%m-%d")
 
 
 class ClaudeService(BaseLLMService):
@@ -33,11 +34,10 @@ class ClaudeService(BaseLLMService):
         use_cache: bool = True,
     ) -> T:
         """Parse and standardize items from receipt text"""
-        today = datetime.now().strftime("%Y-%m-%d")
         return await self.process_request(
             prompt_template=INGREDIENT_ANALYSIS_PROMPT_TEMPLATE,
             model=model,
-            template_vars={"ingredients": ingredient, "today": today},
+            template_vars={"ingredients": ingredient, "today": TODAY},
             user_id=user_id,
             use_cache=use_cache,
             metadata={"type": "ingredient_analysis"},
@@ -54,7 +54,7 @@ class ClaudeService(BaseLLMService):
         return await self.process_request(
             prompt_template=INGREDIENT_ANALYSIS_PROMPT_TEMPLATE,
             model=model,
-            template_vars={"ingredients": receipt_text},
+            template_vars={"ingredients": receipt_text, "today": TODAY},
             user_id=user_id,
             use_cache=use_cache,
             metadata={"type": "receipt_analysis"},

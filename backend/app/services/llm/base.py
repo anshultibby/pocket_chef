@@ -47,9 +47,9 @@ class BaseLLMService(ABC):
 
         # Generate prompt from template
         prompt = prompt_template.substitute(**template_vars)
-
+        logger.info(f"Generated prompt: {prompt}")
         # Generate or get cached response
-        return await self.generate(
+        response = await self.generate(
             prompt=prompt,
             response_model=model,
             system_prompt=system_prompt,
@@ -57,6 +57,8 @@ class BaseLLMService(ABC):
             use_cache=use_cache,
             metadata=metadata,
         )
+        logger.info(f"Generated response: {response}")
+        return response
 
     async def generate(
         self,
