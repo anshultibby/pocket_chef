@@ -51,6 +51,8 @@
 	<string>Kitchen Elf needs access to your photo library to upload receipt images and food items.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Kitchen Elf needs access to your camera to take photos of receipts and food items.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Kitchen Elf needs permission to save photos to your library.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>

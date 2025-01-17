@@ -14,7 +14,8 @@ interface ReceiptStore {
   uploadState: 'idle' | 'uploading' | 'confirming';
   
   // Actions
-  handleFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => Promise<boolean>;
+  handleNativeUpload: () => Promise<boolean>;
+  handleWebUpload: (event: React.ChangeEvent<HTMLInputElement>) => Promise<boolean>;
   clearUpload: () => void;
   setShowConfirmation: (show: boolean) => void;
   setError: (error: string | null) => void;
@@ -53,38 +54,75 @@ export const useReceiptStore = create<ReceiptStore>((set) => {
     showConfirmation: false,
     uploadState: 'idle',
 
-    handleFileUpload: async (event) => {
-      // For iOS/Android native apps
-      if (Capacitor.isNativePlatform()) {
-        try {
-          const image = await Camera.getPhoto({
-            quality: 90,
-            allowEditing: false,
-            resultType: CameraResultType.Uri,
-            source: CameraSource.Prompt
+    // Native upload handler
+    handleNativeUpload: async () => {
+      set({ isUploading: true, error: null });
+
+      try {
+        // Check permissions first
+        const permissionState = await Camera.checkPermissions();
+        
+        if (permissionState.photos === 'prompt' || permissionState.photos === 'denied') {
+          const request = await Camera.requestPermissions({
+            permissions: ['photos']
           });
-
-          // Convert the image to a file
-          const response = await fetch(image.webPath!);
-          const blob = await response.blob();
-          const file = new File([blob], 'receipt.jpg', { type: 'image/jpeg' });
-
-          return processFile(file);
-        } catch (err: unknown) {
-          // Don't show error if user just cancelled
-          if (err instanceof Error && err.message !== 'User cancelled photos app') {
-            set({ error: 'Failed to process receipt' });
-            console.error('Camera error:', err);
+          if (request.photos !== 'granted') {
+            set({ error: 'Permission denied for camera/photos access' });
+            return false;
           }
-          return false;
         }
+
+        const image = await Camera.getPhoto({
+          quality: 100,
+          allowEditing: false,
+          resultType: CameraResultType.Base64,
+          source: CameraSource.Prompt,
+          promptLabelHeader: 'Add Receipt',
+          promptLabelPicture: 'Take Photo',
+          promptLabelPhoto: 'Choose from Library',
+          correctOrientation: true
+        });
+
+        // Convert base64 to blob
+        const base64Data = image.base64String!;
+        const contentType = image.format === 'heic' ? 'image/jpeg' : `image/${image.format}`;
+        
+        const byteCharacters = atob(base64Data);
+        const byteArrays = [];
+        
+        for (let offset = 0; offset < byteCharacters.length; offset += 1024) {
+          const slice = byteCharacters.slice(offset, offset + 1024);
+          const byteNumbers = new Array(slice.length);
+          
+          for (let i = 0; i < slice.length; i++) {
+            byteNumbers[i] = slice.charCodeAt(i);
+          }
+          
+          byteArrays.push(new Uint8Array(byteNumbers));
+        }
+
+        const blob = new Blob(byteArrays, { type: contentType });
+        const file = new File([blob], `receipt.${contentType.split('/')[1]}`, { type: contentType });
+
+        return await processFile(file);
+      } catch (err: unknown) {
+        // Don't show error if user just cancelled
+        if (err instanceof Error && err.message !== 'User cancelled photos app') {
+          set({ error: 'Failed to process receipt' });
+          console.error('Camera error:', err);
+        }
+        return false;
+      } finally {
+        set({ isUploading: false });
       }
-      
-      // For web browsers
+    },
+
+    // Web upload handler
+    handleWebUpload: async (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
       if (!file) return false;
-      
-      return processFile(file);
+
+      return await processFile(file);
     },
 
     clearUpload: () => {

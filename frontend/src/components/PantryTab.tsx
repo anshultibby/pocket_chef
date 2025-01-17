@@ -29,6 +29,7 @@ import {
   XMarkIcon,
   FunnelIcon
 } from '@heroicons/react/24/outline';
+import { Capacitor } from '@capacitor/core';
 
 export default function PantryTab() {
   const { 
@@ -43,7 +44,7 @@ export default function PantryTab() {
   const { error, handleError, clearError } = useErrorHandler();
   const {
     isUploading,
-    handleFileUpload,
+    handleWebUpload,
     error: uploadError,
     clearUpload,
   } = useReceiptStore();
@@ -141,7 +142,7 @@ export default function PantryTab() {
 
   const handleUploadReceipt = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
-      const success = await handleFileUpload(event);
+      const success = await handleWebUpload(event);
       if (success) {
         useReceiptStore.getState().setShowConfirmation(true);
       }
@@ -352,6 +353,16 @@ export default function PantryTab() {
           }}
           onClose={() => setSelectedItem(null)}
           isEditing
+        />
+      )}
+
+      {/* Only for Web: File Input */}
+      {!Capacitor.isNativePlatform() && (
+        <input
+          type="file"
+          onChange={handleWebUpload}
+          className="hidden"
+          accept="image/*"
         />
       )}
     </div>

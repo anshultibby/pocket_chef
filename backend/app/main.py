@@ -19,6 +19,7 @@ CORS_ORIGINS = [
     "https://kitchen-elf.com",
     "https://www.kitchen-elf.com",
     "capacitor://localhost",
+    "capacitor://com.kitchenelf.app",
     "http://localhost",
     "http://127.0.0.1",
     "app://localhost",
@@ -33,7 +34,7 @@ app = FastAPI(
 # Configure CORS with settings for mobile
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*", "Authorization"],

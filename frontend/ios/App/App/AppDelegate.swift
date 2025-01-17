@@ -37,15 +37,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         window?.rootViewController = navigationController
         window?.makeKeyAndVisible()
         
-        // Request tracking permission after a delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            if #available(iOS 14, *) {
-                ATTrackingManager.requestTrackingAuthorization { status in
-                    print("🔍 Tracking authorization status: \(status.rawValue)")
-                }
-            }
-        }
-        
         return true
     }
 

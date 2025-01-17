@@ -1,7 +1,6 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const isDevMode = process.env.NEXT_PUBLIC_APP_MODE === 'development';
-const localIp = process.env.NEXT_PUBLIC_LOCAL_IP || 'localhost';
 
 const config: CapacitorConfig = {
   appId: 'com.kitchenelf.app',
@@ -10,7 +9,7 @@ const config: CapacitorConfig = {
   server: {
     androidScheme: 'https',
     iosScheme: isDevMode ? 'http' : 'https',
-    hostname: isDevMode ? localIp : 'com.kitchenelf.app',
+    hostname: isDevMode ? 'localhost' : 'com.kitchenelf.app',
     allowNavigation: [
       'localhost',
       '*.kitchen-elf.com',

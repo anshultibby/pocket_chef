@@ -10,7 +10,7 @@ export interface PantryControlsProps {
   searchTerm: string;
   onSearchChange: (value: string) => void;
   onAddItem: () => void;
-  onUploadReceipt: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onUploadReceipt: (event?: React.ChangeEvent<HTMLInputElement>) => void;
   onClearPantry: () => void;
   isUploading: boolean;
   fileInputRef: React.RefObject<HTMLInputElement>;

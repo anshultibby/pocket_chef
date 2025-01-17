@@ -9,8 +9,8 @@ import {
   ArrowPathIcon,
   FunnelIcon
 } from '@heroicons/react/24/outline';
-import { Camera } from '@capacitor/camera';
 import { Capacitor } from '@capacitor/core';
+import { useReceiptStore } from '@/stores/receiptStore';
 
 export default function PantryControls({
   searchTerm,
@@ -26,38 +26,16 @@ export default function PantryControls({
   showFilters,
   setShowFilters
 }: PantryControlsProps) {
-  const checkPhotoPermissions = async () => {
-    if (!Capacitor.isNativePlatform()) {
-      return true;
-    }
+  const { handleNativeUpload, handleWebUpload } = useReceiptStore();
 
-    try {
-      const permissionState = await Camera.checkPermissions();
-      
-      if (permissionState.photos === 'prompt' || permissionState.photos === 'denied') {
-        const request = await Camera.requestPermissions({
-          permissions: ['photos']
-        });
-        return request.photos === 'granted';
-      }
-      
-      return permissionState.photos === 'granted';
-    } catch (err) {
-      console.error('Permission check failed:', err);
-      return false;
-    }
-  };
-
-  const handleUploadClick = async () => {
+  const handleUploadClick = () => {
     if (isUploading) return;
-    
-    const hasPermission = await checkPhotoPermissions();
-    if (!hasPermission) {
-      // You might want to show a toast or alert here
-      return;
+
+    if (Capacitor.isNativePlatform()) {
+      handleNativeUpload();
+    } else {
+      fileInputRef.current?.click();
     }
-    
-    fileInputRef.current?.click();
   };
 
   return (
@@ -238,6 +216,17 @@ export default function PantryControls({
           }}
         />
       </div>
+
+      {/* Hidden File Input for Web */}
+      {!Capacitor.isNativePlatform() && (
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleWebUpload}
+          className="hidden"
+          accept="image/*"
+        />
+      )}
     </div>
   );
 }
