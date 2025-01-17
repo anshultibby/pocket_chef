@@ -7,8 +7,9 @@ export interface AuthContextType {
   loading: boolean;
   error: Error | null;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, name: string) => Promise<void>;
+  signUp: (email: string, password: string, name: string) => Promise<{ session: Session | null; isNewUser: boolean }>;
   signOut: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);

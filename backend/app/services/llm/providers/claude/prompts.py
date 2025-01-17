@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 T = TypeVar("T", bound=BaseModel)
 
-MODEL = "claude-3-5-sonnet-20240620"
+MODEL = "claude-3-5-sonnet-20241022"
 MAX_TOKENS = 4096
 
 
@@ -38,14 +38,20 @@ Here are the ingredients to format:
 $ingredients
 </ingredients>
 
-Use your best guess for nutritional information 
-and make sure to use the standard unit for scaling the nutritional information
+
+- Use your best guess for nutritional information 
+- make sure to use the standard unit for scaling the nutritional information
+- In notes add an icon to indicate the type of ingredient
+- fill in the expiration date, assume standard shelf life todays date is $today
+- just reply with the json object
 """
 
 INGREDIENT_ANALYSIS_PROMPT_TEMPLATE = Template(INGREDIENT_ANALYSIS_PROMPT)
 
 RECIPE_PANTRY_PROMPT = """
 Generate recipes based on these requirements and available ingredients.
+Feel free to generate international recipes. 
+And be liberal with using non-english names.
 Return recipes that exactly match this schema:
 
 <model>
@@ -63,12 +69,17 @@ $preferences
 </preferences>
 
 Important:
-- Each recipe must use at least 3 ingredients from the available list
-- Include detailed step-by-step instructions
+- Make good recipes, should be balanced, nutritious, and delicious
+- Compare nutritional information on recipe to that on ingredients and be consistent
+- Include detailed step-by-step instructions, each step should have sufficient detail
 - Ensure quantities and units are specific and measurable
-- Consider dietary restrictions and nutrition goals
-- Recipes should be practical and achievable
-- Assume a few common ingredients (such as salt, pepper, oil) are available
+- Assume a few common ingredients (such as salt, pepper, oil, spices) are available
+- Add an icon to each step to indicate the type of step
+- Try fill in the protein, calories for each ingredient
+- Always try to fill in the price, estimate if ingredients are not available
+- When asked for multiple recipes, 
+return a couple totally doable with the ingredients in the pantry 
+but atleast one that requires 1 or 2 ingredients user may not have
 """
 
 RECIPE_PANTRY_PROMPT_TEMPLATE = Template(RECIPE_PANTRY_PROMPT)

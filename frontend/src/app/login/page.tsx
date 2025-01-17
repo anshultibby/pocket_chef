@@ -39,7 +39,7 @@ export default function LoginPage() {
     e.preventDefault();
     try {
       await signIn(email, password);
-      router.push('/');
+      router.push('/home');
     } catch {
       setError('Invalid login credentials');
     }

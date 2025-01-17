@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timedelta
 from typing import List, Optional
 from uuid import UUID
 
@@ -11,7 +12,7 @@ from ..models.recipe_interactions import (
     RecipeInteractionCreate,
 )
 from ..models.recipes import ListOfRecipeData, RecipePreferences, RecipeResponse
-from .claude import ClaudeService
+from .llm.providers.claude import ClaudeService
 from .pantry import get_pantry_manager
 
 logger = logging.getLogger(__name__)
@@ -32,26 +33,45 @@ class RecipeManager:
         self, preferences: RecipePreferences, user_id: UUID
     ) -> List[RecipeResponse]:
         """Generate recipe and link ingredients to pantry items"""
-        pantry_manager = get_pantry_manager()
-        pantry_items = await pantry_manager.get_items(user_id)
-        final_recipes = []
-        ingredients = [
-            f"{item.data.name} ({item.data.quantity} \
-{item.data.unit} ${item.data.price} )"
-            for item in pantry_items
-        ]
-        list_of_recipe_data = await self.claude_service.generate_recipes(
-            ListOfRecipeData,
-            ingredients=ingredients,
-            preferences=preferences,
-        )
-        for recipe_data in list_of_recipe_data.recipes:
-            recipe_crud = await self.recipe_crud.create_recipe(
-                user_id=user_id,
-                data=recipe_data,
+        try:
+            # Get unsaved recipes from last 24 hours
+            unsaved_recipes = await self.get_unsaved_recipes(user_id)
+            if unsaved_recipes:
+                avoid_text = f"\nPlease avoid generating these or similar recipes: {', '.join(unsaved_recipes)}"
+                if preferences.custom_preferences:
+                    preferences.custom_preferences += avoid_text
+                else:
+                    preferences.custom_preferences = avoid_text
+
+            logger.info(
+                f"Generating recipe for user {user_id} with preferences: {preferences}"
             )
-            final_recipes.append(recipe_crud)
-        return final_recipes
+            pantry_manager = get_pantry_manager()
+            pantry_items = await pantry_manager.get_items(user_id)
+            final_recipes = []
+            ingredients = [
+                f"{item.data.name} ({item.data.quantity} \
+{item.data.unit} ${item.data.price} )"
+                for item in pantry_items
+            ]
+            list_of_recipe_data = await self.claude_service.generate_recipes(
+                ListOfRecipeData,
+                ingredients=ingredients,
+                preferences=preferences,
+                user_id=user_id,
+                use_cache=True,
+            )
+            for recipe_data in list_of_recipe_data.recipes:
+                recipe_crud = await self.recipe_crud.create_recipe(
+                    user_id=user_id,
+                    data=recipe_data,
+                )
+                final_recipes.append(recipe_crud)
+            return final_recipes
+
+        except Exception as e:
+            logger.error(f"Error during recipe generation: {str(e)}")
+            raise
 
     async def generate_shoppable_recipes(
         self, preferences: RecipePreferences, user_id: UUID
@@ -280,6 +300,35 @@ class RecipeManager:
         except Exception as e:
             logger.error(f"Error getting recipes: {str(e)}")
             raise
+
+    async def get_unsaved_recipes(self, user_id: UUID, hours: int = 1) -> List[str]:
+        """Get names of up to 10 most recent unsaved recipes from the last hour"""
+        try:
+            cutoff_time = datetime.utcnow() - timedelta(hours=hours)
+
+            # Get all recipes from last hour
+            recent_recipes = await self.recipe_crud.get_recipes_since(
+                user_id=user_id, since=cutoff_time
+            )
+
+            # Get saved recipe IDs
+            saved_interactions = await self.recipe_crud.get_recipe_interactions(
+                user_id=user_id, interaction_type=InteractionType.SAVE
+            )
+            saved_ids = {
+                str(interaction.recipe_id) for interaction in saved_interactions
+            }
+
+            # Return names of up to 10 most recent unsaved recipes
+            unsaved_recipes = [
+                recipe.data.name
+                for recipe in recent_recipes
+                if str(recipe.id) not in saved_ids
+            ]
+            return unsaved_recipes[-10:]  # Return only the last 10 recipes
+        except Exception as e:
+            logger.error(f"Error getting unsaved recipes: {str(e)}")
+            return []
 
 
 _recipe_manager = None

@@ -9,6 +9,7 @@ from ..models.recipe_interactions import (
     RecipeInteraction,
     RecipeInteractionCreate,
     RecipeInteractionResponse,
+    RecipeInteractionUpdate,
 )
 from ..models.recipes import RecipePreferences, RecipeResponse
 from ..services.auth import get_current_user
@@ -122,4 +123,43 @@ async def get_all_interactions(
 
     except Exception as e:
         logger.error(f"Error getting interactions: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.patch("/{recipe_id}/interactions/{interaction_id}")
+async def update_recipe_interaction(
+    recipe_id: str,
+    interaction_id: str,
+    interaction: RecipeInteractionUpdate,
+    current_user: dict = Depends(get_current_user),
+) -> RecipeInteraction:
+    """Update an existing recipe interaction"""
+    try:
+        # Convert string IDs to UUID
+        user_id = UUID(current_user["id"])
+        recipe_uuid = UUID(recipe_id)
+        interaction_uuid = UUID(interaction_id)
+
+        # Use Supabase to update the interaction
+        query = (
+            recipe_manager.recipe_crud.supabase.table("recipe_interactions")
+            .update(interaction.dict(exclude_unset=True))
+            .eq("id", str(interaction_uuid))
+            .eq("recipe_id", str(recipe_uuid))
+            .eq("user_id", str(user_id))
+            .execute()
+        )
+
+        if not query.data:
+            raise HTTPException(
+                status_code=404,
+                detail="Interaction not found or you don't have permission to update it",
+            )
+
+        return RecipeInteraction(**query.data[0])
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail="Invalid UUID format")
+    except Exception as e:
+        logger.error(f"Error updating interaction: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))

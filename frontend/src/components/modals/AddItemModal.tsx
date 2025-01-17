@@ -7,9 +7,9 @@ import { Dialog } from '@headlessui/react';
 import { motion } from 'framer-motion';
 
 const SUGGESTED_UNITS = [
+  'units',
   'grams',
   'milliliters',
-  'units',
   'pieces',
   'cups',
   'tablespoons',
@@ -17,19 +17,6 @@ const SUGGESTED_UNITS = [
   'ounces',
   'pounds',
   'pinch'
-];
-
-const SUGGESTED_CATEGORIES = [
-  'Produce',
-  'Meat & Seafood',
-  'Dairy & Eggs',
-  'Pantry Staples',
-  'Snacks',
-  'Beverages',
-  'Frozen Foods',
-  'Condiments',
-  'Baking',
-  'Other'
 ];
 
 export default function AddItemModal({ 
@@ -41,6 +28,14 @@ export default function AddItemModal({
   originalQuantity
 }: AddItemModalProps) {
   const handleSubmit = async (values: PantryItemCreate) => {
+    // Set default category if not provided
+    if (!values.data.category) {
+      values.data.category = 'Pantry Staples';
+    }
+    // Set default unit if not provided
+    if (!values.data.unit) {
+      values.data.unit = 'units';
+    }
     await Promise.resolve(onAdd(values));
   };
 
@@ -56,6 +51,7 @@ export default function AddItemModal({
     onClose 
   });
 
+  const [showAdditionalInfo, setShowAdditionalInfo] = useState(false);
   const [showNutrition, setShowNutrition] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
 
@@ -98,7 +94,7 @@ export default function AddItemModal({
                   animate={{ x: 0, opacity: 1 }}
                   transition={{ delay: 0.2 }}
                 >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-4">
                     <FormInput
                       label="Name"
                       value={values.data.name}
@@ -106,15 +102,43 @@ export default function AddItemModal({
                       error={errors['name']}
                       required
                       placeholder="Common name (e.g., bread)"
+                      className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-1 ring-blue-500 focus:outline-none"
                     />
 
-                    <FormInput
-                      label="Original Name"
-                      value={values.data.original_name || ''}
-                      onChange={(e) => handleChange('original_name', e.target.value)}
-                      error={errors['original_name']}
-                      placeholder="As scanned/entered (optional)"
-                    />
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormInput
+                        label={isRecipeUse ? "Final Pantry Quantity" : "Quantity"}
+                        type="number"
+                        value={isSubmitting ? '' : (values.data.quantity ?? '')}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          handleChange('quantity', value === '' ? null : Number(value));
+                        }}
+                        disabled={isSubmitting}
+                        error={errors['quantity']}
+                        placeholder="Enter quantity"
+                        className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-1 ring-blue-500 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                      
+                      <div>
+                        <label className="text-sm text-gray-400">Unit</label>
+                        <input
+                          type="text"
+                          value={values.data.unit}
+                          onChange={(e) => handleChange('unit', e.target.value)}
+                          className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-1 ring-blue-500 focus:outline-none"
+                          placeholder="units"
+                          onFocus={() => handleChange('unit', '')}
+                          list="unit-suggestions"
+                          autoComplete="off"
+                        />
+                        <datalist id="unit-suggestions">
+                          {SUGGESTED_UNITS.map(unit => (
+                            <option key={unit} value={unit} />
+                          ))}
+                        </datalist>
+                      </div>
+                    </div>
                   </div>
                 </motion.div>
 
@@ -123,34 +147,59 @@ export default function AddItemModal({
                   animate={{ x: 0, opacity: 1 }}
                   transition={{ delay: 0.3 }}
                 >
-                  <div className="grid grid-cols-2 gap-4 mt-4">
-                    <FormInput
-                      label={isRecipeUse ? "Final Pantry Quantity" : "Quantity"}
-                      type="number"
-                      value={values.data.quantity}
-                      onChange={(e) => handleChange('quantity', Number(e.target.value))}
-                      min="0"
-                      step="0.1"
-                      error={errors['quantity']}
-                    />
-                    
-                    <div>
-                      <label className="text-sm text-gray-400">Unit</label>
-                      <input
-                        list="unit-suggestions"
-                        type="text"
-                        value={values.data.unit}
-                        onChange={(e) => handleChange('unit', e.target.value)}
-                        className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
-                        placeholder="Enter or select a unit"
-                        required
-                      />
-                      <datalist id="unit-suggestions">
-                        {SUGGESTED_UNITS.map(unit => (
-                          <option key={unit} value={unit} />
-                        ))}
-                      </datalist>
-                    </div>
+                  <div className="border-t border-gray-700 pt-4 mt-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowAdditionalInfo(!showAdditionalInfo)}
+                      className="text-blue-400 hover:text-blue-300 mb-3"
+                    >
+                      {showAdditionalInfo ? 'Hide Additional Info' : 'Additional Info'}
+                    </button>
+
+                    {showAdditionalInfo && (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-sm text-gray-400">Category</label>
+                          <input
+                            list="category-suggestions"
+                            type="text"
+                            value={values.data.category}
+                            onChange={(e) => handleChange('category', e.target.value)}
+                            className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
+                            placeholder="Select or enter category"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-sm text-gray-400">Expiry Date</label>
+                          <input
+                            type="date"
+                            value={values.data.expiry_date ? new Date(values.data.expiry_date).toISOString().split('T')[0] : ''}
+                            onChange={(e) => handleChange('expiry_date', e.target.value || null)}
+                            className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
+                          />
+                        </div>
+
+                        <FormInput
+                          label="Price"
+                          error={errors.price}
+                          type="number"
+                          value={values.data.price?.toString() ?? ''}
+                          onChange={(e) => handleChange('price', e.target.value ? Number(e.target.value) : null)}
+                          min="0"
+                          step="0.01"
+                          placeholder="Enter price (optional)"
+                        />
+
+                        <FormInput
+                          label="Original Name"
+                          value={values.data.original_name || ''}
+                          onChange={(e) => handleChange('original_name', e.target.value)}
+                          error={errors['original_name']}
+                          placeholder="As scanned/entered (optional)"
+                        />
+                      </div>
+                    )}
                   </div>
                 </motion.div>
 
@@ -158,60 +207,6 @@ export default function AddItemModal({
                   initial={{ x: -20, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
                   transition={{ delay: 0.4 }}
-                >
-                  <div className="mt-4">
-                    <div>
-                      <label className="text-sm text-gray-400">Category</label>
-                      <input
-                        list="category-suggestions"
-                        type="text"
-                        value={values.data.category}
-                        onChange={(e) => handleChange('category', e.target.value)}
-                        className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
-                        placeholder="Select or enter category"
-                      />
-                      <datalist id="category-suggestions">
-                        {SUGGESTED_CATEGORIES.map(cat => (
-                          <option key={cat} value={cat} />
-                        ))}
-                      </datalist>
-                    </div>
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: 0.5 }}
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormInput
-                      label="Price"
-                      error={errors.price}
-                      type="number"
-                      value={values.data.price?.toString() ?? ''}
-                      onChange={(e) => handleChange('price', e.target.value ? Number(e.target.value) : null)}
-                      min="0"
-                      step="0.01"
-                      placeholder="Enter price (optional)"
-                    />
-
-                    <div>
-                      <label className="text-sm text-gray-400">Expiry Date</label>
-                      <input
-                        type="date"
-                        value={values.data.expiry_date ? new Date(values.data.expiry_date).toISOString().split('T')[0] : ''}
-                        onChange={(e) => handleChange('expiry_date', e.target.value || null)}
-                        className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: 0.6 }}
                 >
                   <div className="border-t border-gray-700 pt-4 mt-4">
                     <button
@@ -282,7 +277,7 @@ export default function AddItemModal({
                 <motion.div
                   initial={{ x: -20, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: 0.7 }}
+                  transition={{ delay: 0.5 }}
                 >
                   <div className="border-t border-gray-700 pt-4 mt-4">
                     <button

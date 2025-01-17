@@ -18,35 +18,38 @@ export interface RecipeIngredient {
   pantry_item_id?: string;
   is_optional: boolean;
   substitutes: string[];
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
+  fiber?: number;
 }
 
 export interface RecipeData {
   name: string;
-  ingredients: RecipeIngredient[];
-  instructions: string[];
+  description?: string;
   preparation_time: number;
   servings: number;
   category: string;
+  ingredients: RecipeIngredient[];
+  instructions: string[];
+  price?: number;
+  nutrition?: {
+    calories?: number;
+    protein?: number;
+    carbs?: number;
+    fat?: number;
+    fiber?: number;
+  };
 }
 
 export interface Recipe {
   id: string;
-  data: {
-    name: string;
-    ingredients: Array<{
-      name: string;
-      quantity: number;
-      unit: string;
-      substitutes?: string[];
-    }>;
-    instructions: string[];
-    preparation_time: number;
-    servings: number;
-    category: string;
-  };
+  data: RecipeData;
+  user_id: string;
+  is_public: boolean;
   created_at: string;
   updated_at: string;
-  user_id: string;
 }
 
 // Pantry types matching the database
@@ -137,6 +140,8 @@ export interface RecipePreferences {
   serving_size: number;
   recipes_per_meal: number;
   custom_preferences?: string;
+  max_calories?: number;
+  min_protein?: number;
 }
 
 export type InteractionType = 'save' | 'rate' | 'cook';
@@ -183,4 +188,26 @@ export interface RecipeInteraction {
 
 export interface InteractionWithRecipe extends Omit<RecipeInteraction, 'recipe'> {
   recipe: Recipe;
+}
+
+export type CookingExperience = 'beginner' | 'intermediate' | 'advanced';
+
+export interface UserProfile {
+  id: string;
+  user_id: string;
+  dietary_preferences: string[];
+  goals: string[];
+  default_servings: number;
+  cooking_experience: CookingExperience;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserProfileUpdate {
+  dietary_preferences?: string[];
+  goals?: string[];
+  default_servings?: number;
+  cooking_experience?: CookingExperience;
+  notes?: string;
 }

@@ -1,0 +1,39 @@
+name: iOS App Store
+
+# Triggers
+trigger:
+  branch:
+    - main
+  event:
+    - push
+    - pull_request
+
+# Environment
+environment:
+  node: 18
+  xcode: latest
+  cocoapods: latest
+
+# Build Configuration
+build:
+  commands:
+    pre:
+      - npm install -g npm@latest
+    main:
+      - npm install --legacy-peer-deps
+      - npm run build-static
+      - npx cap sync ios
+    post:
+      - cd ios/App && pod install
+
+# Archive Configuration
+archive:
+  scheme: App
+  configuration: Release
+  destination: generic/platform=iOS
+
+# Export Configuration
+export:
+  method: app-store
+  teamId: RYA34L6PN4
+  bundleIdentifier: com.kitchenelf.app

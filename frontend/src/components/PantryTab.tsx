@@ -4,7 +4,6 @@ import {
   PantryItemCreate, 
 } from '@/types';
 import { pantryApi } from '@/lib/api';
-import ReceiptConfirmation from '@/components/ReceiptConfirmation';
 import CategoryFilters from './pantry/CategoryFilters';
 import PantryControls from './pantry/PantryControls';
 import PantryGrid from './pantry/PantryGrid';
@@ -14,11 +13,22 @@ import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { ErrorMessage } from '@/components/shared/ErrorMessage';
 import { ERROR_MESSAGES } from '@/constants/messages';
 import { DuplicateItemModal } from './modals/DuplicateItemModal';
-import { useDuplicateHandler } from '@/hooks/useDuplicateHandler';
+import { useDuplicateStore } from '@/stores/duplicateStore';
 import { usePantryStore } from '@/stores/pantryStore';
 import { CATEGORIES, getCategoryLabel } from '@/constants/categories';
 import { useReceiptStore } from '@/stores/receiptStore';
 import { track } from '@vercel/analytics';
+import { findMatchingItem } from '@/utils/pantry';
+import { toast } from 'react-hot-toast';
+import { 
+  PlusIcon, 
+  DocumentArrowUpIcon, 
+  TrashIcon, 
+  ArrowPathIcon,
+  MagnifyingGlassIcon,
+  XMarkIcon,
+  FunnelIcon
+} from '@heroicons/react/24/outline';
 
 export default function PantryTab() {
   const { 
@@ -36,56 +46,34 @@ export default function PantryTab() {
     handleFileUpload,
     error: uploadError,
     clearUpload,
-    pendingItems: uploadPendingItems,
-    receiptImage
   } = useReceiptStore();
 
   const {
     duplicateItem,
-    handleSingleItem,
-    handleMultipleItems,
-    handleDuplicateResolution,
-    handleEditComplete,
     isProcessing,
     isEditing,
-    clearDuplicates
-  } = useDuplicateHandler(pantryItems, addItems, updateItem);
+    handleDuplicateResolution,
+    handleEditComplete,
+    clearDuplicates,
+  } = useDuplicateStore();
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddItemForm, setShowAddItemForm] = useState(false);
-  const [showReceiptConfirmation, setShowReceiptConfirmation] = useState(false);
   const [selectedItem, setSelectedItem] = useState<PantryItem | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [editingItem, setEditingItem] = useState<PantryItem | null>(null);
+  const [showSearch, setShowSearch] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   if (isLoading) {
     return <LoadingSpinner message="Loading pantry items..." />;
   }
 
-  const handleReceiptConfirmation = async (confirmedItems: PantryItemCreate[]) => {
-    try {
-      await handleMultipleItems(confirmedItems);
-      setShowReceiptConfirmation(false);
-      if (clearUpload) {
-        clearUpload();
-      }
-    } catch (error) {
-      handleError(error);
-      setShowReceiptConfirmation(false);
-    }
-  };
-
-  // Handle single item addition
+  // Simplified single item add
   const handleAddItem = async (item: PantryItemCreate) => {
     try {
-      await handleSingleItem(item);
-      track('add_pantry_item', {
-        itemName: item.data.name,
-        category: item.data.category || 'Other',
-        hasUnit: !!item.data.unit,
-        hasExpiry: !!item.data.expiry_date
-      });
+      // Use handleItems for single item addition
+      await useDuplicateStore.getState().handleItems([item], pantryItems);
     } catch (error) {
       handleError(error);
     }
@@ -144,24 +132,23 @@ export default function PantryTab() {
       return groups;
     }, {} as Record<string, PantryItem[]>);
 
+  // Sort categories alphabetically
+  const sortedGroupedItems = Object.fromEntries(
+    Object.entries(groupedItems).sort(([a], [b]) => a.localeCompare(b))
+  );
+
   const categories = Array.from(new Set(pantryItems.map(item => item.data.category || 'Other')));
 
   const handleUploadReceipt = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
-      await handleFileUpload(event);
-      setShowReceiptConfirmation(true);
+      const success = await handleFileUpload(event);
+      if (success) {
+        useReceiptStore.getState().setShowConfirmation(true);
+      }
     } catch (error) {
       handleError(error);
     }
   };
-
-  const handleCloseConfirmation = () => {
-    setShowReceiptConfirmation(false);
-    if (clearUpload) {
-      clearUpload();
-    }
-  };
-
 
   const handleItemUpdate = async (id: string, updates: Partial<PantryItem>) => {
     try {
@@ -172,22 +159,23 @@ export default function PantryTab() {
   };
 
   const handleMergeAndEdit = async () => {
-    try {
-      const mergedItem = await handleDuplicateResolution('mergeEdit');
-      if (mergedItem) {
-        setEditingItem(mergedItem);
-      }
-    } catch (error) {
-      handleError(error);
+    if (duplicateItem) {
+      await handleDuplicateResolution('mergeEdit', addItems, updateItem);
     }
   };
 
-  const handleEditModalClose = async (updates?: Partial<PantryItem>) => {
-    if (updates) {
-      await updateItem(editingItem!.id, updates);
+  const handleEditModalClose = async (updates?: PantryItemCreate) => {
+    try {
+      if (updates?.data && duplicateItem) {
+        await handleEditComplete(updates, updateItem);
+      } else if (updates?.data && selectedItem) {
+        await updateItem(selectedItem.id, updates);
+      }
+    } catch (error) {
+      handleError(error);
+    } finally {
+      setSelectedItem(null);
     }
-    setEditingItem(null);
-    await handleEditComplete();
   };
 
   return (
@@ -199,38 +187,112 @@ export default function PantryTab() {
         />
       )}
 
-      <PantryControls
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        onAddItem={() => setShowAddItemForm(true)}
-        onUploadReceipt={handleUploadReceipt}
-        onClearPantry={handleClearPantry}
-        isUploading={isUploading}
-        fileInputRef={fileInputRef}
-        pantryItemsCount={pantryItems.length}
-      />
+      {/* Mobile Controls */}
+      <div className="sm:hidden">
+        {showSearch && (
+          <div className="relative w-full animate-slideDown mb-2">
+            <input
+              type="text"
+              placeholder="Search items..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="bg-gray-800/50 rounded-lg px-4 py-2 text-white w-full focus:ring-2 ring-blue-500 focus:outline-none text-base"
+              autoFocus
+            />
+            <button 
+              onClick={() => {
+                setShowSearch(false);
+                setSearchTerm(''); // Clear search when closing
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white p-1"
+            >
+              <XMarkIcon className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+        
+        <div className="flex gap-2 justify-start">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`w-10 h-10 rounded-full flex items-center justify-center ${
+              showFilters 
+                ? 'bg-blue-600/20 text-blue-400' 
+                : 'bg-gray-800/50 text-gray-400 hover:text-white'
+            }`}
+          >
+            <FunnelIcon className="w-5 h-5" />
+          </button>
+          
+          <button
+            onClick={() => setShowSearch(true)}
+            className="w-10 h-10 rounded-full bg-gray-800/50 text-gray-400 hover:text-white flex items-center justify-center"
+          >
+            <MagnifyingGlassIcon className="w-5 h-5" />
+          </button>
 
-      <CategoryFilters
-        categories={categories}
-        selectedCategories={selectedCategories}
-        onSelectCategory={handleCategorySelect}
-        onClearCategories={() => setSelectedCategories([])}
-      />
+          <button
+            onClick={() => setShowAddItemForm(true)}
+            className="w-10 h-10 rounded-full bg-green-600/20 text-green-400 hover:bg-green-600/30 flex items-center justify-center"
+          >
+            <PlusIcon className="w-5 h-5" />
+          </button>
 
-      <PantryGrid
-        groupedItems={groupedItems}
-        onSelectItem={setSelectedItem}
-      />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className={`w-10 h-10 rounded-full flex items-center justify-center ${
+              isUploading 
+                ? 'bg-gray-700/50 text-gray-400' 
+                : 'bg-blue-600/20 text-blue-400 hover:bg-blue-600/30'
+            }`}
+          >
+            {isUploading ? 
+              <ArrowPathIcon className="w-5 h-5 animate-spin" /> : 
+              <DocumentArrowUpIcon className="w-5 h-5" />
+            }
+          </button>
 
-      {/* Modals */}
-      {showReceiptConfirmation && uploadPendingItems && (
-        <ReceiptConfirmation
-          items={uploadPendingItems}
-          receiptImage={receiptImage}
-          onConfirm={handleReceiptConfirmation}
-          onCancel={handleCloseConfirmation}
+          <button
+            onClick={handleClearPantry}
+            disabled={pantryItems.length === 0}
+            className="w-10 h-10 rounded-full bg-red-900/20 text-red-300/70 hover:bg-red-900/30 disabled:opacity-50 flex items-center justify-center"
+          >
+            <TrashIcon className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Desktop Controls */}
+      <div className="hidden sm:block">
+        <PantryControls
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          onAddItem={() => setShowAddItemForm(true)}
+          onUploadReceipt={handleUploadReceipt}
+          onClearPantry={handleClearPantry}
+          isUploading={isUploading}
+          fileInputRef={fileInputRef}
+          pantryItemsCount={pantryItems.length}
+          showSearch={showSearch}
+          setShowSearch={setShowSearch}
+          showFilters={showFilters}
+          setShowFilters={setShowFilters}
+        />
+      </div>
+
+      {showFilters && (
+        <CategoryFilters
+          categories={categories}
+          selectedCategories={selectedCategories}
+          onSelectCategory={handleCategorySelect}
+          onClearCategories={() => setSelectedCategories([])}
         />
       )}
+
+      <PantryGrid
+        groupedItems={sortedGroupedItems}
+        onSelectItem={setSelectedItem}
+      />
 
       {showAddItemForm && (
         <AddItemModal
@@ -243,19 +305,40 @@ export default function PantryTab() {
         <DuplicateItemModal
           existingItem={duplicateItem.existing}
           newItem={duplicateItem.new}
-          onMergeQuantities={() => handleDuplicateResolution('merge')}
-          onMergeAndEdit={handleMergeAndEdit}
-          onCreateNew={() => handleDuplicateResolution('create')}
-          onCancel={clearDuplicates}
+          onMergeQuantities={() => handleDuplicateResolution('merge', addItems, updateItem)}
+          onMergeAndEdit={() => handleDuplicateResolution('mergeEdit', addItems, updateItem)}
+          onCreateNew={() => handleDuplicateResolution('create', addItems, updateItem)}
+          onCancel={() => {
+            clearDuplicates();
+            setShowAddItemForm(false);
+          }}
           isProcessing={isProcessing}
         />
       )}
 
-      {editingItem && (
+      {isEditing && duplicateItem && (
         <AddItemModal
-          initialValues={editingItem}
-          onAdd={handleEditModalClose}
-          onClose={() => handleEditModalClose()}
+          initialValues={{
+            data: {
+              ...duplicateItem.existing.data,
+              quantity: duplicateItem.existing.data.quantity + duplicateItem.new.data.quantity
+            },
+            nutrition: duplicateItem.existing.nutrition
+          }}
+          onAdd={async (updatedItem) => {
+            try {
+              await handleEditComplete(updatedItem, updateItem);
+              setShowAddItemForm(false);
+            } catch (error) {
+              toast.error('Failed to update item');
+              useDuplicateStore.getState().setIsProcessing(false);
+            }
+          }}
+          onClose={() => {
+            useDuplicateStore.getState().setIsEditing(false);
+            useDuplicateStore.getState().setIsProcessing(false);
+            setShowAddItemForm(false);
+          }}
           isEditing={true}
         />
       )}

@@ -1,10 +1,12 @@
 'use client';
 
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useState, useMemo } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
-import { AuthContext, AuthContextType } from '@/lib/auth-context';
+import { AuthContext} from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
+import { profileApi } from '@/lib/api';
+import { userApi } from '@/lib/api';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -46,29 +48,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initializeAuth();
   }, [router]);
 
-  const value: AuthContextType = {
-    user,
-    session,
-    loading,
-    error,
-    signIn: async (email: string, password: string) => {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-    },
-    signUp: async (email: string, password: string, name: string) => {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { name } }
-      });
-      if (error) throw error;
-    },
-    signOut: async () => {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      router.push('/login');
-    }
-  };
+  const value = useMemo(
+    () => ({
+      user,
+      session,
+      loading,
+      error,
+      signIn: async (email: string, password: string) => {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+      },
+      signUp: async (email: string, password: string, name: string) => {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: { name } }
+        });
+        if (error) throw error;
+        
+        if (data.session) {
+          setSession(data.session);
+          setUser(data.session.user);
+          
+          // Create initial profile
+          try {
+            await profileApi.createProfile();
+            router.push('/onboarding'); // Redirect to onboarding immediately
+            return { session: data.session, isNewUser: true };
+          } catch (error) {
+            console.error('Error creating profile:', error);
+          }
+        }
+        return { session: data.session, isNewUser: true };
+      },
+      signOut: async () => {
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
+        router.push('/login');
+      },
+      deleteAccount: async () => {
+        try {
+          // First delete all user data
+          await userApi.deleteAccount();
+          
+          // Then sign out
+          await supabase.auth.signOut();
+          
+          router.push('/login?message=account-deleted');
+        } catch (error) {
+          console.error('Error deleting account:', error);
+          throw error;
+        }
+      }
+    }),
+    [user, session, loading, error, router]
+  );
 
   return (
     <AuthContext.Provider value={value}>

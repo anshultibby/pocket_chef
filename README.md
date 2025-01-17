@@ -112,3 +112,16 @@
    startLine: 1
    endLine: 22
    ```
+
+IOS stuff
+
+```
+1. Create dist and add ios app
+npm run add-ios
+
+2. Run the app
+launch xcode and try the app
+
+
+
+```

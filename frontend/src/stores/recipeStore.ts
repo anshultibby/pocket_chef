@@ -42,7 +42,9 @@ export const useRecipeStore = create<RecipeStore>((set, get) => ({
     meal_types: [],
     nutrition_goals: [],
     custom_preferences: '',
-    recipes_per_meal: 3
+    recipes_per_meal: 4,
+    max_calories: undefined,
+    min_protein: undefined
   },
   isLoading: false,
   isGenerating: false,
@@ -67,10 +69,8 @@ export const useRecipeStore = create<RecipeStore>((set, get) => ({
   fetchRecipes: async () => {
     const state = get();
     
-    // Don't fetch if already loading
     if (state.isLoading) return;
     
-    // Don't fetch if within cooldown period
     const now = Date.now();
     if (state.lastFetched && (now - state.lastFetched) < FETCH_COOLDOWN) {
       return;
@@ -85,9 +85,11 @@ export const useRecipeStore = create<RecipeStore>((set, get) => ({
         error: null 
       });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load recipes';
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Failed to load recipes';
       set({ error: errorMessage });
-      throw error;
+      console.error('Recipe fetch error:', error);
     } finally {
       set({ isLoading: false });
     }

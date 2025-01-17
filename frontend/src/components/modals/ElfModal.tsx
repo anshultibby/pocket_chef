@@ -1,8 +1,9 @@
 import { Dialog } from '@headlessui/react';
-import RecipeGenerationControls from '@/components/recipes/RecipeGenerationControls';
 import { useRecipeStore } from '@/stores/recipeStore';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { recipeApi } from '@/lib/api';
+import { useState } from 'react';
+import { PreferenceControls } from '@/components/recipes/PreferenceControls';
 
 interface ElfModalProps {
   onClose: () => void;
@@ -20,6 +21,8 @@ export default function ElfModal({ onClose, pantryItemsCount }: ElfModalProps) {
     preferences,
     setError
   } = useRecipeStore();
+
+  const [activeSection, setActiveSection] = useState<string | null>(null);
 
   const handleGenerateRecipes = async () => {
     setIsLoading(true);
@@ -44,32 +47,36 @@ export default function ElfModal({ onClose, pantryItemsCount }: ElfModalProps) {
       
       <div className="fixed inset-0 overflow-y-auto">
         <div className="flex min-h-full items-center justify-center p-4">
-          <Dialog.Panel className="w-full max-w-4xl rounded-xl bg-gray-900 p-6">
-            <div className="flex justify-between items-center mb-8">
+          <Dialog.Panel className="w-full max-w-4xl rounded-xl bg-gray-900 p-6 shadow-lg border border-gray-800">
+            <div className="flex justify-between items-start mb-8">
               <div className="flex items-center gap-6">
                 <div>
                   <img 
-                    src="/images/kitchen-elf.png"
+                    src="/images/elf2.webp"
                     alt="Kitchen Elf"
-                    className="w-20 h-20 object-contain rounded-lg"
+                    className="w-16 h-16 object-contain rounded-lg"
                   />
                 </div>
-                <div>
-                  <Dialog.Title className="text-2xl font-bold text-white">
-                    Kitchen Elf
+                <div className="space-y-2">
+                  <Dialog.Title className="text-3xl font-bold text-white">
+                    Recipes
                   </Dialog.Title>
-                  <p className="text-gray-400 mt-1">Your magical cooking companion</p>
+                  <p className="text-gray-400 italic">
+                    Set your preferences
+                  </p>
                 </div>
               </div>
               <button 
                 onClick={onClose}
-                className="text-gray-400 hover:text-white"
+                className="text-gray-400 hover:text-white text-xl"
               >
                 ✕
               </button>
             </div>
             
-            <RecipeGenerationControls
+            <PreferenceControls
+              activeSection={activeSection}
+              setActiveSection={setActiveSection}
               onGenerate={handleGenerateRecipes}
               isGenerating={isGenerating}
               isLoading={isLoading}

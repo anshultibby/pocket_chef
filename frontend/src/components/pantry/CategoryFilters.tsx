@@ -11,37 +11,59 @@ const CategoryFilters = memo(function CategoryFilters({
   onClearCategories,
 }: CategoryFiltersProps) {
   const { items } = usePantryStore();
+  
+  // Sort categories alphabetically first, then by item count
+  const sortedCategories = [...categories].sort((a, b) => {
+    return a.toLowerCase().localeCompare(b.toLowerCase());
+  });
+
+  // Split into main categories (top 5) and others
+  const mainCategories = sortedCategories.slice(0, 5);
+  const otherCategories = sortedCategories.slice(5);
 
   return (
-    <div className="space-y-4">
-      <div className="flex gap-2 flex-wrap">
-        {categories.map((category, index) => {
-          const categoryLabel = getCategoryLabel(category);
-          return (
-            <button
-              key={`category-button-${category}-${index}`}
-              onClick={() => onSelectCategory(category.toLowerCase())}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors
-                ${selectedCategories.includes(category.toLowerCase())
-                  ? 'bg-blue-600/30 text-blue-400 ring-2 ring-blue-500/50'
-                  : 'bg-gray-800/50 text-gray-400 hover:bg-gray-700/50'
-                }`}
-            >
-              {categoryLabel}
-              <span className="ml-2 bg-gray-700/50 px-2 py-0.5 rounded-full text-xs">
-                {items.filter(item => (item.data.category || CATEGORIES.OTHER).toLowerCase() === category.toLowerCase()).length}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-      
+    <div className="flex items-center gap-2 flex-wrap">
+      {/* Main category buttons */}
+      {mainCategories.map((category) => (
+        <button
+          key={category}
+          onClick={() => onSelectCategory(category.toLowerCase())}
+          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors
+            ${selectedCategories.includes(category.toLowerCase())
+              ? 'bg-blue-600/30 text-blue-400 ring-1 ring-blue-500/50'
+              : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+            }`}
+        >
+          {getCategoryLabel(category)}
+          <span className="ml-1.5 text-xs opacity-60">
+            {items.filter(item => (item.data.category || CATEGORIES.OTHER).toLowerCase() === category.toLowerCase()).length}
+          </span>
+        </button>
+      ))}
+
+      {/* Dropdown for additional categories */}
+      {otherCategories.length > 0 && (
+        <div className="relative">
+          <select
+            onChange={(e) => onSelectCategory(e.target.value)}
+            className="bg-gray-800 text-gray-400 px-3 py-1.5 rounded-lg text-sm appearance-none cursor-pointer hover:bg-gray-700"
+          >
+            <option value="">More categories...</option>
+            {otherCategories.map((category) => (
+              <option key={category} value={category.toLowerCase()}>
+                {getCategoryLabel(category)}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {selectedCategories.length > 0 && (
         <button
           onClick={onClearCategories}
-          className="text-sm text-gray-400 hover:text-gray-300 transition-colors"
+          className="text-sm text-gray-400 hover:text-gray-300 px-2 py-1"
         >
-          Clear Filters ({selectedCategories.length})
+          Clear ({selectedCategories.length})
         </button>
       )}
     </div>

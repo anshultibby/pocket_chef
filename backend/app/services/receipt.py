@@ -1,12 +1,12 @@
 import logging
-from typing import List
+from functools import lru_cache
 from uuid import UUID
 
 from fastapi import UploadFile
 from google.cloud import vision
 
 from ..models.pantry import ListOfPantryItemsCreate
-from .claude import ClaudeService
+from .llm.providers.claude import ClaudeService
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +23,7 @@ class ReceiptParser:
             self._vision_client = vision.ImageAnnotatorClient()
         return self._vision_client
 
+    @lru_cache(maxsize=10)
     async def parse_receipt(
         self, file: UploadFile, user_id: UUID
     ) -> ListOfPantryItemsCreate:

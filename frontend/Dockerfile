@@ -17,5 +17,5 @@ RUN chown -R node:node /app/node_modules
 # Expose port
 EXPOSE 3000
 
-# Start the app
+# Start the app in dev mode (includes cleaning dist)
 CMD ["npm", "run", "dev"]

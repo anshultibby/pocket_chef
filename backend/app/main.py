@@ -1,14 +1,12 @@
 import logging
 import os
 import traceback
-from uuid import UUID
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from .routers import pantry, recipes
-from .services.auth import get_current_user
+from .api import users
+from .routers import feedback, pantry, profile, recipes
 
 # Add logging configuration
 logging.basicConfig(level=logging.INFO)
@@ -20,6 +18,10 @@ CORS_ORIGINS = [
     "https://kitchen-elf.vercel.app",
     "https://kitchen-elf.com",
     "https://www.kitchen-elf.com",
+    "capacitor://localhost",
+    "http://localhost",
+    "http://127.0.0.1",
+    "app://localhost",
 ]
 
 app = FastAPI(
@@ -28,20 +30,24 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Configure CORS with more permissive settings for Vercel preview deployments
+# Configure CORS with settings for mobile
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
     allow_origin_regex=r"https://.*\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["*", "Authorization"],
     expose_headers=["*"],
+    max_age=3600,
 )
 
 # Include routers
 app.include_router(pantry.router)
 app.include_router(recipes.router)
+app.include_router(profile.router)
+app.include_router(feedback.router)
+app.include_router(users.router, prefix="/users", tags=["users"])
 
 
 # Add a simple root endpoint for testing

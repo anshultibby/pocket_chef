@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 import { fetchApi } from './fetch';
 import type { Recipe, RecipePreferences, PantryItemCreate, 
   PantryItem, PantryItemUpdate, RecipeInteractionCreate, 
-  RecipeInteraction, InteractionType, SaveData, RateData, CookData } from '@/types';
+  RecipeInteraction, InteractionType, SaveData, RateData, CookData, UserProfile, UserProfileUpdate } from '@/types';
 
 // Helper function to get auth token
 const getAuthToken = async () => {
@@ -189,11 +189,10 @@ export const recipeApi = {
         // Get the existing save interaction
         const interactions = await recipeApi.getInteractions(recipeId, 'save');
         if (interactions.length > 0) {
-          return interactions[0];
+          return interactions[0]; // Return the existing interaction
         }
       }
       // If it's any other error, or we couldn't find the existing interaction, rethrow
-      console.error('Error saving recipe:', error);
       throw error;
     }
   },
@@ -203,6 +202,26 @@ export const recipeApi = {
     rating: number, 
     review?: string
   ): Promise<RecipeInteraction> => {
+    // Check if rating already exists
+    const interactions = await recipeApi.getInteractions(recipeId);
+    const existingRating = interactions.find(i => i.type === 'rate');
+
+    if (existingRating) {
+      // Update existing rating
+      return fetchApi<RecipeInteraction>(`/recipes/${recipeId}/interactions/${existingRating.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${await getAuthToken()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          type: 'rate',
+          data: { rating, review }
+        })
+      });
+    }
+
+    // Create new rating
     return recipeApi.interact(recipeId, {
       type: 'rate',
       data: { rating, review }
@@ -245,4 +264,63 @@ export const recipeApi = {
       }
     });
   },
+};
+
+export const profileApi = {
+  async getProfile(): Promise<UserProfile> {
+    const token = await getAuthToken();
+    return fetchApi<UserProfile>('/profile', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  },
+
+  async updateProfile(updates: UserProfileUpdate): Promise<UserProfile> {
+    const token = await getAuthToken();
+    return fetchApi<UserProfile>('/profile', {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(updates)
+    });
+  },
+
+  async createProfile(): Promise<UserProfile> {
+    const token = await getAuthToken();
+    return fetchApi<UserProfile>('/profile', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  }
+};
+
+export const feedbackApi = {
+  submit: async (content: string): Promise<void> => {
+    const token = await getAuthToken();
+    return fetchApi<void>('/feedback', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ content }),
+    });
+  }
+};
+
+export const userApi = {
+  deleteAccount: async (): Promise<void> => {
+    const token = await getAuthToken();
+    return fetchApi('/users/me', {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  }
 };

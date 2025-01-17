@@ -10,6 +10,7 @@ from ..models.recipe_interactions import (
     RecipeInteractionCreate,
 )
 from ..models.recipes import RecipeData, RecipeResponse
+from ..models.user_profile import UserProfile, UserProfileUpdate
 from .supabase import get_supabase
 
 logger = logging.getLogger(__name__)
@@ -96,7 +97,7 @@ class PantryCRUD(BaseCRUD):
                 .eq("user_id", str(user_id))
                 .execute()
             )
-            return len(result.data) > 0
+            return True
         except Exception as e:
             logger.error(f"Error clearing pantry: {str(e)}")
             raise
@@ -140,6 +141,7 @@ class RecipeCRUD(BaseCRUD):
     def __init__(self):
         super().__init__()
         self.table = "recipes"
+        self.interactions_table = "recipe_interactions"
 
     def get_recipes_by_categories(
         self, user_id: UUID, min_per_category: dict[str, int]
@@ -324,4 +326,164 @@ class RecipeCRUD(BaseCRUD):
             return RecipeResponse(**result.data[0]) if result.data else None
         except Exception as e:
             logger.error(f"Error getting recipe: {str(e)}")
+            raise
+
+    async def get_recipes_since(
+        self, user_id: UUID, since: datetime
+    ) -> List[RecipeResponse]:
+        """Get all recipes created since the given datetime"""
+        try:
+            result = (
+                self.supabase.table(self.table)
+                .select("*")
+                .eq("user_id", str(user_id))
+                .gte("created_at", since.isoformat())
+                .execute()
+            )
+            return [RecipeResponse(**item) for item in result.data]
+        except Exception as e:
+            logger.error(f"Error getting recent recipes: {str(e)}")
+            raise
+
+    async def delete_user_recipes(self, user_id: UUID) -> bool:
+        try:
+            # Delete recipe interactions first (due to foreign key constraints)
+            self.supabase.table(self.interactions_table).delete().eq(
+                "user_id", str(user_id)
+            ).execute()
+
+            # Then delete recipes
+            result = (
+                self.supabase.table(self.table)
+                .delete()
+                .eq("user_id", str(user_id))
+                .execute()
+            )
+
+            return True
+        except Exception as e:
+            logger.error(f"Error deleting user recipes: {str(e)}")
+            raise
+
+
+class ProfileCRUD(BaseCRUD):
+    def __init__(self):
+        super().__init__()
+        self.table = "user_profiles"
+
+    async def get_profile(self, user_id: UUID) -> Optional[UserProfile]:
+        try:
+            result = (
+                self.supabase.table(self.table)
+                .select("*")
+                .eq("user_id", str(user_id))
+                .execute()
+            )
+            # Handle the case where no profile exists
+            return UserProfile(**result.data[0]) if result.data else None
+        except Exception as e:
+            logger.error(f"Error getting user profile: {str(e)}")
+            raise
+
+    async def update_profile(
+        self, user_id: UUID, updates: UserProfileUpdate
+    ) -> UserProfile:
+        try:
+            result = (
+                self.supabase.table(self.table)
+                .update(updates.model_dump(exclude_none=True))
+                .eq("user_id", str(user_id))
+                .execute()
+            )
+            return UserProfile(**result.data[0])
+        except Exception as e:
+            logger.error(f"Error updating user profile: {str(e)}")
+            raise
+
+    async def create_profile(self, user_id: UUID) -> UserProfile:
+        """Create a new profile for a user with default values"""
+        try:
+            data = {
+                "user_id": str(user_id),
+                "dietary_preferences": [],
+                "goals": [],
+                "default_servings": 2,
+                "cooking_experience": "beginner",
+                "notes": None,
+            }
+            result = self.supabase.table(self.table).insert(data).execute()
+            return UserProfile(**result.data[0])
+        except Exception as e:
+            logger.error(f"Error creating user profile: {str(e)}")
+            raise
+
+    async def delete_profile(self, user_id: UUID) -> bool:
+        try:
+            result = (
+                self.supabase.table(self.table)
+                .delete()
+                .eq("user_id", str(user_id))
+                .execute()
+            )
+            return True
+        except Exception as e:
+            logger.error(f"Error deleting user profile: {str(e)}")
+            raise
+
+
+class UserContentCRUD(BaseCRUD):
+    async def create_content(
+        self, user_id: UUID, type: str, data: dict, metadata: dict = None
+    ) -> dict:
+        try:
+            result = (
+                self.supabase.table("user_content")
+                .insert(
+                    {
+                        "user_id": str(user_id),
+                        "type": type,
+                        "data": data,
+                        "metadata": metadata or {},
+                        "updated_at": datetime.utcnow().isoformat(),
+                    }
+                )
+                .execute()
+            )
+
+            if not result.data:
+                raise ValueError("Failed to create user content")
+
+            return result.data[0]
+
+        except Exception as e:
+            logger.error(f"Error creating user content: {str(e)}")
+            raise
+
+    async def get_user_content(
+        self,
+        user_id: Optional[UUID] = None,
+        type: str = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> List[dict]:
+        try:
+            query = self.supabase.table("user_content").select("*")
+
+            if type:
+                query = query.eq("type", type)
+
+            if user_id:  # Only filter by user_id if provided
+                query = query.eq("user_id", str(user_id))
+
+            result = (
+                query.order("created_at", desc=True)
+                .limit(limit)
+                .offset(offset)
+                .execute()
+            )
+
+            return result.data or []
+
+        except Exception as e:
+            logger.error(f"Error fetching user content: {str(e)}")
             raise

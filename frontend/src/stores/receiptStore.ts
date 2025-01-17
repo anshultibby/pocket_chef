@@ -1,7 +1,9 @@
 import { create } from 'zustand';
 import { PantryItemCreate } from '@/types';
 import { pantryApi } from '@/lib/api';
-import { pantryStore } from './pantryStore';
+import { Capacitor } from '@capacitor/core';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { userApi } from '@/lib/api/userApi';
 
 interface ReceiptStore {
   isUploading: boolean;
@@ -9,69 +11,94 @@ interface ReceiptStore {
   pendingItems: PantryItemCreate[];
   error: string | null;
   showConfirmation: boolean;
+  uploadState: 'idle' | 'uploading' | 'confirming';
   
   // Actions
   handleFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => Promise<boolean>;
-  confirmItems: (items: PantryItemCreate[]) => Promise<void>;
   clearUpload: () => void;
   setShowConfirmation: (show: boolean) => void;
   setError: (error: string | null) => void;
+  setUploadState: (state: 'idle' | 'uploading' | 'confirming') => void;
 }
 
-export const useReceiptStore = create<ReceiptStore>((set, get) => ({
-  isUploading: false,
-  receiptImage: null,
-  pendingItems: [],
-  error: null,
-  showConfirmation: false,
-
-  handleFileUpload: async (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return false;
-
+export const useReceiptStore = create<ReceiptStore>((set) => {
+  const processFile = async (file: File) => {
     set({ isUploading: true, error: null });
 
     try {
-      const formData = new FormData();
-      formData.append('file', file, file.name);
-
       const imageUrl = URL.createObjectURL(file);
       set({ receiptImage: imageUrl });
 
-      const items = await pantryApi.receipt.process(formData);
-      set({ pendingItems: items, showConfirmation: true });
+      const items = await userApi.processFile(file);
+      set({ 
+        pendingItems: items, 
+        showConfirmation: true 
+      });
       
-      event.target.value = '';
       return true;
-    } catch (err) {
+    } catch (err: unknown) {
       set({ error: 'Failed to process receipt' });
       console.error('Receipt upload error:', err);
       return false;
     } finally {
       set({ isUploading: false });
     }
-  },
+  };
 
-  confirmItems: async (items) => {
-    try {
-      await pantryApi.addItems(items);
-      await pantryStore.getState().fetchItems();
-      get().clearUpload();
-    } catch (error) {
-      set({ error: 'Failed to add items' });
-      throw error;
-    }
-  },
+  return {
+    isUploading: false,
+    receiptImage: null,
+    pendingItems: [],
+    error: null,
+    showConfirmation: false,
+    uploadState: 'idle',
 
-  clearUpload: () => {
-    set({
-      receiptImage: null,
-      pendingItems: [],
-      error: null,
-      showConfirmation: false
-    });
-  },
+    handleFileUpload: async (event) => {
+      // For iOS/Android native apps
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const image = await Camera.getPhoto({
+            quality: 90,
+            allowEditing: false,
+            resultType: CameraResultType.Uri,
+            source: CameraSource.Prompt
+          });
 
-  setShowConfirmation: (show) => set({ showConfirmation: show }),
-  setError: (error) => set({ error })
-}));
+          // Convert the image to a file
+          const response = await fetch(image.webPath!);
+          const blob = await response.blob();
+          const file = new File([blob], 'receipt.jpg', { type: 'image/jpeg' });
+
+          return processFile(file);
+        } catch (err: unknown) {
+          // Don't show error if user just cancelled
+          if (err instanceof Error && err.message !== 'User cancelled photos app') {
+            set({ error: 'Failed to process receipt' });
+            console.error('Camera error:', err);
+          }
+          return false;
+        }
+      }
+      
+      // For web browsers
+      const file = event.target.files?.[0];
+      if (!file) return false;
+      
+      return processFile(file);
+    },
+
+    clearUpload: () => {
+      set({
+        receiptImage: null,
+        pendingItems: [],
+        error: null,
+        showConfirmation: false,
+        uploadState: 'idle'
+      });
+    },
+
+    setShowConfirmation: (show) => set({ showConfirmation: show }),
+    setError: (error) => set({ error }),
+    setUploadState: (state) => set({ uploadState: state })
+  };
+});

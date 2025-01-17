@@ -17,11 +17,10 @@ export const groupItemsByCategory = (items: PantryItem[]) => {
 export const findMatchingItem = (
   items: PantryItem[], 
   name: string, 
-  unit: string
+  _unit: string
 ) => {
   const normalizedName = normalizeString(name);
   return items.find(item => 
-    normalizeString(item.data.name) === normalizedName &&
-    normalizeString(item.data.unit) === normalizeString(unit)
+    normalizeString(item.data.name) === normalizedName
   );
 };
