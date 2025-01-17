@@ -15,7 +15,7 @@ const config: CapacitorConfig = {
     ],
     cleartext: true,
     iosScheme: 'https',
-    hostname: '*',
+    hostname: 'pocketchef-production.up.railway.app',
   },
   ios: {
     contentInset: 'automatic',

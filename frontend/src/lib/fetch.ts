@@ -30,10 +30,12 @@ export const fetchApi = async <T>(url: string, options: RequestInit = {}): Promi
       });
     }
 
-    // Create base headers
+    // Create base headers with CORS headers
     const headers = new Headers({
       'Authorization': `Bearer ${session.access_token}`,
       'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Origin': window.location.origin
     });
 
     // Merge with any provided headers
@@ -43,7 +45,7 @@ export const fetchApi = async <T>(url: string, options: RequestInit = {}): Promi
       });
     }
 
-    // Always use Railway for mobile
+    // Always use Railway for mobile with proper CORS config
     if (Capacitor.isNativePlatform()) {
       console.log('Mobile detected, using Railway');
       console.log('Request headers:', Object.fromEntries(headers.entries())); // Debug log
@@ -51,6 +53,7 @@ export const fetchApi = async <T>(url: string, options: RequestInit = {}): Promi
       const response = await fetch(`${RAILWAY_URL}${url}`, {
         ...options,
         headers,
+        credentials: 'include'
       });
 
       console.log('Railway response status:', response.status);
@@ -119,29 +122,3 @@ export const createAuthHeaders = (token: string, contentType = 'application/json
   'Authorization': `Bearer ${token}`,
   ...(contentType ? { 'Content-Type': contentType } : {})
 });
-
-const fetchWithRetry = async <T>(url: string, options: RequestInit, retries = 3): Promise<T> => {
-  try {
-    return await fetchApi<T>(url, options);
-  } catch (error) {
-    if (retries > 0 && error instanceof ApiException && error.error.status >= 500) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return fetchWithRetry<T>(url, options, retries - 1);
-    }
-    throw error;
-  }
-};
-
-const fetchWithTimeout = async <T>(url: string, options: RequestInit = {}, timeout = 10000): Promise<T> => {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeout);
-  
-  try {
-    return await fetchApi<T>(url, {
-      ...options,
-      signal: controller.signal
-    });
-  } finally {
-    clearTimeout(timeoutId);
-  }
-};
