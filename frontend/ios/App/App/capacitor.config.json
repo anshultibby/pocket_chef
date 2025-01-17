@@ -11,12 +11,15 @@
 			"*.supabase.co",
 			"kitchen-elf.vercel.app"
 		],
-		"cleartext": true
+		"cleartext": true,
+		"iosScheme": "https",
+		"hostname": "*"
 	},
 	"ios": {
 		"contentInset": "automatic",
 		"limitsNavigationsToAppBoundDomains": false,
-		"backgroundColor": "#000000"
+		"backgroundColor": "#000000",
+		"webContentsDebuggingEnabled": true
 	},
 	"packageClassList": [
 		"CAPCameraPlugin"
