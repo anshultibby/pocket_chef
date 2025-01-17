@@ -17,5 +17,8 @@ RUN chown -R node:node /app/node_modules
 # Expose port
 EXPOSE 3000
 
+# Set default env var for LOCAL_IP (can be overridden by docker-compose)
+ENV NEXT_PUBLIC_LOCAL_IP=localhost
+
 # Start the app in dev mode (includes cleaning dist)
 CMD ["npm", "run", "dev"]
