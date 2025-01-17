@@ -35,5 +35,5 @@ archive:
 # Export Configuration
 export:
   method: app-store
-  teamId: RYA34L6PN4
+  teamId: G5NB89X943
   bundleIdentifier: com.kitchenelf.app
