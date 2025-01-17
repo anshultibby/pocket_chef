@@ -18,7 +18,6 @@ import { usePantryStore } from '@/stores/pantryStore';
 import { CATEGORIES, getCategoryLabel } from '@/constants/categories';
 import { useReceiptStore } from '@/stores/receiptStore';
 import { track } from '@vercel/analytics';
-import { findMatchingItem } from '@/utils/pantry';
 import { toast } from 'react-hot-toast';
 import { 
   PlusIcon, 
@@ -140,7 +139,9 @@ export default function PantryTab() {
 
   const categories = Array.from(new Set(pantryItems.map(item => item.data.category || 'Other')));
 
-  const handleUploadReceipt = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUploadReceipt = async (event?: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event) return;
+    
     try {
       const success = await handleWebUpload(event);
       if (success) {

@@ -156,7 +156,7 @@ export default function Home() {
     }
   };
 
-  const handleTabChange = (newTab: TabType) => {
+  const handleTabChange = async (newTab: TabType) => {
     const { uploadState } = useReceiptStore.getState();
     
     if (uploadState !== 'idle') {
@@ -169,6 +169,16 @@ export default function Home() {
     
     setActiveTab(newTab);
     localStorage.setItem('activeTab', newTab);
+
+    // Refresh pantry items when switching to pantry tab
+    if (newTab === 'pantry') {
+      try {
+        await usePantryStore.getState().fetchItems();
+      } catch (error) {
+        console.error('Error refreshing pantry items:', error);
+      }
+    }
+
     track('tab_change', {
       from: activeTab,
       to: newTab,
