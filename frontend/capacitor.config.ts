@@ -16,7 +16,7 @@ const config: CapacitorConfig = {
       'kitchen-elf.vercel.app',
       'pocketchef-production.up.railway.app',
       '192.168.*',
-    ]
+    ],
   },
   ios: {
     contentInset: 'automatic',

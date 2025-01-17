@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { AuthGuard } from '@/components/AuthGuard';
-import { useAuth } from '@/lib/auth-context';
 import { useProfileStore } from '@/stores/profileStore';
 import { TextArea } from '@/components/forms/TextArea';
 import { 
@@ -29,7 +28,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const { profile, updateProfile } = useProfileStore();
   
-  const { register, control, reset, handleSubmit, formState: { isSubmitting } } = useForm<UserProfileUpdate>({
+  const { control, reset, handleSubmit, formState: { isSubmitting } } = useForm<UserProfileUpdate>({
     defaultValues: async () => {
       const { profile } = useProfileStore.getState();
       await useProfileStore.getState().fetchProfile();

@@ -9,7 +9,6 @@ import { usePantryStore } from '@/stores/pantryStore';
 import ElfModal from '@/components/modals/ElfModal';
 import { CookbookTab } from '@/components/cookbook';
 import { track } from '@vercel/analytics';
-import { useRouter } from 'next/navigation';
 import { useReceiptStore } from '@/stores/receiptStore';
 import ReceiptConfirmation from '@/components/ReceiptConfirmation';
 import { toast } from 'react-hot-toast';
@@ -55,7 +54,6 @@ export default function Home() {
   const sessionStartTime = useRef(Date.now());
   const lastTabChange = useRef(Date.now());
   const isHidden = useRef(false);
-  const router = useRouter();
   const { 
     showConfirmation, 
     pendingItems, 
@@ -386,7 +384,7 @@ export default function Home() {
             onAdd={async (updatedItem) => {
               try {
                 await handleEditComplete(updatedItem, updateItem);
-              } catch (error) {
+              } catch  {
                 toast.error('Failed to update item');
                 // Keep the editing state active so user can retry
                 useDuplicateStore.getState().setIsProcessing(false);

@@ -18,19 +18,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
+        if (!supabase) {
+          throw new Error('Supabase client is not initialized');
+        }
+
         // Enable session persistence
-        await supabase.auth.getSession();
-        
+        const { data } = await supabase.auth.getSession();
+        console.log('Retrieved session:', data.session);
+        setSession(data.session);
+        setUser(data.session?.user ?? null);
+
         // Listen for auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        const { data: authSubscription } = supabase.auth.onAuthStateChange(
           async (_event, currentSession) => {
+            console.log('Auth state changed:', currentSession);
             setSession(currentSession);
             setUser(currentSession?.user ?? null);
             router.refresh();
           }
         );
 
-        return () => subscription.unsubscribe();
+        return () => {
+          authSubscription?.subscription.unsubscribe();
+        };
       } catch (err) {
         console.error('Auth initialization error:', err);
         setError(err instanceof Error ? err : new Error('Auth initialization failed'));

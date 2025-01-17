@@ -37,7 +37,7 @@ export async function requestTrackingPermission(): Promise<boolean> {
 }
 
 // Modify the existing track function to respect tracking permission
-export async function track(event: string, properties?: Record<string, unknown>) {
+export async function track() {
   const canTrack = await requestTrackingPermission();
   if (!canTrack) {
     return;

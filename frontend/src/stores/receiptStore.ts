@@ -1,7 +1,5 @@
 import { create } from 'zustand';
 import { PantryItemCreate } from '@/types';
-import { pantryApi } from '@/lib/api';
-import { Capacitor } from '@capacitor/core';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { userApi } from '@/lib/api/userApi';
 

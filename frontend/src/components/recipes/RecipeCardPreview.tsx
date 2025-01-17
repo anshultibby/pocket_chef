@@ -1,10 +1,7 @@
 import { Recipe } from '@/types';
 import { PantryItem } from '@/types';
 import { calculateRecipeAvailability } from '@/stores/recipeStore';
-import { recipeApi } from '@/lib/api';
-import { useState } from 'react';
-import { toast } from 'react-hot-toast';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion} from 'framer-motion';
 import { RecipeStats } from './RecipeStats';
 
 interface RecipeCardPreviewProps {

@@ -13,14 +13,3 @@ export const groupItemsByCategory = (items: PantryItem[]) => {
     return groups;
   }, {} as Record<string, PantryItem[]>);
 };
-  
-export const findMatchingItem = (
-  items: PantryItem[], 
-  name: string, 
-  _unit: string
-) => {
-  const normalizedName = normalizeString(name);
-  return items.find(item => 
-    normalizeString(item.data.name) === normalizedName
-  );
-};

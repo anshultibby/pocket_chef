@@ -78,7 +78,7 @@ export const pantryStore = create<PantryStore>((set, get) => ({
     try {
       const items = await pantryApi.getItems();
       set({ items, isLoading: false });
-    } catch (_error) {
+    } catch {
       set({ error: 'Failed to fetch items', isLoading: false });
     }
   },

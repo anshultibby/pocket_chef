@@ -28,12 +28,23 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Enable local storage and cookies
         config.websiteDataStore = WKWebsiteDataStore.default()
         
-        // Create the bridge view controller with the configuration
-        let bridgeViewController = CAPBridgeViewController(configuration: config)
+        // Create the bridge view controller
+        let bridgeViewController = CAPBridgeViewController()
         
         // Update tracking with the real WebView once it's available
         if let webView = bridgeViewController.webView {
             tracking?.webView = webView
+            
+            // Check for stored session
+            webView.evaluateJavaScript("""
+                (async () => {
+                    const { data } = await window.supabase.auth.getSession();
+                    if (data.session) {
+                        window.location.href = '/home';
+                    }
+                })()
+            """, completionHandler: nil)
+            
             webView.configuration.userContentController.add(
                 tracking!,
                 name: "tracking"

@@ -15,10 +15,11 @@ const nextConfig = {
   },
   webpack: (config, { isServer }) => {
     if (!isServer) {
-      // Don't attempt to bundle these modules on the server side
+      // Don't attempt to bundle these modules on the client side
       config.resolve.fallback = {
         ...config.resolve.fallback,
         '@capacitor/camera': false,
+        '@capacitor/preferences': false,
       };
     }
     return config;

@@ -1,11 +1,27 @@
 'use client';
 
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { OnboardingImage } from '@/components/OnboardingImage';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useAuth } from '@/lib/auth-context';
 
 export default function LandingPage() {
+  const router = useRouter();
+  const { session, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && session) {
+      router.replace('/home');
+    }
+  }, [session, router, loading]);
+
+  if (loading || session) {
+    return <div className="min-h-screen bg-gray-950" />;
+  }
+
   const features = [
     {
       title: "Smart Recipe Suggestions",

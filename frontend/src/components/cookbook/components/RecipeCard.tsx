@@ -30,12 +30,6 @@ export function RecipeCard({ recipe, interaction, pantryItems, onClick }: Recipe
 
   const { percentage: availability } = calculateRecipeAvailability(recipe, pantryItems);
 
-  const getAvailabilityColor = (percentage: number) => {
-    if (percentage >= 80) return "text-green-400";
-    if (percentage >= 50) return "text-yellow-400";
-    return "text-red-400";
-  };
-
   const StarRating = ({ rating }: { rating: number }) => {
     return (
       <div className="flex">

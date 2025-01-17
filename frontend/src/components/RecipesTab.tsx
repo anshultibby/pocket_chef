@@ -92,7 +92,6 @@ export default function RecipesTab({
     recipes,
     isLoading,
     isGenerating,
-    error,
     fetchRecipes,
   } = useRecipeStore();
   

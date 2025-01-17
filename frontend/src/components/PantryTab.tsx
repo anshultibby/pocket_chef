@@ -331,7 +331,7 @@ export default function PantryTab() {
             try {
               await handleEditComplete(updatedItem, updateItem);
               setShowAddItemForm(false);
-            } catch (error) {
+            } catch {
               toast.error('Failed to update item');
               useDuplicateStore.getState().setIsProcessing(false);
             }

@@ -40,13 +40,6 @@ export function GenerateRecipesStep({ onNext, onBack, onExit }: GenerateRecipesS
     }
   };
 
-  const handlePrevious = () => {
-    if (currentFeature > 0) {
-      setCurrentFeature(prev => prev - 1);
-    } else {
-      onBack();
-    }
-  };
 
   return (
     <motion.div

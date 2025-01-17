@@ -1,5 +1,5 @@
 import { PantryItem } from '@/types';
-import { TrashIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { TrashIcon } from '@heroicons/react/24/outline';
 import { useDraggable } from '@dnd-kit/core';
 
 interface PantryItemCardProps {

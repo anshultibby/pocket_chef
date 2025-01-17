@@ -2,8 +2,6 @@ import { PantryItem, Recipe } from '@/types';
 import { RecipeCard } from '../components/RecipeCard';
 import { useState } from 'react';
 import { InteractionWithRecipe } from '../types';
-import { StarIcon } from '@heroicons/react/24/solid';
-import { StarIcon as StarIconOutline } from '@heroicons/react/24/outline';
 
 interface RatedRecipesViewProps {
   interactions: InteractionWithRecipe[];
