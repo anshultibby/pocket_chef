@@ -85,13 +85,15 @@ export const pantryApi = {
   receipt: {
     process: async (formData: FormData): Promise<PantryItemCreate[]> => {
       const token = await getAuthToken();
-      return fetchApi<PantryItemCreate[]>('/pantry/receipt/process', {
+      const response = await fetchApi<PantryItemCreate[]>('/pantry/receipt/process', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
         },
         body: formData
       });
+      
+      return response;
     },
   }
 };

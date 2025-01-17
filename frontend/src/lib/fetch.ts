@@ -18,7 +18,7 @@ export const fetchApi = async <T>(url: string, options: RequestInit = {}): Promi
 
     const headers = new Headers({
       'Authorization': `Bearer ${session.access_token}`,
-      'Content-Type': 'application/json',
+      ...(!(options.body instanceof FormData) && { 'Content-Type': 'application/json' }),
       ...options.headers
     });
 

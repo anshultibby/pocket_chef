@@ -3,27 +3,34 @@ import { track } from '@vercel/analytics';
 
 export const userApi = {
   async processFile(file: File) {
+    if (!file.type.startsWith('image/')) {
+      throw new Error('Please upload an image file');
+    }
+
     const formData = new FormData();
-    formData.append('file', file, file.name);
+    formData.append('file', file);
 
     try {
-      const items = await pantryApi.receipt.process(formData);
+      const response = await pantryApi.receipt.process(formData);
       
       track('receipt_upload', {
         fileSize: Math.round(file.size / 1024),
         fileType: file.type,
-        itemsExtracted: items.length,
+        itemsExtracted: response.length,
         success: true
       });
       
-      return items;
+      return response;
     } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to process receipt';
+      
       track('receipt_upload_error', {
         fileSize: Math.round(file.size / 1024),
         fileType: file.type,
-        error: err instanceof Error ? err.message : 'Unknown error'
+        error: errorMessage
       });
-      throw err;
+      
+      throw new Error(errorMessage);
     }
   }
 }; 

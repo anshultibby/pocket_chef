@@ -78,6 +78,10 @@ export default function PantryControls({
           onChange={onUploadReceipt}
           className="hidden"
           accept="image/*"
+          onClick={(e) => {
+            const target = e.target as HTMLInputElement;
+            target.value = '';
+          }}
         />
 
         <div className="flex items-center gap-2">
@@ -192,6 +196,10 @@ export default function PantryControls({
           onChange={onUploadReceipt}
           className="hidden"
           accept="image/*"
+          onClick={(e) => {
+            const target = e.target as HTMLInputElement;
+            target.value = '';
+          }}
         />
       </div>
     </div>
