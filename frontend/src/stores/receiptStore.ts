@@ -22,7 +22,7 @@ interface ReceiptStore {
 }
 
 export const useReceiptStore = create<ReceiptStore>((set) => {
-  const processFile = async (file: File) => {
+  const processFile = async (file: Blob) => {
     set({ isUploading: true, error: null });
 
     try {
@@ -68,7 +68,7 @@ export const useReceiptStore = create<ReceiptStore>((set) => {
         }
 
         const image = await Camera.getPhoto({
-          quality: 100,
+          quality: 90,
           allowEditing: false,
           resultType: CameraResultType.Base64,
           source: CameraSource.Prompt,
@@ -97,9 +97,7 @@ export const useReceiptStore = create<ReceiptStore>((set) => {
         }
 
         const blob = new Blob(byteArrays, { type: contentType });
-        const file = new File([blob], `receipt.${contentType.split('/')[1]}`, { type: contentType });
-
-        return await processFile(file);
+        return await processFile(blob);
       } catch (err: unknown) {
         if (err instanceof Error) {
           // Don't show error if user just cancelled

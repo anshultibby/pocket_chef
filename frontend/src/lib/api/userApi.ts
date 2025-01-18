@@ -1,13 +1,26 @@
 import { pantryApi } from '@/lib/api';
+import { PantryItemCreate } from '@/types';
 import { track } from '@vercel/analytics';
 
-export const userApi = {
-  async processFile(file: File) {
-    if (!file.type.startsWith('image/')) {
+interface FileUploadAPI {
+  processFile(inputFile: Blob): Promise<PantryItemCreate[]>;
+}
+
+export const userApi: FileUploadAPI = {
+  async processFile(inputFile: Blob) {
+    // Ensure we have an image file
+    if (!inputFile.type.startsWith('image/')) {
       throw new Error('Please upload an image file');
     }
 
     const formData = new FormData();
+    
+    // Create a new File object from the Blob
+    const file = new File([inputFile], 'receipt.jpg', { 
+      type: inputFile.type,
+      lastModified: Date.now()
+    });
+    
     formData.append('file', file);
 
     try {

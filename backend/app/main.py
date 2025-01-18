@@ -53,8 +53,6 @@ app.include_router(profile.router)
 app.include_router(feedback.router)
 app.include_router(users.router, prefix="/users", tags=["users"])
 
-app.middleware("http")(log_request_middleware)
-
 
 # Add a simple root endpoint for testing
 @app.get("/")
