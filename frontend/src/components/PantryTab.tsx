@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { 
   PantryItem, 
   PantryItemCreate, 
@@ -64,6 +64,14 @@ export default function PantryTab() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showSearch, setShowSearch] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+
+  useEffect(() => {
+    if (isLoading) {
+      // Clear any existing errors when loading starts
+      if (error) clearError();
+      if (uploadError) useReceiptStore.getState().dismissError();
+    }
+  }, [isLoading, error, uploadError, clearError]);
 
   if (isLoading && pantryItems.length === 0) {
     return <LoadingSpinner message="Loading pantry items..." />;
