@@ -43,36 +43,75 @@ export default function LandingPage() {
     }
   ];
 
-  return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      {/* Hero Section */}
-      <div className="max-w-6xl mx-auto px-4 py-12 sm:py-20 text-center">
+  const HeroSection = () => {
+    return (
+      <div className="relative max-w-6xl mx-auto px-4 py-8 sm:py-16 text-center">
+        {/* Background gradient */}
+        <div className="absolute inset-0 bg-gradient-to-b from-blue-500/10 to-transparent pointer-events-none" />
+        
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="space-y-4 sm:space-y-6"
+          className="relative space-y-8"
         >
+          {/* Logo and title */}
           <div className="flex items-center justify-center gap-3">
             <Image
               src="/images/zoomed_elf.png"
               alt="Kitchen Elf Logo"
-              width={40}
-              height={40}
-              className="w-[40px] h-[40px] sm:w-[50px] sm:h-[50px]"
+              width={50}
+              height={50}
+              className="w-[50px] h-[50px] sm:w-[60px] sm:h-[60px]"
               priority
             />
-            <h1 className="text-4xl sm:text-5xl font-bold">Kitchen Elf</h1>
+            <h1 className="text-5xl sm:text-6xl font-bold">Kitchen Elf</h1>
           </div>
-          <p className="text-lg sm:text-xl text-gray-300 max-w-2xl mx-auto flex flex-col items-center gap-1">
-            <span>AI-powered recipes from your pantry.</span>
-            <span>Save Time.</span>
-            <span>Waste Less.</span>
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+
+          {/* Hero image */}
+          <div className="relative max-w-3xl mx-auto mt-4 mb-6">
+            <Image
+              src="/images/mockup-2.webp"
+              alt="Kitchen Elf app features: Organized Pantry, Upload Items, and Recipe Suggestions"
+              width={1200}
+              height={800}
+              className="w-full h-auto rounded-lg shadow-2xl"
+              priority
+            />
+          </div>
+
+          {/* Tagline with staggered animation */}
+          <motion.p 
+            className="text-xl sm:text-2xl text-gray-300 max-w-2xl mx-auto flex flex-col items-center gap-2"
+            initial="hidden"
+            animate="visible"
+            variants={{
+              visible: { transition: { staggerChildren: 0.12 } }
+            }}
+          >
+            <motion.span
+              variants={{
+                hidden: { opacity: 0, y: 10 },
+                visible: { opacity: 1, y: 0 }
+              }}
+            >
+              AI-powered recipes from your pantry.
+            </motion.span>
+            <motion.span
+              variants={{
+                hidden: { opacity: 0, y: 10 },
+                visible: { opacity: 1, y: 0 }
+              }}
+            >
+              Save Time. Waste Less.
+            </motion.span>
+          </motion.p>
+
+          {/* Action buttons */}
+          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
             <div className="flex gap-4">
               <Link
                 href="/signup"
-                className="px-8 py-4 bg-blue-500 text-white rounded-lg hover:bg-blue-400 transform hover:scale-105 transition-all font-medium"
+                className="px-8 py-4 bg-blue-500 text-white rounded-lg hover:bg-blue-400 transform hover:scale-105 transition-all font-medium shadow-lg shadow-blue-500/20"
               >
                 Sign up
               </Link>
@@ -99,6 +138,13 @@ export default function LandingPage() {
           </div>
         </motion.div>
       </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-950 text-white">
+      {/* Hero Section */}
+      <HeroSection />
 
       {/* Features Section */}
       <div className="max-w-6xl mx-auto px-4 py-20">
