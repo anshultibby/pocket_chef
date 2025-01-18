@@ -3,6 +3,7 @@ import { usePantryStore } from '@/stores/pantryStore';
 import { PantryItemCard } from './PantryItemCard';
 import { DndContext, DragEndEvent, useDroppable } from '@dnd-kit/core';
 import { pantryApi } from '@/lib/api';
+import { useState } from 'react';
 
 function CategoryDropZone({ category, children }: { category: string; children: React.ReactNode }) {
   const { setNodeRef } = useDroppable({
@@ -23,6 +24,19 @@ function CategoryDropZone({ category, children }: { category: string; children: 
 
 export default function PantryGrid({ groupedItems, onSelectItem }: Omit<PantryGridProps, 'onDeleteItem'>) {
   const { deleteItem, updateItem } = usePantryStore();
+  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
+  
+  const toggleCategory = (category: string) => {
+    setCollapsedCategories(prev => {
+      const next = new Set(prev);
+      if (next.has(category)) {
+        next.delete(category);
+      } else {
+        next.add(category);
+      }
+      return next;
+    });
+  };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
@@ -69,18 +83,32 @@ export default function PantryGrid({ groupedItems, onSelectItem }: Omit<PantryGr
 
   return (
     <DndContext onDragEnd={handleDragEnd}>
-      <div className="space-y-8">
+      <div className="space-y-6">
         {sortedEntries.map(([category, items]) => (
-          <CategoryDropZone key={category} category={category}>
-            {items.map(item => (
-              <PantryItemCard
-                key={item.id}
-                item={item}
-                onSelect={onSelectItem}
-                onDelete={deleteItem}
-              />
-            ))}
-          </CategoryDropZone>
+          <div key={category} className="space-y-2">
+            <button
+              onClick={() => toggleCategory(category)}
+              className="w-full flex items-center justify-between p-2 hover:bg-gray-800/50 rounded-lg transition-colors"
+            >
+              <h3 className="text-lg font-medium text-white">{category}</h3>
+              <span className="text-gray-400">
+                {collapsedCategories.has(category) ? '+' : '−'}
+              </span>
+            </button>
+            
+            {!collapsedCategories.has(category) && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {items.map(item => (
+                  <PantryItemCard
+                    key={item.id}
+                    item={item}
+                    onSelect={onSelectItem}
+                    onDelete={deleteItem}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         ))}
       </div>
     </DndContext>
