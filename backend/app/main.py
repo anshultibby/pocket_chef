@@ -23,6 +23,7 @@ CORS_ORIGINS = [
     "https://www.kitchen-elf.com",
     "capacitor://localhost",
     "capacitor://com.kitchenelf.app",
+    "capacitor://kitchen-elf.com",
     "http://localhost",
     "http://127.0.0.1",
     "app://localhost",
