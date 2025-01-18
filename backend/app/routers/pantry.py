@@ -110,22 +110,45 @@ async def process_receipt(
     file: UploadFile = File(...), current_user: dict = Depends(get_current_user)
 ) -> List[PantryItemCreate]:
     """Process receipt and return suggested items without storing"""
+    logger.info(f"Starting receipt processing for user: {current_user['id']}")
+    logger.info(
+        f"File details - name: {file.filename}, content_type: {file.content_type}"
+    )
+
     if not file or not file.filename:
+        logger.error("No file provided or filename missing")
         raise HTTPException(status_code=422, detail="No file provided")
 
     # Check file type
     if not file.content_type:
+        logger.error(f"Content type missing for file: {file.filename}")
         raise HTTPException(status_code=422, detail="File type could not be determined")
 
     logger.info(f"Received file with content type: {file.content_type}")
+
     if not file.content_type.startswith("image/"):
+        logger.error(
+            f"Invalid content type: {file.content_type} for file: {file.filename}"
+        )
         raise HTTPException(
             status_code=422,
             detail=f"Invalid file type: {file.content_type}. Please upload an image file.",
         )
 
     try:
-        return await pantry_manager.process_receipt(file, UUID(current_user["id"]))
+        # Log file size
+        file_contents = await file.read()
+        file_size = len(file_contents)
+        logger.info(f"File size: {file_size} bytes")
+
+        # Reset file position after reading
+        await file.seek(0)
+
+        logger.info("Starting receipt processing with pantry manager")
+        result = await pantry_manager.process_receipt(file, UUID(current_user["id"]))
+        logger.info(f"Successfully processed receipt. Found {len(result)} items")
+        return result
+
     except Exception as e:
-        logger.error(f"Error processing receipt: {str(e)}")
+        logger.error(f"Error processing receipt: {str(e)}", exc_info=True)
         raise HTTPException(status_code=400, detail=str(e))

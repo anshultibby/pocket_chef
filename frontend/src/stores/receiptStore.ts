@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { PantryItemCreate } from '@/types';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { userApi } from '@/lib/api/userApi';
+import { requestCameraPermissions } from '@/utils/permissions';
 
 interface ReceiptStore {
   isUploading: boolean;
@@ -57,17 +58,13 @@ export const useReceiptStore = create<ReceiptStore>((set) => {
       set({ isUploading: true, error: null });
 
       try {
-        // Check permissions first
-        const permissionState = await Camera.checkPermissions();
+        const hasPermissions = await requestCameraPermissions();
         
-        if (permissionState.photos === 'prompt' || permissionState.photos === 'denied') {
-          const request = await Camera.requestPermissions({
-            permissions: ['photos']
+        if (!hasPermissions) {
+          set({ 
+            error: 'Camera and photo library access is required to upload receipts. Please enable these permissions in your device settings.' 
           });
-          if (request.photos !== 'granted') {
-            set({ error: 'Permission denied for camera/photos access' });
-            return false;
-          }
+          return false;
         }
 
         const image = await Camera.getPhoto({
@@ -104,10 +101,12 @@ export const useReceiptStore = create<ReceiptStore>((set) => {
 
         return await processFile(file);
       } catch (err: unknown) {
-        // Don't show error if user just cancelled
-        if (err instanceof Error && err.message !== 'User cancelled photos app') {
-          set({ error: 'Failed to process receipt' });
-          console.error('Camera error:', err);
+        if (err instanceof Error) {
+          // Don't show error if user just cancelled
+          if (err.message !== 'User cancelled photos app') {
+            set({ error: 'Failed to process receipt' });
+            console.error('Camera error:', err);
+          }
         }
         return false;
       } finally {

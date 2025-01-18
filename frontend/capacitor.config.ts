@@ -22,7 +22,19 @@ const config: CapacitorConfig = {
     contentInset: 'automatic',
     limitsNavigationsToAppBoundDomains: false,
     backgroundColor: "#000000",
-    preferredContentMode: 'mobile',
+    preferredContentMode: 'mobile'
+  },
+  plugins: {
+    Camera: {
+      ios: {
+        usageDescription: "Kitchen Elf needs access to your camera to take photos of receipts and food items."
+      }
+    },
+    Photos: {
+      ios: {
+        usageDescription: "Kitchen Elf needs access to your photo library to upload receipt images and food items."
+      }
+    }
   }
 };
 
