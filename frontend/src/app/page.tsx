@@ -70,7 +70,7 @@ export default function LandingPage() {
           {/* Hero image */}
           <div className="relative max-w-3xl mx-auto mt-4 mb-6">
             <Image
-              src="/images/mockup-2.webp"
+              src="/images/mockup-3.webp"
               alt="Kitchen Elf app features: Organized Pantry, Upload Items, and Recipe Suggestions"
               width={1200}
               height={800}
@@ -102,7 +102,7 @@ export default function LandingPage() {
                 visible: { opacity: 1, y: 0 }
               }}
             >
-              Save Time. Waste Less.
+              Save Time. Waste Less. Save Money.
             </motion.span>
           </motion.p>
 
