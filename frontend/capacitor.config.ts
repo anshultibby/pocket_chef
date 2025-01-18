@@ -9,13 +9,15 @@ const config: CapacitorConfig = {
   server: {
     androidScheme: 'https',
     iosScheme: 'https',
-    hostname: isDevMode ? 'localhost' : 'com.kitchenelf.app',
+    hostname: isDevMode ? 'localhost' : 'kitchen-elf.com',
     allowNavigation: [
       'localhost',
       '*.kitchen-elf.com',
       'kitchen-elf.vercel.app',
       'pocketchef-production.up.railway.app',
       '192.168.*',
+      'supabase.co',
+      '*.supabase.co'
     ],
   },
   ios: {
