@@ -69,7 +69,7 @@ export function IngredientCard({ id, item, recipe, onEdit }: IngredientCardProps
           </div>
         )}
         {item.data.notes && (
-          <div className="text-gray-400 italic">Note: {item.data.notes}</div>
+          <div className="text-gray-400">Note: {item.data.notes}</div>
         )}
       </div>
     </div>

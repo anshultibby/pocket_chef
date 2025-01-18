@@ -117,6 +117,7 @@ async def process_receipt(
     if not file.content_type:
         raise HTTPException(status_code=422, detail="File type could not be determined")
 
+    logger.info(f"Received file with content type: {file.content_type}")
     if not file.content_type.startswith("image/"):
         raise HTTPException(
             status_code=422,
