@@ -40,7 +40,7 @@ const basePantryApi = {
 
   async addItems(items: PantryItemCreate[]): Promise<PantryItem[]> {
     const token = await getAuthToken();
-    return fetchApi<PantryItem[]>('/pantry/items', {
+    const result = await fetchApi<PantryItem[]>('/pantry/items', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -48,6 +48,10 @@ const basePantryApi = {
       },
       body: JSON.stringify(items),
     });
+
+    await this.invalidateCache();
+    
+    return result;
   },
 
   async updateItem(id: string, updates: PantryItemUpdate): Promise<PantryItem> {

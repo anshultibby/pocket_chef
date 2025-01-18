@@ -26,9 +26,11 @@ import {
   ArrowPathIcon,
   MagnifyingGlassIcon,
   XMarkIcon,
-  FunnelIcon
+  FunnelIcon,
+  TableCellsIcon
 } from '@heroicons/react/24/outline';
 import { Capacitor } from '@capacitor/core';
+import BulkEntryModal from '@/components/modals/BulkEntryModal';
 
 export default function PantryTab() {
   const { 
@@ -60,6 +62,7 @@ export default function PantryTab() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddItemForm, setShowAddItemForm] = useState(false);
+  const [showBulkEntry, setShowBulkEntry] = useState(false);
   const [selectedItem, setSelectedItem] = useState<PantryItem | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showSearch, setShowSearch] = useState(false);
@@ -188,6 +191,14 @@ export default function PantryTab() {
     }
   };
 
+  const handleBulkAdd = async (items: PantryItemCreate[]) => {
+    try {
+      await useDuplicateStore.getState().handleItems(items, pantryItems);
+    } catch (error) {
+      handleError(error);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {isLoading && (
@@ -250,8 +261,17 @@ export default function PantryTab() {
           <button
             onClick={() => setShowAddItemForm(true)}
             className="w-10 h-10 rounded-full bg-green-600/20 text-green-400 hover:bg-green-600/30 flex items-center justify-center"
+            title="Add Single Item"
           >
             <PlusIcon className="w-5 h-5" />
+          </button>
+
+          <button
+            onClick={() => setShowBulkEntry(true)}
+            className="w-10 h-10 rounded-full bg-green-600/20 text-green-400 hover:bg-green-600/30 flex items-center justify-center"
+            title="Bulk Add Items"
+          >
+            <TableCellsIcon className="w-5 h-5" />
           </button>
 
           <button
@@ -285,6 +305,7 @@ export default function PantryTab() {
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
           onAddItem={() => setShowAddItemForm(true)}
+          onBulkAdd={() => setShowBulkEntry(true)}
           onUploadReceipt={handleUploadReceipt}
           onClearPantry={handleClearPantry}
           isUploading={isUploading}
@@ -379,6 +400,13 @@ export default function PantryTab() {
           onChange={handleWebUpload}
           className="hidden"
           accept="image/*"
+        />
+      )}
+
+      {showBulkEntry && (
+        <BulkEntryModal
+          onAdd={handleBulkAdd}
+          onClose={() => setShowBulkEntry(false)}
         />
       )}
     </div>
