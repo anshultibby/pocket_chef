@@ -27,10 +27,12 @@ import {
   MagnifyingGlassIcon,
   XMarkIcon,
   FunnelIcon,
-  TableCellsIcon
+  TableCellsIcon,
+  EllipsisHorizontalIcon
 } from '@heroicons/react/24/outline';
 import { Capacitor } from '@capacitor/core';
 import BulkEntryModal from '@/components/modals/BulkEntryModal';
+import { Menu, Transition } from '@headlessui/react';
 
 export default function PantryTab() {
   const { 
@@ -200,7 +202,7 @@ export default function PantryTab() {
   };
 
   return (
-    <div className="space-y-6">
+    <div>
       {isLoading && (
         <div className="fixed top-4 right-4 flex items-center gap-2 bg-blue-500/20 text-blue-300 px-3 py-2 rounded-full">
           <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full" />
@@ -215,92 +217,100 @@ export default function PantryTab() {
         />
       )}
 
-      {/* Mobile Controls */}
+      {/* Mobile Controls - Add absolute positioning */}
       <div className="sm:hidden">
         {showSearch && (
-          <div className="relative w-full animate-slideDown mb-2">
-            <input
-              type="text"
-              placeholder="Search items..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-gray-800/50 rounded-lg px-4 py-2 text-white w-full focus:ring-2 ring-blue-500 focus:outline-none text-base"
-              autoFocus
-            />
-            <button 
-              onClick={() => {
-                setShowSearch(false);
-                setSearchTerm(''); // Clear search when closing
-              }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white p-1"
-            >
-              <XMarkIcon className="w-4 h-4" />
-            </button>
+          <div className="fixed inset-x-0 bottom-16 p-4 bg-gray-900/95 backdrop-blur-sm z-30 animate-slideUp">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search items..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="bg-gray-800/50 rounded-xl px-4 py-3 text-white w-full focus:ring-2 ring-blue-500 focus:outline-none text-base"
+                autoFocus
+              />
+              <button 
+                onClick={() => {
+                  setShowSearch(false);
+                  setSearchTerm('');
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white p-2"
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         )}
-        
-        <div className="flex gap-2 justify-start">
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`w-10 h-10 rounded-full flex items-center justify-center ${
-              showFilters 
-                ? 'bg-blue-600/20 text-blue-400' 
-                : 'bg-gray-800/50 text-gray-400 hover:text-white'
-            }`}
-          >
-            <FunnelIcon className="w-5 h-5" />
-          </button>
-          
-          <button
-            onClick={() => setShowSearch(true)}
-            className="w-10 h-10 rounded-full bg-gray-800/50 text-gray-400 hover:text-white flex items-center justify-center"
-          >
-            <MagnifyingGlassIcon className="w-5 h-5" />
-          </button>
 
-          <button
-            onClick={() => setShowAddItemForm(true)}
-            className="w-10 h-10 rounded-full bg-green-600/20 text-green-400 hover:bg-green-600/30 flex items-center justify-center"
-            title="Add Single Item"
-          >
-            <PlusIcon className="w-5 h-5" />
-          </button>
+        {/* Bottom Action Bar */}
+        <div className="fixed inset-x-0 bottom-0 bg-gray-900/95 backdrop-blur-sm border-t border-gray-800 z-30">
+          <div className="max-w-lg mx-auto px-4 py-3">
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setShowSearch(true)}
+                className="w-12 h-12 rounded-full bg-gray-800/50 text-gray-400 hover:text-white flex items-center justify-center"
+              >
+                <MagnifyingGlassIcon className="w-6 h-6" />
+              </button>
 
-          <button
-            onClick={() => setShowBulkEntry(true)}
-            className="w-10 h-10 rounded-full bg-green-600/20 text-green-400 hover:bg-green-600/30 flex items-center justify-center"
-            title="Bulk Add Items"
-          >
-            <TableCellsIcon className="w-5 h-5" />
-          </button>
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                  showFilters 
+                    ? 'bg-blue-600/20 text-blue-400' 
+                    : 'bg-gray-800/50 text-gray-400 hover:text-white'
+                }`}
+              >
+                <FunnelIcon className="w-6 h-6" />
+              </button>
 
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-            className={`w-10 h-10 rounded-full flex items-center justify-center ${
-              isUploading 
-                ? 'bg-gray-700/50 text-gray-400' 
-                : 'bg-blue-600/20 text-blue-400 hover:bg-blue-600/30'
-            }`}
-          >
-            {isUploading ? 
-              <ArrowPathIcon className="w-5 h-5 animate-spin" /> : 
-              <DocumentArrowUpIcon className="w-5 h-5" />
-            }
-          </button>
+              <button
+                onClick={() => setShowAddItemForm(true)}
+                className="w-12 h-12 rounded-full bg-green-600/20 text-green-400 hover:bg-green-600/30 flex items-center justify-center"
+              >
+                <PlusIcon className="w-6 h-6" />
+              </button>
 
-          <button
-            onClick={handleClearPantry}
-            disabled={pantryItems.length === 0}
-            className="w-10 h-10 rounded-full bg-red-900/20 text-red-300/70 hover:bg-red-900/30 disabled:opacity-50 flex items-center justify-center"
-          >
-            <TrashIcon className="w-5 h-5" />
-          </button>
+              <button
+                onClick={() => setShowBulkEntry(true)}
+                className="w-12 h-12 rounded-full bg-green-600/20 text-green-400 hover:bg-green-600/30 flex items-center justify-center"
+              >
+                <TableCellsIcon className="w-6 h-6" />
+              </button>
+
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                  isUploading 
+                    ? 'bg-gray-700/50 text-gray-400' 
+                    : 'bg-blue-600/20 text-blue-400 hover:bg-blue-600/30'
+                }`}
+              >
+                {isUploading ? 
+                  <ArrowPathIcon className="w-6 h-6 animate-spin" /> : 
+                  <DocumentArrowUpIcon className="w-6 h-6" />
+                }
+              </button>
+
+              <button
+                onClick={handleClearPantry}
+                disabled={pantryItems.length === 0}
+                className="w-12 h-12 rounded-full bg-red-900/20 text-red-300/70 hover:bg-red-900/30 disabled:opacity-50 flex items-center justify-center"
+              >
+                <TrashIcon className="w-6 h-6" />
+              </button>
+            </div>
+          </div>
         </div>
+
+        {/* Reduced bottom padding */}
+        <div className="pb-1" />
       </div>
 
-      {/* Desktop Controls */}
-      <div className="hidden sm:block">
+      {/* Desktop Controls - Add relative positioning */}
+      <div className="relative hidden sm:block mb-8 mt-6">
         <PantryControls
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
@@ -327,10 +337,13 @@ export default function PantryTab() {
         />
       )}
 
-      <PantryGrid
-        groupedItems={sortedGroupedItems}
-        onSelectItem={setSelectedItem}
-      />
+      {/* Remove padding top on mobile */}
+      <div className="space-y-2">
+        <PantryGrid
+          groupedItems={sortedGroupedItems}
+          onSelectItem={setSelectedItem}
+        />
+      </div>
 
       {showAddItemForm && (
         <AddItemModal

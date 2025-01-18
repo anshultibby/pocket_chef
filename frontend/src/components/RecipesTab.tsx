@@ -192,7 +192,7 @@ export default function RecipesTab({
   }
 
   return (
-    <div className="space-y-8 relative">
+    <div className="space-y-8 relative pb-8 sm:pb-24 lg:mb-16 mt-2">
       {(isLoading || isGenerating) && (
         <div className="fixed top-4 right-4 flex items-center gap-2 bg-blue-500/20 text-blue-300 px-3 py-2 rounded-full">
           <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full" />
@@ -205,14 +205,14 @@ export default function RecipesTab({
       {/* Current Generation */}
       {sortedTimestamps[0] && (
         <div>
-          <div className="mb-4">
+          <div className="mb-8">
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-medium text-gray-400">
                 Current Generation
               </h3>
               <span className="text-gray-400">✨</span>
             </div>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 mt-2">
               Recipes tailored to your {pantryItems.length} pantry items
             </p>
           </div>

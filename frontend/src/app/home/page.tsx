@@ -190,7 +190,7 @@ export default function Home() {
       <main className="min-h-screen bg-gray-950 text-white">
         {/* Header */}
         <div className="border-b border-gray-800">
-          <div className="max-w-4xl mx-auto px-4 py-6">
+          <div className="max-w-4xl mx-auto px-4 py-4">
             <div className="flex justify-between items-center">
               <div>
                 <h1 className="text-3xl font-bold mb-2">Kitchen Elf</h1>
@@ -274,11 +274,11 @@ export default function Home() {
                     : 'text-gray-400 hover:text-gray-200'
                 }`}
               >
-                Recipe Suggestions
+                Recipes
               </button>
               <button
                 onClick={() => handleTabChange('pantry')}
-                className={`px-4 py-3 ${
+                className={`px-4 py-1 ${
                   activeTab === 'pantry'
                     ? 'border-b-2 border-blue-500 text-blue-500'
                     : 'text-gray-400 hover:text-gray-200'
@@ -288,7 +288,7 @@ export default function Home() {
               </button>
               <button
                 onClick={() => handleTabChange('cookbook')}
-                className={`px-4 py-3 ${
+                className={`px-4 py-1 ${
                   activeTab === 'cookbook'
                     ? 'border-b-2 border-blue-500 text-blue-500'
                     : 'text-gray-400 hover:text-gray-200'
@@ -301,7 +301,7 @@ export default function Home() {
         </div>
 
         {/* Tab Content */}
-        <div className="max-w-4xl mx-auto px-4 py-6">
+        <div className="max-w-4xl mx-auto px-1">
           {activeTab === 'pantry' ? (
             <PantryTab />
           ) : activeTab === 'cookbook' ? (

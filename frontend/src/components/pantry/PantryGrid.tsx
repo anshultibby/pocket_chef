@@ -83,12 +83,12 @@ export default function PantryGrid({ groupedItems, onSelectItem }: Omit<PantryGr
 
   return (
     <DndContext onDragEnd={handleDragEnd}>
-      <div className="space-y-6">
+      <div className="space-y-3">
         {sortedEntries.map(([category, items]) => (
-          <div key={category} className="space-y-2">
+          <div key={category} className="space-y-1">
             <button
               onClick={() => toggleCategory(category)}
-              className="w-full flex items-center justify-between p-2 hover:bg-gray-800/50 rounded-lg transition-colors"
+              className="w-full flex items-center justify-between p-1.5 hover:bg-gray-800/50 rounded-lg transition-colors"
             >
               <h3 className="text-lg font-medium text-white">{category}</h3>
               <span className="text-gray-400">
@@ -97,7 +97,7 @@ export default function PantryGrid({ groupedItems, onSelectItem }: Omit<PantryGr
             </button>
             
             {!collapsedCategories.has(category) && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 {items.map(item => (
                   <PantryItemCard
                     key={item.id}
