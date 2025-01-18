@@ -83,7 +83,7 @@ export default function PantryGrid({ groupedItems, onSelectItem }: Omit<PantryGr
 
   return (
     <DndContext onDragEnd={handleDragEnd}>
-      <div className="space-y-6">
+      <div>
         {sortedEntries.map(([category, items]) => (
           <div key={category} className="category-section">
             <button
@@ -97,7 +97,7 @@ export default function PantryGrid({ groupedItems, onSelectItem }: Omit<PantryGr
             </button>
             
             {!collapsedCategories.has(category) && (
-              <div className="mt-3 category-content">
+              <div className="mt-1 category-content">
                 {items.map(item => (
                   <PantryItemCard
                     key={item.id}
