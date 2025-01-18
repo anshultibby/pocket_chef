@@ -54,6 +54,7 @@ export default function AddItemModal({
   const [showAdditionalInfo, setShowAdditionalInfo] = useState(false);
   const [showNutrition, setShowNutrition] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
+  const [showQuantity, setShowQuantity] = useState(false);
 
   return (
     <Dialog open={true} onClose={onClose} className="relative z-50">
@@ -105,38 +106,53 @@ export default function AddItemModal({
                       className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-1 ring-blue-500 focus:outline-none"
                     />
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormInput
-                        label={isRecipeUse ? "Final Pantry Quantity" : "Quantity"}
-                        type="number"
-                        value={isSubmitting ? '' : (values.data.quantity ?? '')}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          handleChange('quantity', value === '' ? null : Number(value));
-                        }}
-                        disabled={isSubmitting}
-                        error={errors['quantity']}
-                        placeholder="Enter quantity"
-                        className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-1 ring-blue-500 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      />
-                      
-                      <div>
-                        <label className="text-sm text-gray-400">Unit</label>
-                        <input
-                          type="text"
-                          value={values.data.unit}
-                          onChange={(e) => handleChange('unit', e.target.value)}
-                          className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-1 ring-blue-500 focus:outline-none"
-                          placeholder="units"
-                          onFocus={() => handleChange('unit', '')}
-                          list="unit-suggestions"
-                          autoComplete="off"
-                        />
-                        <datalist id="unit-suggestions">
-                          {SUGGESTED_UNITS.map(unit => (
-                            <option key={unit} value={unit} />
-                          ))}
-                        </datalist>
+                    <div className="border-t border-gray-700 pt-4">
+                      <button
+                        type="button"
+                        onClick={() => setShowQuantity(!showQuantity)}
+                        className="text-blue-400 hover:text-blue-300 mb-3"
+                      >
+                        {showQuantity ? 'Hide Quantity' : 'Quantity'}
+                      </button>
+
+                      <div className={`
+                        overflow-hidden transition-all duration-300 ease-in-out
+                        ${showQuantity ? 'max-h-[200px] opacity-100' : 'max-h-0 opacity-0'}
+                      `}>
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormInput
+                            label={isRecipeUse ? "Final Pantry Quantity" : "Quantity"}
+                            type="number"
+                            value={isSubmitting ? '' : (values.data.quantity ?? '')}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              handleChange('quantity', value === '' ? null : Number(value));
+                            }}
+                            disabled={isSubmitting}
+                            error={errors['quantity']}
+                            placeholder="Enter quantity"
+                            className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-1 ring-blue-500 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+
+                          <div>
+                            <label className="text-sm text-gray-400">Unit</label>
+                            <input
+                              type="text"
+                              value={values.data.unit}
+                              onChange={(e) => handleChange('unit', e.target.value)}
+                              className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-1 ring-blue-500 focus:outline-none"
+                              placeholder="units"
+                              onFocus={() => handleChange('unit', '')}
+                              list="unit-suggestions"
+                              autoComplete="off"
+                            />
+                            <datalist id="unit-suggestions">
+                              {SUGGESTED_UNITS.map(unit => (
+                                <option key={unit} value={unit} />
+                              ))}
+                            </datalist>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -156,7 +172,10 @@ export default function AddItemModal({
                       {showAdditionalInfo ? 'Hide Additional Info' : 'Additional Info'}
                     </button>
 
-                    {showAdditionalInfo && (
+                    <div className={`
+                      overflow-hidden transition-all duration-300 ease-in-out
+                      ${showAdditionalInfo ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'}
+                    `}>
                       <div className="space-y-4">
                         <div>
                           <label className="text-sm text-gray-400">Category</label>
@@ -199,7 +218,7 @@ export default function AddItemModal({
                           placeholder="As scanned/entered (optional)"
                         />
                       </div>
-                    )}
+                    </div>
                   </div>
                 </motion.div>
 
@@ -217,7 +236,10 @@ export default function AddItemModal({
                       {showNutrition ? 'Hide Nutrition' : 'Nutrition'}
                     </button>
 
-                    {showNutrition && (
+                    <div className={`
+                      overflow-hidden transition-all duration-300 ease-in-out
+                      ${showNutrition ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'}
+                    `}>
                       <div className="space-y-4">
                         <div className="flex flex-col gap-2">
                           <p className="text-sm text-gray-400">
@@ -270,7 +292,7 @@ export default function AddItemModal({
                           />
                         </div>
                       </div>
-                    )}
+                    </div>
                   </div>
                 </motion.div>
 
@@ -288,7 +310,10 @@ export default function AddItemModal({
                       {showNotes ? 'Hide Notes' : 'Notes'}
                     </button>
 
-                    {showNotes && (
+                    <div className={`
+                      overflow-hidden transition-all duration-300 ease-in-out
+                      ${showNotes ? 'max-h-[200px] opacity-100' : 'max-h-0 opacity-0'}
+                    `}>
                       <div>
                         <textarea
                           value={values.data.notes || ''}
@@ -301,7 +326,7 @@ export default function AddItemModal({
                           <span className="text-red-400 text-sm mt-1">{errors['notes']}</span>
                         )}
                       </div>
-                    )}
+                    </div>
                   </div>
                 </motion.div>
 

@@ -3,8 +3,15 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #030712;
+  --foreground: #f8fafc;
+  --primary: #3b82f6;
+  --primary-light: #60a5fa;
+  --success: #22c55e;
+  --warning: #eab308;
+  --error: #ef4444;
+  --surface: #1f2937;
+  --surface-light: #374151;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -32,4 +39,78 @@ body {
 
 .animate-slideDown {
   animation: slideDown 0.2s ease-out;
+}
+
+.glass-effect {
+  @apply bg-gray-900/70 backdrop-blur-md 
+  border border-gray-700/50
+  shadow-lg shadow-black/10;
+}
+
+/* Card Styles */
+.card {
+  @apply relative overflow-hidden rounded-xl 
+  bg-gradient-to-b from-gray-800/50 to-gray-900/50 
+  backdrop-blur-sm border border-gray-700/50 
+  transition-all duration-300
+  hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-500/10;
+}
+
+/* Container Spacing */
+.content-container {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+/* Grid Layout */
+.grid-layout {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6;
+}
+
+/* Typography */
+.heading-primary {
+  @apply text-2xl sm:text-3xl font-bold 
+  bg-clip-text text-transparent bg-gradient-to-r 
+  from-white to-gray-300 tracking-tight;
+}
+
+.heading-secondary {
+  @apply text-lg sm:text-xl font-semibold 
+  text-gray-200 tracking-wide;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Button Styles */
+.btn-primary {
+  @apply px-4 py-2 rounded-lg
+  bg-gradient-to-r from-blue-600 to-blue-500
+  hover:from-blue-500 hover:to-blue-400
+  text-white font-medium
+  transition-all duration-300
+  shadow-lg shadow-blue-500/20
+  hover:shadow-xl hover:shadow-blue-500/30
+  active:shadow-inner;
+}
+
+.btn-secondary {
+  @apply px-4 py-2 rounded-lg
+  bg-gray-800 hover:bg-gray-700
+  text-gray-200 font-medium
+  transition-all duration-300
+  border border-gray-700
+  hover:border-gray-600;
 }

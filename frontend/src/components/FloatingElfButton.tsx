@@ -24,12 +24,15 @@ export function FloatingElfButton({
           disabled={pantryItemsCount === 0 || isGenerating}
           className={`
             relative flex items-center gap-2 px-6 py-3 rounded-full
-            bg-gradient-to-r from-green-600 to-blue-600
-            text-white shadow-lg hover:shadow-xl
+            bg-gradient-to-r from-green-500 to-blue-500
+            text-white shadow-lg 
             disabled:opacity-50 disabled:cursor-not-allowed
-            transition-shadow duration-200
+            transition-all duration-300
+            hover:shadow-xl hover:from-green-400 hover:to-blue-400
+            active:shadow-inner
+            backdrop-blur-sm
           `}
-          whileHover={{ scale: 1.05 }}
+          whileHover={{ scale: 1.05, y: -2 }}
           whileTap={{ scale: 0.95 }}
         >
           {/* Even slower glow effect */}

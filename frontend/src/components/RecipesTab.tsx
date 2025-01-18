@@ -150,11 +150,14 @@ export default function RecipesTab({
 
   if ((isLoading || isGenerating) && recipes.length === 0) {
     return (
-      <div className="text-center py-8">
-        <div className="animate-spin inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mb-4"></div>
-        <p className="text-gray-400">
-          {isGenerating ? 'Generating your recipes...' : 'Loading recipes...'}
-        </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 p-4">
+        {[...Array(8)].map((_, i) => (
+          <div key={i} className="animate-pulse">
+            <div className="h-48 bg-gray-800/50 rounded-lg mb-4" />
+            <div className="h-4 bg-gray-800/50 rounded w-3/4 mb-2" />
+            <div className="h-4 bg-gray-800/50 rounded w-1/2" />
+          </div>
+        ))}
       </div>
     );
   }
@@ -192,7 +195,7 @@ export default function RecipesTab({
   }
 
   return (
-    <div className="space-y-8 relative pb-8 sm:pb-24 lg:mb-16 mt-2">
+    <div className="space-y-8 relative pb-8 sm:pb-16 lg:pb-24 mt-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       {(isLoading || isGenerating) && (
         <div className="fixed top-4 right-4 flex items-center gap-2 bg-blue-500/20 text-blue-300 px-3 py-2 rounded-full">
           <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full" />
