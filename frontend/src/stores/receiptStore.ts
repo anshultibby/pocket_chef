@@ -18,6 +18,7 @@ interface ReceiptStore {
   clearUpload: () => void;
   setShowConfirmation: (show: boolean) => void;
   setError: (error: string | null) => void;
+  dismissError: () => void;
   setUploadState: (state: 'idle' | 'uploading' | 'confirming') => void;
 }
 
@@ -132,6 +133,7 @@ export const useReceiptStore = create<ReceiptStore>((set) => {
 
     setShowConfirmation: (show) => set({ showConfirmation: show }),
     setError: (error) => set({ error }),
+    dismissError: () => set({ error: null }),
     setUploadState: (state) => set({ uploadState: state })
   };
 });
