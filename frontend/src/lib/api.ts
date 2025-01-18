@@ -3,8 +3,11 @@ import { fetchApi } from './fetch';
 import type { Recipe, RecipePreferences, PantryItemCreate, 
   PantryItem, PantryItemUpdate, RecipeInteractionCreate, 
   RecipeInteraction, InteractionType, SaveData, RateData, CookData, UserProfile, UserProfileUpdate } from '@/types';
+import { cache } from '@/lib/cache';
 
-// Helper function to get auth token
+
+const CACHE_TTL = 5 * 60 * 1000;
+
 const getAuthToken = async () => {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error('Not authenticated');
@@ -14,12 +17,25 @@ const getAuthToken = async () => {
 // Base pantry operations through backend API
 const basePantryApi = {
   async getItems(): Promise<PantryItem[]> {
+    const cacheKey = 'pantry-items';
+    
+    // Check cache first
+    const cachedData = await cache.get<PantryItem[]>(cacheKey);
+    if (cachedData) {
+      return cachedData;
+    }
+
+    // Fetch fresh data
     const token = await getAuthToken();
-    return fetchApi<PantryItem[]>('/pantry/items', {
+    const items = await fetchApi<PantryItem[]>('/pantry/items', {
       headers: {
         'Authorization': `Bearer ${token}`
       }
     });
+
+    // Cache the result
+    await cache.set(cacheKey, items, CACHE_TTL);
+    return items;
   },
 
   async addItems(items: PantryItemCreate[]): Promise<PantryItem[]> {
@@ -76,6 +92,10 @@ const basePantryApi = {
       body: formData
     });
   },
+
+  async invalidateCache() {
+    await cache.delete('pantry-items');
+  }
 };
 
 // Combine both APIs
