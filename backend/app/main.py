@@ -6,10 +6,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .api import users
+from .middleware import log_request_middleware
 from .routers import feedback, pantry, profile, recipes
 
 # Add logging configuration
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 # Store CORS origins in a variable
@@ -49,6 +52,8 @@ app.include_router(recipes.router)
 app.include_router(profile.router)
 app.include_router(feedback.router)
 app.include_router(users.router, prefix="/users", tags=["users"])
+
+app.middleware("http")(log_request_middleware)
 
 
 # Add a simple root endpoint for testing
