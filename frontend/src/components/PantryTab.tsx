@@ -153,7 +153,7 @@ export default function PantryTab() {
   const categories = Array.from(new Set(pantryItems.map(item => item.data.category || 'Other')));
 
   const handleUploadReceipt = async (event?: React.ChangeEvent<HTMLInputElement>) => {
-    if (!event) return;
+    if (!event?.target?.files?.length) return;
     
     try {
       const success = await handleWebUpload(event);
@@ -162,6 +162,11 @@ export default function PantryTab() {
       }
     } catch (error) {
       handleError(error);
+    } finally {
+      // Clear the input value to allow uploading the same file again
+      if (event.target) {
+        event.target.value = '';
+      }
     }
   };
 
@@ -217,10 +222,10 @@ export default function PantryTab() {
         />
       )}
 
-      {/* Mobile Controls - Add absolute positioning */}
+      {/* Mobile Controls */}
       <div className="sm:hidden">
         {showSearch && (
-          <div className="fixed inset-x-0 bottom-16 p-4 bg-gray-900/95 backdrop-blur-sm z-30 animate-slideUp">
+          <div className="fixed inset-x-0 bottom-[5.5rem] p-4 bg-gray-900/95 backdrop-blur-sm z-20 animate-slideUp">
             <div className="relative">
               <input
                 type="text"
@@ -244,18 +249,35 @@ export default function PantryTab() {
         )}
 
         {/* Bottom Action Bar */}
-        <div className="fixed inset-x-0 bottom-0 bg-gray-900/95 backdrop-blur-sm border-t border-gray-800 z-30">
-          <div className="max-w-lg mx-auto px-4 py-3">
+        <div className={`fixed inset-x-0 bottom-0 bg-gray-900/95 backdrop-blur-sm border-t border-gray-800 z-30 ${Capacitor.getPlatform() === 'ios' ? 'pb-8' : 'pb-safe'}`}>
+          <div className="max-w-lg mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
               <button
-                onClick={() => setShowSearch(true)}
-                className="w-12 h-12 rounded-full bg-gray-800/50 text-gray-400 hover:text-white flex items-center justify-center"
+                onClick={(e) => {
+                  e.preventDefault(); // Prevent default to avoid PWA edge issue
+                  if (showSearch) {
+                    setShowSearch(false);
+                    setSearchTerm('');
+                  } else {
+                    setShowSearch(true);
+                    setShowFilters(false); // Close filters if open
+                  }
+                }}
+                className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                  showSearch 
+                    ? 'bg-blue-600/20 text-blue-400' 
+                    : 'bg-gray-800/50 text-gray-400 hover:text-white'
+                }`}
               >
                 <MagnifyingGlassIcon className="w-6 h-6" />
               </button>
 
               <button
-                onClick={() => setShowFilters(!showFilters)}
+                onClick={() => {
+                  setShowFilters(!showFilters);
+                  setShowSearch(false); // Close search when toggling filters
+                  setSearchTerm(''); // Clear search term when closing
+                }}
                 className={`w-12 h-12 rounded-full flex items-center justify-center ${
                   showFilters 
                     ? 'bg-blue-600/20 text-blue-400' 
@@ -266,21 +288,33 @@ export default function PantryTab() {
               </button>
 
               <button
-                onClick={() => setShowAddItemForm(true)}
+                onClick={() => {
+                  setShowAddItemForm(true);
+                  setShowSearch(false); // Close search when opening add form
+                  setSearchTerm(''); // Clear search term when closing
+                }}
                 className="w-12 h-12 rounded-full bg-green-600/20 text-green-400 hover:bg-green-600/30 flex items-center justify-center"
               >
                 <PlusIcon className="w-6 h-6" />
               </button>
 
               <button
-                onClick={() => setShowBulkEntry(true)}
+                onClick={() => {
+                  setShowBulkEntry(true);
+                  setShowSearch(false); // Close search when opening bulk entry
+                  setSearchTerm(''); // Clear search term when closing
+                }}
                 className="w-12 h-12 rounded-full bg-green-600/20 text-green-400 hover:bg-green-600/30 flex items-center justify-center"
               >
                 <TableCellsIcon className="w-6 h-6" />
               </button>
 
               <button
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => {
+                  fileInputRef.current?.click();
+                  setShowSearch(false); // Close search when clicking upload
+                  setSearchTerm(''); // Clear search term when closing
+                }}
                 disabled={isUploading}
                 className={`w-12 h-12 rounded-full flex items-center justify-center ${
                   isUploading 
@@ -295,7 +329,11 @@ export default function PantryTab() {
               </button>
 
               <button
-                onClick={handleClearPantry}
+                onClick={() => {
+                  handleClearPantry();
+                  setShowSearch(false); // Close search when clicking clear
+                  setSearchTerm(''); // Clear search term when closing
+                }}
                 disabled={pantryItems.length === 0}
                 className="w-12 h-12 rounded-full bg-red-900/20 text-red-300/70 hover:bg-red-900/30 disabled:opacity-50 flex items-center justify-center"
               >
@@ -304,12 +342,9 @@ export default function PantryTab() {
             </div>
           </div>
         </div>
-
-        {/* Reduced bottom padding */}
-        <div className="pb-1" />
       </div>
 
-      {/* Desktop Controls - Add relative positioning */}
+      {/* Desktop Controls */}
       <div className="relative hidden sm:block mb-8 mt-6">
         <PantryControls
           searchTerm={searchTerm}
@@ -410,7 +445,8 @@ export default function PantryTab() {
       {!Capacitor.isNativePlatform() && (
         <input
           type="file"
-          onChange={handleWebUpload}
+          ref={fileInputRef}
+          onChange={handleUploadReceipt}
           className="hidden"
           accept="image/*"
         />
