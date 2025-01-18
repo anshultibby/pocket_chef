@@ -54,7 +54,7 @@ export default function LandingPage() {
         >
           <div className="flex items-center justify-center gap-3">
             <Image
-              src="/images/elf2.webp"
+              src="/images/zoomed_elf.png"
               alt="Kitchen Elf Logo"
               width={40}
               height={40}
@@ -63,22 +63,39 @@ export default function LandingPage() {
             />
             <h1 className="text-4xl sm:text-5xl font-bold">Kitchen Elf</h1>
           </div>
-          <p className="text-lg sm:text-xl text-gray-300 max-w-2xl mx-auto">
-            Save time and money by getting AI-powered recipe suggestions based on what you already have. No more wasted ingredients or endless recipe searching.
+          <p className="text-lg sm:text-xl text-gray-300 max-w-2xl mx-auto flex flex-col items-center gap-1">
+            <span>AI-powered recipes from your pantry.</span>
+            <span>Save Time.</span>
+            <span>Waste Less.</span>
           </p>
-          <div className="flex gap-4 justify-center">
-            <Link
-              href="/signup"
-              className="px-8 py-4 bg-blue-500 text-white rounded-lg hover:bg-blue-400 transform hover:scale-105 transition-all font-medium"
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <div className="flex gap-4">
+              <Link
+                href="/signup"
+                className="px-8 py-4 bg-blue-500 text-white rounded-lg hover:bg-blue-400 transform hover:scale-105 transition-all font-medium"
+              >
+                Sign up
+              </Link>
+              <Link
+                href="/login"
+                className="px-8 py-4 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-all"
+              >
+                Login
+              </Link>
+            </div>
+            
+            <a
+              href="https://apps.apple.com/us/app/kitchen-elf/id6739987145"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition-opacity hover:opacity-80"
             >
-              Sign up
-            </Link>
-            <Link
-              href="/login"
-              className="px-8 py-4 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-all"
-            >
-              Login
-            </Link>
+              <img 
+                src="/images/app-store-badge.svg" 
+                alt="Download Kitchen Elf on the App Store" 
+                className="h-[44px]"
+              />
+            </a>
           </div>
         </motion.div>
       </div>
