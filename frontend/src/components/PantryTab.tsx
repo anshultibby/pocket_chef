@@ -225,17 +225,35 @@ export default function PantryTab() {
       {/* Mobile Controls */}
       <div className="sm:hidden">
         {showSearch && (
-          <div className="fixed inset-x-0 bottom-[5.5rem] p-4 bg-gray-900/95 backdrop-blur-sm z-20 animate-slideUp">
-            <div className="relative">
+          <div className="fixed inset-x-0 bottom-[4.5rem] p-4 bg-gray-900/95 backdrop-blur-sm z-40 animate-slideDown">
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+              }}
+              className="relative"
+            >
               <input
-                type="text"
+                type="search"
+                inputMode="search"
                 placeholder="Search items..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                onFocus={(e) => {
+                  // Blur the input after a minimal delay
+                  setTimeout(() => {
+                    e.target.blur();
+                  }, 50);
+                }}
                 className="bg-gray-800/50 rounded-xl px-4 py-3 text-white w-full focus:ring-2 ring-blue-500 focus:outline-none text-base"
                 autoFocus
+                enterKeyHint="search"
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck="false"
+                style={{ fontSize: '16px' }}
               />
               <button 
+                type="button"
                 onClick={() => {
                   setShowSearch(false);
                   setSearchTerm('');
@@ -244,13 +262,13 @@ export default function PantryTab() {
               >
                 <XMarkIcon className="w-5 h-5" />
               </button>
-            </div>
+            </form>
           </div>
         )}
 
         {/* Bottom Action Bar */}
-        <div className={`fixed inset-x-0 bottom-0 bg-gray-900/95 backdrop-blur-sm border-t border-gray-800 z-30 ${Capacitor.getPlatform() === 'ios' ? 'pb-8' : 'pb-safe'}`}>
-          <div className="max-w-lg mx-auto px-6 py-4">
+        <div className="mobile-controls">
+          <div className="max-w-lg mx-auto px-4 py-2">
             <div className="flex items-center justify-between">
               <button
                 onClick={(e) => {

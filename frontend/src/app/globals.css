@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  height: -webkit-fill-available;
+}
+
 :root {
   --background: #030712;
   --foreground: #f8fafc;
@@ -24,6 +28,9 @@
 body {
   color: var(--foreground);
   background: var(--background);
+  min-height: -webkit-fill-available;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 @keyframes slideDown {
@@ -142,4 +149,12 @@ body {
   transition-all duration-300
   border border-gray-700
   hover:border-gray-600;
+}
+
+/* Add this new class */
+.mobile-controls {
+  @apply fixed inset-x-0 bottom-0 bg-gray-900/95 backdrop-blur-sm border-t border-gray-800;
+  z-index: 40;
+  margin-bottom: 0;
+  padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
 }
