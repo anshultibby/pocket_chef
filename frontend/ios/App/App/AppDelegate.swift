@@ -74,7 +74,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        // Restart any tasks that were paused while the application was inactive
+        // Request tracking permission when app becomes active
+        if #available(iOS 14, *) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                ATTrackingManager.requestTrackingAuthorization { status in
+                    // Handle the response
+                    if let webView = self.tracking?.webView {
+                        let authorized = status == .authorized
+                        webView.evaluateJavaScript("window.trackingAuthorizationStatus(\(authorized))", completionHandler: nil)
+                    }
+                }
+            }
+        }
     }
 
     func applicationWillTerminate(_ application: UIApplication) {
