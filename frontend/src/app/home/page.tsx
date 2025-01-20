@@ -189,21 +189,59 @@ export default function Home() {
   return (
     <AuthGuard>
       <main className="min-h-screen bg-gray-950 text-white">
-        {/* Simplified Header */}
-        <div className="fixed top-0 inset-x-0 z-30 bg-gray-900/95 backdrop-blur-sm border-b border-gray-800 sm:relative">
+        {/* Update the header container class */}
+        <div className="fixed top-0 inset-x-0 z-30 bg-gray-900/95 backdrop-blur-sm border-b border-gray-800">
           <div className="content-container">
             <div className="flex justify-between items-center h-14">
-              <div className="sm:hidden">
-                {/* Mobile Title based on active tab */}
-                <h1 className="text-lg font-medium">
-                  {activeTab === 'pantry' ? 'Pantry' : 
-                   activeTab === 'cookbook' ? 'Cookbook' : 'Recipes'}
-                </h1>
-              </div>
-              <div className="hidden sm:block">
+              <div className="flex items-center gap-6">
                 <h1 className="text-2xl font-bold">Kitchen Elf</h1>
+                
+                {/* Desktop Navigation */}
+                <div className="hidden sm:flex items-center gap-4">
+                  <button
+                    onClick={() => handleTabChange('cook')}
+                    className={`
+                      flex items-center gap-2 px-4 py-2 rounded-lg transition-all
+                      ${activeTab === 'cook' 
+                        ? 'text-blue-400 bg-blue-500/10' 
+                        : 'text-gray-400 hover:text-gray-300'
+                      }
+                    `}
+                  >
+                    <SparklesIcon className="w-5 h-5" />
+                    <span>Recipes</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleTabChange('pantry')}
+                    className={`
+                      flex items-center gap-2 px-4 py-2 rounded-lg transition-all
+                      ${activeTab === 'pantry' 
+                        ? 'text-blue-400 bg-blue-500/10' 
+                        : 'text-gray-400 hover:text-gray-300'
+                      }
+                    `}
+                  >
+                    <Square3Stack3DIcon className="w-5 h-5" />
+                    <span>Pantry</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleTabChange('cookbook')}
+                    className={`
+                      flex items-center gap-2 px-4 py-2 rounded-lg transition-all
+                      ${activeTab === 'cookbook' 
+                        ? 'text-blue-400 bg-blue-500/10' 
+                        : 'text-gray-400 hover:text-gray-300'
+                      }
+                    `}
+                  >
+                    <BookOpenIcon className="w-5 h-5" />
+                    <span>Cookbook</span>
+                  </button>
+                </div>
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <div className="relative">
                   <button
@@ -269,8 +307,8 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Tab Content with padding for fixed header on mobile */}
-        <div className="pt-14 sm:pt-0">
+        {/* Update the content padding for both mobile and desktop */}
+        <div className="pt-14">
           <div className="content-container">
             {activeTab === 'pantry' ? (
               <PantryTab />
