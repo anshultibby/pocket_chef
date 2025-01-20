@@ -4,6 +4,7 @@
 
 html {
   height: -webkit-fill-available;
+  background-color: var(--background);
 }
 
 :root {
@@ -70,6 +71,7 @@ body {
 
 .content-container {
   @apply max-w-[1200px] mx-auto px-2 sm:px-4 lg:px-6 w-full;
+  padding-top: calc(2rem + env(safe-area-inset-top));
 }
 
 /* Navigation */
@@ -159,8 +161,9 @@ body {
 .mobile-controls {
   @apply fixed inset-x-0 bottom-0 bg-gray-900/95 backdrop-blur-sm border-t border-gray-800;
   z-index: 40;
-  margin-bottom: env(safe-area-inset-bottom, 1rem);
-  padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+  margin-bottom: env(safe-area-inset-bottom, 0);
+  padding-bottom: max(env(safe-area-inset-bottom, 1.25rem));
+  padding-top: 0.75rem;
 }
 
 
@@ -203,4 +206,17 @@ body {
   0% { transform: scale(1); }
   50% { transform: scale(1.1); }
   100% { transform: scale(1.05); }
+}
+
+.header-container {
+  @apply fixed top-0 inset-x-0 z-30 
+    bg-gray-900/95 backdrop-blur-sm 
+    border-b border-gray-800;
+  padding-top: env(safe-area-inset-top);
+  min-height: calc(2rem + env(safe-area-inset-top));
+}
+
+/* Add this new class for the header inner container */
+.header-inner {
+  @apply max-w-[1200px] mx-auto px-2 sm:px-4 lg:px-6 w-full;
 }

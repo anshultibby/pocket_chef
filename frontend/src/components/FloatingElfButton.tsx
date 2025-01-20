@@ -4,12 +4,14 @@ interface FloatingElfButtonProps {
   onClick: () => void;
   pantryItemsCount: number;
   isGenerating?: boolean;
+  className?: string;
 }
 
 export function FloatingElfButton({ 
   onClick, 
   pantryItemsCount,
-  isGenerating 
+  isGenerating,
+  className = ''
 }: FloatingElfButtonProps) {
   return (
     <AnimatePresence>
@@ -17,7 +19,7 @@ export function FloatingElfButton({
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.8 }}
-        className="fixed bottom-20 right-4 sm:bottom-4 z-20"
+        className={`fixed right-4 z-20 ${className}`}
       >
         <motion.button
           onClick={onClick}

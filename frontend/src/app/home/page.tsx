@@ -189,15 +189,14 @@ export default function Home() {
   return (
     <AuthGuard>
       <main className="min-h-screen bg-gray-950 text-white">
-        {/* Update the header container class */}
-        <div className="fixed top-0 inset-x-0 z-30 bg-gray-900/95 backdrop-blur-sm border-b border-gray-800">
-          <div className="content-container">
-            <div className="flex justify-between items-center h-14">
-              <div className="flex items-center gap-6">
-                <h1 className="text-2xl font-bold">Kitchen Elf</h1>
+        <div className="header-container">
+          <div className="header-inner">
+            <div className="flex justify-between items-center h-12">
+              <div className="flex items-center gap-4">
+                <h1 className="text-xl font-bold">Kitchen Elf</h1>
                 
                 {/* Desktop Navigation */}
-                <div className="hidden sm:flex items-center gap-4">
+                <div className="hidden sm:flex items-center gap-3">
                   <button
                     onClick={() => handleTabChange('cook')}
                     className={`
@@ -308,7 +307,7 @@ export default function Home() {
         </div>
 
         {/* Update the content padding for both mobile and desktop */}
-        <div className="pt-14">
+        <div className="pt-[calc(3.5rem+env(safe-area-inset-top))]">
           <div className="content-container">
             {activeTab === 'pantry' ? (
               <PantryTab />
@@ -327,7 +326,10 @@ export default function Home() {
         <div className="fixed bottom-0 inset-x-0 bg-gray-900/95 backdrop-blur-sm border-t border-gray-800 sm:hidden">
           <div 
             className="flex justify-around" 
-            style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 0.5rem)', paddingTop: '0.5rem' }}
+            style={{ 
+              paddingBottom: 'max(env(safe-area-inset-bottom), 0.75rem)',
+              paddingTop: '0.75rem'
+            }}
           >
             <button
               onClick={() => handleTabChange('cook')}
@@ -378,6 +380,7 @@ export default function Home() {
           <FloatingElfButton
             onClick={() => setShowElfModal(true)}
             pantryItemsCount={pantryItems.length}
+            className="bottom-24 sm:bottom-8"
           />
         )}
 
