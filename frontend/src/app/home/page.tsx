@@ -18,6 +18,7 @@ import AddItemModal from '@/components/modals/AddItemModal';
 import Link from 'next/link';
 import { FloatingElfButton } from '@/components/FloatingElfButton';
 import FeedbackModal from '@/components/modals/FeedbackModal';
+import { SparklesIcon, Square3Stack3DIcon, BookOpenIcon } from '@heroicons/react/24/outline';
 
 type TabType = 'cook' | 'pantry' | 'cookbook';
 
@@ -188,20 +189,26 @@ export default function Home() {
   return (
     <AuthGuard>
       <main className="min-h-screen bg-gray-950 text-white">
-        {/* Header */}
-        <div className="border-b border-gray-800">
+        {/* Simplified Header */}
+        <div className="fixed top-0 inset-x-0 z-30 bg-gray-900/95 backdrop-blur-sm border-b border-gray-800 sm:relative">
           <div className="content-container">
-            <div className="flex justify-between items-center pt-4 pb-1">
-              <div>
-                <h1 className="text-3xl font-bold mb-2">Kitchen Elf</h1>
+            <div className="flex justify-between items-center h-14">
+              <div className="sm:hidden">
+                {/* Mobile Title based on active tab */}
+                <h1 className="text-lg font-medium">
+                  {activeTab === 'pantry' ? 'Pantry' : 
+                   activeTab === 'cookbook' ? 'Cookbook' : 'Recipes'}
+                </h1>
+              </div>
+              <div className="hidden sm:block">
+                <h1 className="text-2xl font-bold">Kitchen Elf</h1>
               </div>
               
               <div className="flex items-center gap-2">
                 <div className="relative">
                   <button
-                    id="account-button"
                     onClick={() => setIsAccountMenuOpen(!isAccountMenuOpen)}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition-colors text-sm"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300"
                   >
                     <span>👤</span>
                     <span className="hidden sm:inline">Account</span>
@@ -262,56 +269,70 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Navigation Tabs */}
-        <div className="nav-container">
+        {/* Tab Content with padding for fixed header on mobile */}
+        <div className="pt-14 sm:pt-0">
           <div className="content-container">
-            <div className="flex space-x-1 py-3">
-              <button
-                onClick={() => handleTabChange('cook')}
-                className={`px-2 py-2 ${
-                  activeTab === 'cook'
-                    ? 'border-b-2 border-blue-500 text-blue-500'
-                    : 'text-gray-400 hover:text-gray-200'
-                }`}
-              >
-                Recipes
-              </button>
-              <button
-                onClick={() => handleTabChange('pantry')}
-                className={`px-2 py-2 ${
-                  activeTab === 'pantry'
-                    ? 'border-b-2 border-blue-500 text-blue-500'
-                    : 'text-gray-400 hover:text-gray-200'
-                }`}
-              >
-                Pantry
-              </button>
-              <button
-                onClick={() => handleTabChange('cookbook')}
-                className={`px-2 py-2 ${
-                  activeTab === 'cookbook'
-                    ? 'border-b-2 border-blue-500 text-blue-500'
-                    : 'text-gray-400 hover:text-gray-200'
-                }`}
-              >
-                Cookbook
-              </button>
-            </div>
+            {activeTab === 'pantry' ? (
+              <PantryTab />
+            ) : activeTab === 'cookbook' ? (
+              <CookbookTab />
+            ) : (
+              <RecipesTab
+                loading={isLoading}
+                pantryItems={pantryItems}
+              />
+            )}
           </div>
         </div>
 
-        {/* Tab Content */}
-        <div className="content-container">
-          {activeTab === 'pantry' ? (
-            <PantryTab />
-          ) : activeTab === 'cookbook' ? (
-            <CookbookTab />
-          ) : (
-            <RecipesTab
-              loading={isLoading}
-              pantryItems={pantryItems}
-            />
-          )}
+        {/* Bottom Navigation for Mobile */}
+        <div className="fixed bottom-0 inset-x-0 bg-gray-900/95 backdrop-blur-sm border-t border-gray-800 sm:hidden">
+          <div 
+            className="flex justify-around" 
+            style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 0.5rem)', paddingTop: '0.5rem' }}
+          >
+            <button
+              onClick={() => handleTabChange('cook')}
+              className={`
+                flex flex-col items-center gap-1 px-6 py-1 rounded-lg transition-all
+                ${activeTab === 'cook' 
+                  ? 'text-blue-400' 
+                  : 'text-gray-400 hover:text-gray-300'
+                }
+              `}
+            >
+              <SparklesIcon className="w-6 h-6" />
+              <span className="text-xs font-medium">Recipes</span>
+            </button>
+
+            <button
+              onClick={() => handleTabChange('pantry')}
+              className={`
+                flex flex-col items-center gap-1 px-6 py-1 rounded-lg transition-all
+                ${activeTab === 'pantry' 
+                  ? 'text-blue-400' 
+                  : 'text-gray-400 hover:text-gray-300'
+                }
+              `}
+            >
+              <Square3Stack3DIcon className="w-6 h-6" />
+              <span className="text-xs font-medium">Pantry</span>
+            </button>
+
+            <button
+              onClick={() => handleTabChange('cookbook')}
+              className={`
+                flex flex-col items-center gap-1 px-6 py-1 rounded-lg transition-all
+                ${activeTab === 'cookbook' 
+                  ? 'text-blue-400' 
+                  : 'text-gray-400 hover:text-gray-300'
+                }
+              `}
+            >
+              <BookOpenIcon className="w-6 h-6" />
+              <span className="text-xs font-medium">Cookbook</span>
+            </button>
+          </div>
         </div>
 
         {/* Add Floating Elf Button */}

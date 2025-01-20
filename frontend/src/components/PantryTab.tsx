@@ -20,19 +20,12 @@ import { useReceiptStore } from '@/stores/receiptStore';
 import { track } from '@vercel/analytics';
 import { toast } from 'react-hot-toast';
 import { 
-  PlusIcon, 
-  DocumentArrowUpIcon, 
-  TrashIcon, 
-  ArrowPathIcon,
-  MagnifyingGlassIcon,
   XMarkIcon,
-  FunnelIcon,
-  TableCellsIcon,
-  EllipsisHorizontalIcon
 } from '@heroicons/react/24/outline';
 import { Capacitor } from '@capacitor/core';
 import BulkEntryModal from '@/components/modals/BulkEntryModal';
-import { Menu, Transition } from '@headlessui/react';
+import { FloatingActionMenu } from './pantry/FloatingActionMenu';
+import { SearchBar } from './pantry/SearchBar';
 
 export default function PantryTab() {
   const { 
@@ -62,13 +55,13 @@ export default function PantryTab() {
   } = useDuplicateStore();
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
   const [showAddItemForm, setShowAddItemForm] = useState(false);
   const [showBulkEntry, setShowBulkEntry] = useState(false);
   const [selectedItem, setSelectedItem] = useState<PantryItem | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [showSearch, setShowSearch] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
 
   useEffect(() => {
     if (isLoading) {
@@ -107,7 +100,6 @@ export default function PantryTab() {
       // Then clear UI state
       setItems([]);
       setSelectedCategories([]);
-      setSearchTerm('');
       setSelectedItem(null);
       clearError();
 
@@ -132,11 +124,12 @@ export default function PantryTab() {
 
   const groupedItems = pantryItems
     .filter(item => {
-      const matchesSearch = item.data.name.toLowerCase().includes(searchTerm.toLowerCase());
       const itemCategory = (item.data.category || CATEGORIES.OTHER).toLowerCase();
       const matchesCategory = selectedCategories.length === 0 || 
         selectedCategories.includes(itemCategory);
-      return matchesSearch && matchesCategory;
+      const matchesSearch = !searchTerm || 
+        item.data.name.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesCategory && matchesSearch;
     })
     .reduce((groups, item) => {
       const category = getCategoryLabel(item.data.category);
@@ -206,8 +199,56 @@ export default function PantryTab() {
     }
   };
 
+  const handleDeleteItem = async (id: string) => {
+    try {
+      await pantryApi.deleteItem(id);
+      setItems(pantryItems.filter(item => item.id !== id));
+    } catch (error) {
+      handleError(error);
+    }
+  };
+
   return (
-    <div>
+    <div className="pb-32 sm:pb-20">
+      {/* Main Content */}
+      {showFilters && (
+        <CategoryFilters
+          categories={categories}
+          selectedCategories={selectedCategories}
+          onSelectCategory={handleCategorySelect}
+          onClearCategories={() => setSelectedCategories([])}
+        />
+      )}
+
+      {isLoading ? (
+        <LoadingSpinner />
+      ) : (
+        <PantryGrid
+          groupedItems={sortedGroupedItems}
+          onSelectItem={setSelectedItem}
+        />
+      )}
+
+      {/* Floating Action Menu */}
+      <FloatingActionMenu
+        onAddItem={() => setShowAddItemForm(true)}
+        onBulkAdd={() => setShowBulkEntry(true)}
+        onUploadReceipt={() => fileInputRef.current?.click()}
+        onToggleSearch={() => setShowSearch(true)}
+        isUploading={isUploading}
+      />
+
+      {/* Search Bar */}
+      <SearchBar
+        value={searchTerm}
+        onChange={setSearchTerm}
+        onClose={() => {
+          setShowSearch(false);
+          setSearchTerm('');
+        }}
+        isVisible={showSearch}
+      />
+
       {isLoading && (
         <div className="fixed top-4 right-4 flex items-center gap-2 bg-blue-500/20 text-blue-300 px-3 py-2 rounded-full">
           <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full" />
@@ -221,182 +262,6 @@ export default function PantryTab() {
           onDismiss={clearError}
         />
       )}
-
-      {/* Mobile Controls */}
-      <div className="sm:hidden">
-        {showSearch && (
-          <div className="fixed inset-x-0 bottom-[4.5rem] p-4 bg-gray-900/95 backdrop-blur-sm z-40 animate-slideDown">
-            <form 
-              onSubmit={(e) => {
-                e.preventDefault();
-              }}
-              className="relative"
-            >
-              <input
-                type="search"
-                inputMode="search"
-                placeholder="Search items..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onFocus={(e) => {
-                  // Blur the input after a minimal delay
-                  setTimeout(() => {
-                    e.target.blur();
-                  }, 50);
-                }}
-                className="bg-gray-800/50 rounded-xl px-4 py-3 text-white w-full focus:ring-2 ring-blue-500 focus:outline-none text-base"
-                autoFocus
-                enterKeyHint="search"
-                autoComplete="off"
-                autoCorrect="off"
-                spellCheck="false"
-                style={{ fontSize: '16px' }}
-              />
-              <button 
-                type="button"
-                onClick={() => {
-                  setShowSearch(false);
-                  setSearchTerm('');
-                }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white p-2"
-              >
-                <XMarkIcon className="w-5 h-5" />
-              </button>
-            </form>
-          </div>
-        )}
-
-        {/* Bottom Action Bar */}
-        <div className="mobile-controls">
-          <div className="max-w-lg mx-auto px-4 py-2">
-            <div className="flex items-center justify-between">
-              <button
-                onClick={(e) => {
-                  e.preventDefault(); // Prevent default to avoid PWA edge issue
-                  if (showSearch) {
-                    setShowSearch(false);
-                    setSearchTerm('');
-                  } else {
-                    setShowSearch(true);
-                    setShowFilters(false); // Close filters if open
-                  }
-                }}
-                className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                  showSearch 
-                    ? 'bg-blue-600/20 text-blue-400' 
-                    : 'bg-gray-800/50 text-gray-400 hover:text-white'
-                }`}
-              >
-                <MagnifyingGlassIcon className="w-6 h-6" />
-              </button>
-
-              <button
-                onClick={() => {
-                  setShowFilters(!showFilters);
-                  setShowSearch(false); // Close search when toggling filters
-                  setSearchTerm(''); // Clear search term when closing
-                }}
-                className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                  showFilters 
-                    ? 'bg-blue-600/20 text-blue-400' 
-                    : 'bg-gray-800/50 text-gray-400 hover:text-white'
-                }`}
-              >
-                <FunnelIcon className="w-6 h-6" />
-              </button>
-
-              <button
-                onClick={() => {
-                  setShowAddItemForm(true);
-                  setShowSearch(false); // Close search when opening add form
-                  setSearchTerm(''); // Clear search term when closing
-                }}
-                className="w-12 h-12 rounded-full bg-green-600/20 text-green-400 hover:bg-green-600/30 flex items-center justify-center"
-              >
-                <PlusIcon className="w-6 h-6" />
-              </button>
-
-              <button
-                onClick={() => {
-                  setShowBulkEntry(true);
-                  setShowSearch(false); // Close search when opening bulk entry
-                  setSearchTerm(''); // Clear search term when closing
-                }}
-                className="w-12 h-12 rounded-full bg-green-600/20 text-green-400 hover:bg-green-600/30 flex items-center justify-center"
-              >
-                <TableCellsIcon className="w-6 h-6" />
-              </button>
-
-              <button
-                onClick={() => {
-                  fileInputRef.current?.click();
-                  setShowSearch(false); // Close search when clicking upload
-                  setSearchTerm(''); // Clear search term when closing
-                }}
-                disabled={isUploading}
-                className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                  isUploading 
-                    ? 'bg-gray-700/50 text-gray-400' 
-                    : 'bg-blue-600/20 text-blue-400 hover:bg-blue-600/30'
-                }`}
-              >
-                {isUploading ? 
-                  <ArrowPathIcon className="w-6 h-6 animate-spin" /> : 
-                  <DocumentArrowUpIcon className="w-6 h-6" />
-                }
-              </button>
-
-              <button
-                onClick={() => {
-                  handleClearPantry();
-                  setShowSearch(false); // Close search when clicking clear
-                  setSearchTerm(''); // Clear search term when closing
-                }}
-                disabled={pantryItems.length === 0}
-                className="w-12 h-12 rounded-full bg-red-900/20 text-red-300/70 hover:bg-red-900/30 disabled:opacity-50 flex items-center justify-center"
-              >
-                <TrashIcon className="w-6 h-6" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Desktop Controls */}
-      <div className="relative hidden sm:block mb-8 mt-6">
-        <PantryControls
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          onAddItem={() => setShowAddItemForm(true)}
-          onBulkAdd={() => setShowBulkEntry(true)}
-          onUploadReceipt={handleUploadReceipt}
-          onClearPantry={handleClearPantry}
-          isUploading={isUploading}
-          fileInputRef={fileInputRef}
-          pantryItemsCount={pantryItems.length}
-          showSearch={showSearch}
-          setShowSearch={setShowSearch}
-          showFilters={showFilters}
-          setShowFilters={setShowFilters}
-        />
-      </div>
-
-      {showFilters && (
-        <CategoryFilters
-          categories={categories}
-          selectedCategories={selectedCategories}
-          onSelectCategory={handleCategorySelect}
-          onClearCategories={() => setSelectedCategories([])}
-        />
-      )}
-
-      {/* Remove padding top on mobile */}
-      <div className="space-y-2">
-        <PantryGrid
-          groupedItems={sortedGroupedItems}
-          onSelectItem={setSelectedItem}
-        />
-      </div>
 
       {showAddItemForm && (
         <AddItemModal

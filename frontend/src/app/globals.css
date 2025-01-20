@@ -74,7 +74,11 @@ body {
 
 /* Navigation */
 .nav-container {
-  @apply border-b border-gray-800 backdrop-blur-sm sticky top-0 z-30 w-full;
+  @apply border-t border-gray-800 backdrop-blur-sm fixed bottom-0 left-0 right-0 z-30 w-full sm:sticky sm:top-0 sm:bottom-auto sm:border-t-0 sm:border-b;
+  margin-bottom: env(safe-area-inset-bottom, 0);
+  padding-bottom: max(env(safe-area-inset-bottom), 0.75rem);
+  padding-top: 0.75rem;
+  @apply sm:py-0;
 }
 
 /* Grid Layout */
@@ -157,4 +161,46 @@ body {
   z-index: 40;
   margin-bottom: env(safe-area-inset-bottom, 1rem);
   padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+}
+
+
+.floating-search {
+  @apply px-4 py-3 flex items-center gap-3;
+}
+
+/* Update animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fab-menu-item {
+  animation: slideIn 0.2s ease-out forwards;
+  backdrop-filter: blur(8px);
+}
+
+.fab-menu-item:nth-child(1) { animation-delay: 0.15s; }
+.fab-menu-item:nth-child(2) { animation-delay: 0.1s; }
+.fab-menu-item:nth-child(3) { animation-delay: 0.05s; }
+
+/* Add these new styles */
+.nav-tab {
+  @apply flex flex-col items-center gap-1 px-6 py-1 rounded-lg transition-all;
+}
+
+.nav-tab-active {
+  @apply text-blue-400 transform scale-105;
+  animation: tabPulse 0.3s ease-out;
+}
+
+@keyframes tabPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1.05); }
 }
