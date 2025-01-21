@@ -121,7 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Create initial profile for anonymous user
           try {
             await profileApi.createProfile();
-            router.push('/home');
+            router.push('/onboarding');
           } catch (error) {
             console.error('Error creating profile:', error);
             throw error;

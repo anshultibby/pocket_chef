@@ -75,18 +75,6 @@ export default function LandingPage() {
             <h1 className="text-5xl sm:text-6xl font-bold">Kitchen Elf</h1>
           </div>
 
-          {/* Hero image */}
-          <div className="relative max-w-3xl mx-auto mt-4 mb-6">
-            <Image
-              src="/images/mockup-3.webp"
-              alt="Kitchen Elf app features: Organized Pantry, Upload Items, and Recipe Suggestions"
-              width={1200}
-              height={800}
-              className="w-full h-auto rounded-lg shadow-2xl"
-              priority
-            />
-          </div>
-
           {/* Tagline with staggered animation */}
           <motion.p 
             className="text-xl sm:text-2xl text-gray-300 max-w-2xl mx-auto flex flex-col items-center gap-2"
@@ -115,33 +103,34 @@ export default function LandingPage() {
           </motion.p>
 
           {/* Action buttons */}
-          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-            <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col gap-4 items-center">
+            <div className="flex gap-4">
               <Link
                 href="/signup"
                 className="px-8 py-4 bg-blue-500 text-white rounded-lg hover:bg-blue-400 transform hover:scale-105 transition-all font-medium shadow-lg shadow-blue-500/20"
               >
                 Sign up
               </Link>
-              <Link
-                href="/login"
-                className="px-8 py-4 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-all"
-              >
-                Login
-              </Link>
               <button
                 onClick={handleAnonymousSignIn}
                 className="px-8 py-4 bg-gray-800 border border-gray-700 text-white rounded-lg hover:bg-gray-700 transition-all"
               >
-                Try without account
+                Try as guest
               </button>
             </div>
+            
+            <Link
+              href="/login"
+              className="px-8 py-4 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-all"
+            >
+              Login
+            </Link>
             
             <a
               href="https://apps.apple.com/us/app/kitchen-elf/id6739987145"
               target="_blank"
               rel="noopener noreferrer"
-              className="transition-opacity hover:opacity-80"
+              className="transition-opacity hover:opacity-80 mt-2"
             >
               <img 
                 src="/images/app-store-badge.svg" 
