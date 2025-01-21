@@ -210,6 +210,16 @@ export default function PantryTab() {
 
   return (
     <div className="pb-32 sm:pb-20">
+      {/* Receipt Processing Status */}
+      {isUploading && (
+        <div className="fixed top-0 left-[60%] -translate-x-1/2 z-30">
+          <div className="bg-blue-500/20 backdrop-blur-sm border border-blue-500/20 px-8 py-2 rounded-b-lg flex items-center gap-2 shadow-lg">
+            <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+            <p className="text-blue-300 text-sm font-medium">Processing...</p>
+          </div>
+        </div>
+      )}
+
       {/* Main Content */}
       {showFilters && (
         <CategoryFilters

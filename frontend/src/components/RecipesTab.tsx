@@ -222,7 +222,7 @@ export default function RecipesTab({
   }
 
   return (
-    <div className="space-y-8 relative pb-8 sm:pb-16 lg:pb-24 mt-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="space-y-8 relative pb-24 sm:pb-16 lg:pb-24 mt-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       {(isLoading || isGenerating) && (
         <div className="fixed top-4 right-4 flex items-center gap-2 bg-blue-500/20 text-blue-300 px-3 py-2 rounded-full">
           <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full" />

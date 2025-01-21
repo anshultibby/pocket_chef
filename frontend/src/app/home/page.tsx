@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth-context';
 import RecipesTab from '@/components/RecipesTab';
 import PantryTab from '@/components/PantryTab';
 import { usePantryStore } from '@/stores/pantryStore';
+import { useRecipeStore } from '@/stores/recipeStore';
 import ElfModal from '@/components/modals/ElfModal';
 import { CookbookTab } from '@/components/cookbook';
 import { track } from '@vercel/analytics';
@@ -18,6 +19,7 @@ import AddItemModal from '@/components/modals/AddItemModal';
 import Link from 'next/link';
 import FeedbackModal from '@/components/modals/FeedbackModal';
 import { SparklesIcon, Square3Stack3DIcon, BookOpenIcon } from '@heroicons/react/24/outline';
+import { motion, useMotionValue, useTransform, useAnimation } from 'framer-motion';
 
 type TabType = 'cook' | 'pantry' | 'cookbook';
 
@@ -61,6 +63,32 @@ export default function Home() {
     clearUpload,
   } = useReceiptStore();
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Pull to refresh setup
+  const y = useMotionValue(0);
+  const pullProgress = useTransform(y, [0, 100], [0, 1]);
+  const controls = useAnimation();
+  const refreshIndicatorControls = useAnimation();
+  const pullThreshold = 100;
+  const isDragging = useRef(false);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      if (activeTab === 'pantry') {
+        await fetchItems();
+      } else if (activeTab === 'cook') {
+        await useRecipeStore.getState().fetchRecipes();
+      }
+      // Add cookbook refresh when implemented
+    } catch (error) {
+      console.error('Error refreshing:', error);
+      toast.error('Failed to refresh');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   // Save active tab to localStorage whenever it changes
   useEffect(() => {
@@ -305,12 +333,45 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Main scrollable content area */}
-        <div className="flex-1 overflow-y-auto mt-12 mb-16 pb-safe">
+        {/* Main scrollable content area with pull to refresh */}
+        <motion.div 
+          className="flex-1 overflow-y-auto mt-12 mb-16 pb-safe relative"
+          drag="y"
+          dragConstraints={{ top: 0, bottom: 0 }}
+          dragElastic={0.3}
+          onDragStart={() => {
+            isDragging.current = true;
+          }}
+          onDragEnd={() => {
+            isDragging.current = false;
+            if (y.get() > pullThreshold) {
+              handleRefresh();
+            }
+            controls.start({ y: 0 });
+            refreshIndicatorControls.start({ opacity: 0 });
+          }}
+          style={{ y }}
+          animate={controls}
+        >
+          {/* Pull to refresh indicator */}
+          <motion.div 
+            className="absolute top-0 left-0 right-0 flex justify-center py-4 pointer-events-none"
+            style={{ opacity: pullProgress }}
+            animate={refreshIndicatorControls}
+          >
+            <motion.div 
+              className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full"
+              style={{ 
+                rotate: useTransform(pullProgress, [0, 1], [0, 360]),
+              }}
+            />
+          </motion.div>
+
+          {/* Tab content */}
           {activeTab === 'cook' && <RecipesTab pantryItems={pantryItems} loading={isLoading} />}
           {activeTab === 'pantry' && <PantryTab />}
           {activeTab === 'cookbook' && <CookbookTab />}
-        </div>
+        </motion.div>
 
         {/* Fixed bottom navigation for mobile */}
         <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 pb-safe z-10">
