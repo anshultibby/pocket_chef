@@ -106,6 +106,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.error('Error deleting account:', error);
           throw error;
         }
+      },
+      signInAnonymously: async () => {
+        const { data, error } = await supabase.auth.signUp({
+          email: `${crypto.randomUUID()}@anonymous.com`,
+          password: crypto.randomUUID(),
+        });
+        if (error) throw error;
+        
+        if (data.session) {
+          setSession(data.session);
+          setUser(data.session.user);
+          
+          // Create initial profile for anonymous user
+          try {
+            await profileApi.createProfile();
+            router.push('/home');
+          } catch (error) {
+            console.error('Error creating profile:', error);
+            throw error;
+          }
+        }
       }
     }),
     [user, session, loading, error, router]

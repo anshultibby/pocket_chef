@@ -10,13 +10,21 @@ import { useAuth } from '@/lib/auth-context';
 
 export default function LandingPage() {
   const router = useRouter();
-  const { session, loading } = useAuth();
+  const { session, loading, signInAnonymously } = useAuth();
 
   useEffect(() => {
     if (!loading && session) {
       router.replace('/home');
     }
   }, [session, router, loading]);
+
+  const handleAnonymousSignIn = async () => {
+    try {
+      await signInAnonymously();
+    } catch (error) {
+      console.error('Failed to sign in anonymously:', error);
+    }
+  };
 
   if (loading || session) {
     return <div className="min-h-screen bg-gray-950" />;
@@ -108,7 +116,7 @@ export default function LandingPage() {
 
           {/* Action buttons */}
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-4">
               <Link
                 href="/signup"
                 className="px-8 py-4 bg-blue-500 text-white rounded-lg hover:bg-blue-400 transform hover:scale-105 transition-all font-medium shadow-lg shadow-blue-500/20"
@@ -121,6 +129,12 @@ export default function LandingPage() {
               >
                 Login
               </Link>
+              <button
+                onClick={handleAnonymousSignIn}
+                className="px-8 py-4 bg-gray-800 border border-gray-700 text-white rounded-lg hover:bg-gray-700 transition-all"
+              >
+                Try without account
+              </button>
             </div>
             
             <a

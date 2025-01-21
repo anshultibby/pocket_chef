@@ -73,8 +73,8 @@ Important:
 - Include a variety of recipes so that user has a good selection, try to return num_recipes requested
 - Cross-check nutritional information on recipe to that on ingredients and be consistent
 - Include detailed step-by-step instructions, each step should have sufficient detail
-- Assume a few common ingredients (such as salt, pepper, oil, spices) are available, 
-you can include these in step by step instructions without putting them in ingredients list
+- Assume a few common ingredients (such as salt, pepper, oil, basic spices) are available, 
+- If you mention any other ingredients in instructions, you should include them in ingredients list
 - Add an icon to each step to indicate the type of step
 - Try fill in the protein, calories for each ingredient
 - Always try to fill in the price, estimate if ingredients are not available

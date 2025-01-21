@@ -148,7 +148,7 @@ export default function RecipesTab({
     );
   };
 
-  if ((isLoading || isGenerating) && recipes.length === 0) {
+  if (isLoading && !isGenerating && recipes.length === 0) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 p-4">
         {[...Array(8)].map((_, i) => (
@@ -158,6 +158,22 @@ export default function RecipesTab({
             <div className="h-4 bg-gray-800/50 rounded w-1/2" />
           </div>
         ))}
+      </div>
+    );
+  }
+
+  if (isGenerating && recipes.length === 0) {
+    return (
+      <div className="text-center py-12 space-y-4 relative">
+        <div className="bg-gray-800/50 rounded-xl p-8 backdrop-blur-sm max-w-lg mx-auto">
+          <h3 className="text-xl font-medium text-white mb-2">Generating Recipes...</h3>
+          <p className="text-gray-400">
+            Our AI chef is crafting delicious recipes based on your pantry items.
+          </p>
+          <div className="mt-4">
+            <div className="animate-spin w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full mx-auto" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -183,13 +199,24 @@ export default function RecipesTab({
 
   if (recipes.length === 0) {
     return (
-      <div className="text-center py-12 space-y-4">
+      <div className="text-center py-12 space-y-4 relative">
         <div className="bg-gray-800/50 rounded-xl p-8 backdrop-blur-sm max-w-lg mx-auto">
           <h3 className="text-xl font-medium text-white mb-2">No Recipes Yet</h3>
           <p className="text-gray-400">
             Get started by clicking the wand to generate your first batch of AI-powered recipes based on your pantry items.
           </p>
         </div>
+        <FloatingElfButton 
+          onClick={() => setShowElfModal(true)} 
+          pantryItemsCount={pantryItems.length}
+          isGenerating={isGenerating}
+        />
+        {showElfModal && (
+          <ElfModal
+            onClose={() => setShowElfModal(false)}
+            pantryItemsCount={pantryItems.length}
+          />
+        )}
       </div>
     );
   }
