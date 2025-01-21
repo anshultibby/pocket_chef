@@ -16,7 +16,6 @@ import { useDuplicateStore } from '@/stores/duplicateStore';
 import DuplicateItemModal from '@/components/modals/DuplicateItemModal';
 import AddItemModal from '@/components/modals/AddItemModal';
 import Link from 'next/link';
-import { FloatingElfButton } from '@/components/FloatingElfButton';
 import FeedbackModal from '@/components/modals/FeedbackModal';
 import { SparklesIcon, Square3Stack3DIcon, BookOpenIcon } from '@heroicons/react/24/outline';
 
@@ -188,8 +187,8 @@ export default function Home() {
 
   return (
     <AuthGuard>
-      <main className="min-h-screen bg-gray-950 text-white">
-        <div className="header-container">
+      <main className="min-h-screen bg-gray-950 text-white flex flex-col fixed inset-0">
+        <div className="header-container fixed top-0 left-0 right-0 bg-gray-950 z-10">
           <div className="header-inner">
             <div className="flex justify-between items-center h-12">
               <div className="flex items-center gap-4">
@@ -306,68 +305,44 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Tab Content */}
-        <div className="px-4 pb-24 pt-14 sm:pt-16">
-          {activeTab === 'cook' && (
-            <RecipesTab pantryItems={pantryItems} loading={isLoading} />
-          )}
-          {activeTab === 'pantry' && (
-            <PantryTab />
-          )}
-          {activeTab === 'cookbook' && (
-            <CookbookTab />
-          )}
+        {/* Main scrollable content area */}
+        <div className="flex-1 overflow-y-auto mt-12 mb-16 pb-safe">
+          {activeTab === 'cook' && <RecipesTab pantryItems={pantryItems} loading={isLoading} />}
+          {activeTab === 'pantry' && <PantryTab />}
+          {activeTab === 'cookbook' && <CookbookTab />}
         </div>
 
-        {/* Bottom Navigation for Mobile */}
-        <div className="fixed bottom-0 inset-x-0 bg-gray-900/95 backdrop-blur-sm border-t border-gray-800 sm:hidden">
-          <div 
-            className="flex justify-around" 
-            style={{ 
-              paddingBottom: 'max(env(safe-area-inset-bottom), 0.75rem)',
-              paddingTop: '0.75rem'
-            }}
-          >
+        {/* Fixed bottom navigation for mobile */}
+        <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 pb-safe z-10">
+          <div className="flex justify-around items-center h-16">
             <button
               onClick={() => handleTabChange('cook')}
-              className={`
-                flex flex-col items-center gap-1 px-6 py-1 rounded-lg transition-all
-                ${activeTab === 'cook' 
-                  ? 'text-blue-400' 
-                  : 'text-gray-400 hover:text-gray-300'
-                }
-              `}
+              className={`flex flex-col items-center justify-center flex-1 py-2 ${
+                activeTab === 'cook' ? 'text-blue-400' : 'text-gray-400'
+              }`}
             >
               <SparklesIcon className="w-6 h-6" />
-              <span className="text-xs font-medium">Recipes</span>
+              <span className="text-xs mt-1">Recipes</span>
             </button>
 
             <button
               onClick={() => handleTabChange('pantry')}
-              className={`
-                flex flex-col items-center gap-1 px-6 py-1 rounded-lg transition-all
-                ${activeTab === 'pantry' 
-                  ? 'text-blue-400' 
-                  : 'text-gray-400 hover:text-gray-300'
-                }
-              `}
+              className={`flex flex-col items-center justify-center flex-1 py-2 ${
+                activeTab === 'pantry' ? 'text-blue-400' : 'text-gray-400'
+              }`}
             >
               <Square3Stack3DIcon className="w-6 h-6" />
-              <span className="text-xs font-medium">Pantry</span>
+              <span className="text-xs mt-1">Pantry</span>
             </button>
 
             <button
               onClick={() => handleTabChange('cookbook')}
-              className={`
-                flex flex-col items-center gap-1 px-6 py-1 rounded-lg transition-all
-                ${activeTab === 'cookbook' 
-                  ? 'text-blue-400' 
-                  : 'text-gray-400 hover:text-gray-300'
-                }
-              `}
+              className={`flex flex-col items-center justify-center flex-1 py-2 ${
+                activeTab === 'cookbook' ? 'text-blue-400' : 'text-gray-400'
+              }`}
             >
               <BookOpenIcon className="w-6 h-6" />
-              <span className="text-xs font-medium">Cookbook</span>
+              <span className="text-xs mt-1">Cookbook</span>
             </button>
           </div>
         </div>
@@ -383,10 +358,7 @@ export default function Home() {
 
         {/* Modals */}
         {showElfModal && (
-          <ElfModal
-            onClose={() => setShowElfModal(false)}
-            pantryItemsCount={pantryItems.length}
-          />
+          <ElfModal onClose={() => setShowElfModal(false)} pantryItemsCount={pantryItems.length} />
         )}
 
         {showConfirmation && pendingItems && (
