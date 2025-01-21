@@ -16,9 +16,9 @@ export function SearchBar({ value, onChange, onClose, isVisible }: SearchBarProp
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
-          className="fixed top-12 inset-x-0 p-4 bg-gray-900/95 backdrop-blur-sm border-b border-gray-800 z-50"
+          className="relative w-full bg-gray-900/95 backdrop-blur-sm border-b border-gray-800 z-10 py-4"
         >
-          <div className="max-w-3xl mx-auto relative">
+          <div className="max-w-3xl mx-auto relative px-4">
             <input
               type="search"
               inputMode="search"
@@ -33,7 +33,7 @@ export function SearchBar({ value, onChange, onClose, isVisible }: SearchBarProp
             />
             <button
               onClick={onClose}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+              className="absolute right-7 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
             >
               <XMarkIcon className="w-5 h-5" />
             </button>

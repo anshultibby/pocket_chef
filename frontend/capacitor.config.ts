@@ -28,7 +28,7 @@ const config: CapacitorConfig = {
   },
   plugins: {
     Keyboard: {
-      resize: 'none',
+      resize: 'native',
       style: 'dark',
       hideFormAccessoryBar: true
     },

@@ -210,7 +210,7 @@ export default function PantryTab() {
 
   return (
     <div className="pb-32 sm:pb-20">
-      {/* Receipt Processing Status */}
+      {/* Receipt Processing */}
       {isUploading && (
         <div className="fixed top-0 left-1/2 -translate-x-1/2 z-30">
           <div className="bg-blue-500/20 backdrop-blur-sm border border-blue-500/20 px-4 py-2 rounded-b-lg flex items-center gap-2 shadow-lg">
@@ -219,34 +219,6 @@ export default function PantryTab() {
           </div>
         </div>
       )}
-
-      {/* Main Content */}
-      {showFilters && (
-        <CategoryFilters
-          categories={categories}
-          selectedCategories={selectedCategories}
-          onSelectCategory={handleCategorySelect}
-          onClearCategories={() => setSelectedCategories([])}
-        />
-      )}
-
-      {isLoading ? (
-        <LoadingSpinner />
-      ) : (
-        <PantryGrid
-          groupedItems={sortedGroupedItems}
-          onSelectItem={setSelectedItem}
-        />
-      )}
-
-      {/* Floating Action Menu */}
-      <FloatingActionMenu
-        onAddItem={() => setShowAddItemForm(true)}
-        onBulkAdd={() => setShowBulkEntry(true)}
-        onUploadReceipt={() => fileInputRef.current?.click()}
-        onToggleSearch={() => setShowSearch(true)}
-        isUploading={isUploading}
-      />
 
       {/* Search Bar */}
       <SearchBar
@@ -257,6 +229,36 @@ export default function PantryTab() {
           setSearchTerm('');
         }}
         isVisible={showSearch}
+      />
+
+      {/* Main Content */}
+      <div className="mt-4">
+        {showFilters && (
+          <CategoryFilters
+            categories={categories}
+            selectedCategories={selectedCategories}
+            onSelectCategory={handleCategorySelect}
+            onClearCategories={() => setSelectedCategories([])}
+          />
+        )}
+
+        {isLoading ? (
+          <LoadingSpinner />
+        ) : (
+          <PantryGrid
+            groupedItems={sortedGroupedItems}
+            onSelectItem={setSelectedItem}
+          />
+        )}
+      </div>
+
+      {/* Floating Action Menu */}
+      <FloatingActionMenu
+        onAddItem={() => setShowAddItemForm(true)}
+        onBulkAdd={() => setShowBulkEntry(true)}
+        onUploadReceipt={() => fileInputRef.current?.click()}
+        onToggleSearch={() => setShowSearch(true)}
+        isUploading={isUploading}
       />
 
       {isLoading && (
