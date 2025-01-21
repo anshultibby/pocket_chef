@@ -69,15 +69,15 @@ $preferences
 </preferences>
 
 Important:
-- Make good recipes, should be balanced, nutritious, and delicious
-- Compare nutritional information on recipe to that on ingredients and be consistent
+- Make good recipes, should be balanced, nutritious, and delicious. 
+- Include a variety of recipes so that user has a good selection, try to return num_recipes requested
+- Cross-check nutritional information on recipe to that on ingredients and be consistent
 - Include detailed step-by-step instructions, each step should have sufficient detail
-- Ensure quantities and units are specific and measurable
-- Assume a few common ingredients (such as salt, pepper, oil, spices) are available
+- Assume a few common ingredients (such as salt, pepper, oil, spices) are available, 
+you can include these in step by step instructions without putting them in ingredients list
 - Add an icon to each step to indicate the type of step
 - Try fill in the protein, calories for each ingredient
 - Always try to fill in the price, estimate if ingredients are not available
-- Try return a variety of recipes so that the user has a good selection
 """
 
 RECIPE_GENERATION_PROMPT_TEMPLATE = Template(RECIPE_GENERATION_PROMPT)
