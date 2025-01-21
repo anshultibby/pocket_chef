@@ -375,15 +375,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Add Floating Elf Button */}
-        {activeTab === 'cook' && (
-          <FloatingElfButton
-            onClick={() => setShowElfModal(true)}
-            pantryItemsCount={pantryItems.length}
-            className="bottom-24 sm:bottom-8"
-          />
-        )}
-
         {/* Error display */}
         {error && (
           <div className="max-w-4xl mx-auto px-4 mt-4">

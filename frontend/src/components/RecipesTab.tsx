@@ -299,6 +299,7 @@ export default function RecipesTab({
         onClick={() => setShowElfModal(true)}
         pantryItemsCount={pantryItems.length}
         isGenerating={isGenerating}
+        className="bottom-24 sm:bottom-8"
       />
     </div>
   );
