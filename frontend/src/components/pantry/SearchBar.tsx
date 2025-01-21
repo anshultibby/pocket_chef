@@ -16,16 +16,20 @@ export function SearchBar({ value, onChange, onClose, isVisible }: SearchBarProp
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
-          className="fixed top-0 inset-x-0 p-4 bg-gray-900/95 backdrop-blur-sm border-b border-gray-800 z-40"
+          className="fixed top-12 inset-x-0 p-4 bg-gray-900/95 backdrop-blur-sm border-b border-gray-800 z-50"
         >
           <div className="max-w-3xl mx-auto relative">
             <input
-              type="text"
+              type="search"
+              inputMode="search"
               value={value}
               onChange={(e) => onChange(e.target.value)}
               placeholder="Search pantry items..."
-              className="w-full bg-gray-800/50 rounded-lg px-4 py-3 pr-10 text-white focus:ring-2 ring-blue-500 focus:outline-none"
+              className="w-full bg-gray-800/50 rounded-lg px-4 py-3 pr-10 text-white focus:ring-2 ring-blue-500 focus:outline-none appearance-none"
               autoFocus
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck="false"
             />
             <button
               onClick={onClose}

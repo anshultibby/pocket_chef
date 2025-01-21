@@ -103,7 +103,10 @@ export default function AddItemModal({
                       error={errors['name']}
                       required
                       placeholder="Common name (e.g., bread)"
-                      className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-1 ring-blue-500 focus:outline-none"
+                      className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-1 ring-blue-500 focus:outline-none appearance-none"
+                      autoComplete="off"
+                      autoCorrect="off"
+                      spellCheck="false"
                     />
 
                     <div className="border-t border-gray-700 pt-4">
@@ -123,6 +126,7 @@ export default function AddItemModal({
                           <FormInput
                             label={isRecipeUse ? "Final Pantry Quantity" : "Quantity"}
                             type="number"
+                            inputMode="decimal"
                             value={isSubmitting ? '' : (values.data.quantity ?? '')}
                             onChange={(e) => {
                               const value = e.target.value;
@@ -131,7 +135,7 @@ export default function AddItemModal({
                             disabled={isSubmitting}
                             error={errors['quantity']}
                             placeholder="Enter quantity"
-                            className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-1 ring-blue-500 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-1 ring-blue-500 focus:outline-none appearance-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
 
                           <div>
@@ -140,11 +144,13 @@ export default function AddItemModal({
                               type="text"
                               value={values.data.unit}
                               onChange={(e) => handleChange('unit', e.target.value)}
-                              className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-1 ring-blue-500 focus:outline-none"
+                              className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-1 ring-blue-500 focus:outline-none appearance-none"
                               placeholder="units"
                               onFocus={() => handleChange('unit', '')}
                               list="unit-suggestions"
                               autoComplete="off"
+                              autoCorrect="off"
+                              spellCheck="false"
                             />
                             <datalist id="unit-suggestions">
                               {SUGGESTED_UNITS.map(unit => (
@@ -184,8 +190,11 @@ export default function AddItemModal({
                             type="text"
                             value={values.data.category}
                             onChange={(e) => handleChange('category', e.target.value)}
-                            className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
+                            className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none appearance-none"
                             placeholder="Select or enter category"
+                            autoComplete="off"
+                            autoCorrect="off"
+                            spellCheck="false"
                           />
                         </div>
 
@@ -195,7 +204,7 @@ export default function AddItemModal({
                             type="date"
                             value={values.data.expiry_date ? new Date(values.data.expiry_date).toISOString().split('T')[0] : ''}
                             onChange={(e) => handleChange('expiry_date', e.target.value || null)}
-                            className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none"
+                            className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-white focus:ring-2 ring-blue-500 focus:outline-none appearance-none"
                           />
                         </div>
 
@@ -318,9 +327,12 @@ export default function AddItemModal({
                         <textarea
                           value={values.data.notes || ''}
                           onChange={(e) => handleChange('notes', e.target.value)}
-                          className="w-full bg-gray-700 rounded-lg px-3 py-2 focus:ring-2 ring-blue-500 focus:outline-none"
+                          className="w-full bg-gray-700 rounded-lg px-3 py-2 focus:ring-2 ring-blue-500 focus:outline-none appearance-none"
                           rows={3}
                           placeholder="Add any notes about this item..."
+                          autoComplete="off"
+                          autoCorrect="off"
+                          spellCheck="false"
                         />
                         {errors['notes'] && (
                           <span className="text-red-400 text-sm mt-1">{errors['notes']}</span>
