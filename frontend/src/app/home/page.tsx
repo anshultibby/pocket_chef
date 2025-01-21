@@ -306,20 +306,17 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Update the content padding for both mobile and desktop */}
-        <div className="pt-[calc(3.5rem+env(safe-area-inset-top))]">
-          <div className="content-container">
-            {activeTab === 'pantry' ? (
-              <PantryTab />
-            ) : activeTab === 'cookbook' ? (
-              <CookbookTab />
-            ) : (
-              <RecipesTab
-                loading={isLoading}
-                pantryItems={pantryItems}
-              />
-            )}
-          </div>
+        {/* Tab Content */}
+        <div className="px-4 pb-24 pt-14 sm:pt-16">
+          {activeTab === 'cook' && (
+            <RecipesTab pantryItems={pantryItems} loading={isLoading} />
+          )}
+          {activeTab === 'pantry' && (
+            <PantryTab />
+          )}
+          {activeTab === 'cookbook' && (
+            <CookbookTab />
+          )}
         </div>
 
         {/* Bottom Navigation for Mobile */}
