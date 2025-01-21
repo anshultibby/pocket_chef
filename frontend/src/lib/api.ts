@@ -125,7 +125,7 @@ export const pantryApi = {
 export const recipeApi = {
   generate: async (preferences: RecipePreferences): Promise<Recipe[]> => {
     const token = await getAuthToken();
-    return fetchApi<Recipe[]>('/recipes/generate', {
+    const recipes = await fetchApi<Recipe[]>('/recipes/generate', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -133,6 +133,11 @@ export const recipeApi = {
       },
       body: JSON.stringify(preferences),
     });
+
+    // Invalidate the recipes cache after generation
+    await cache.delete('recipes');
+    
+    return recipes;
   },
 
   linkIngredients: async (recipeId: string): Promise<Recipe> => {

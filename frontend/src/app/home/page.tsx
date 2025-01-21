@@ -193,47 +193,40 @@ export default function Home() {
       clearUpload();
     }
     
+    // Change tab immediately for UI responsiveness
     setActiveTab(newTab);
     localStorage.setItem('activeTab', newTab);
 
-    // Background refresh for each tab
-    if (newTab === 'pantry') {
-      // Show current state immediately, then refresh in background
-      try {
-        usePantryStore.getState().fetchItems().catch((error: Error) => {
-          console.error('Error refreshing pantry items:', error);
-          toast.error('Failed to refresh pantry items');
-        });
-      } catch (error) {
-        console.error('Error refreshing pantry items:', error);
-      }
-    } else if (newTab === 'cook') {
-      // Refresh recipes in background
-      try {
-        useRecipeStore.getState().fetchRecipes().catch((error: Error) => {
-          console.error('Error refreshing recipes:', error);
-          toast.error('Failed to refresh recipes');
-        });
-      } catch (error) {
-        console.error('Error refreshing recipes:', error);
-      }
-    } else if (newTab === 'cookbook') {
-      // Refresh cookbook in background
-      try {
-        useRecipeStore.getState().fetchRecipes().catch((error: Error) => {
-          console.error('Error refreshing cookbook:', error);
-          toast.error('Failed to refresh cookbook');
-        });
-      } catch (error) {
-        console.error('Error refreshing cookbook:', error);
-      }
-    }
-
+    // Track analytics
     track('tab_change', {
       from: activeTab,
       to: newTab,
       uploadState
     });
+
+    // Refresh data in background
+    if (newTab === 'pantry') {
+      console.log('Starting pantry refresh...');
+      try {
+        const pantryStore = usePantryStore.getState();
+        await pantryStore.fetchItems();
+        console.log('Pantry refresh completed');
+      } catch (error) {
+        console.error('Error refreshing pantry items:', error);
+        toast.error('Failed to refresh pantry items');
+      }
+    } else if (newTab === 'cook' || newTab === 'cookbook') {
+      console.log(`Starting ${newTab} refresh...`);
+      try {
+        const recipeStore = useRecipeStore.getState();
+        await recipeStore.invalidateCache(); // Invalidate cache first
+        await recipeStore.fetchRecipes(); // Then fetch fresh data
+        console.log(`${newTab} refresh completed`);
+      } catch (error) {
+        console.error(`Error refreshing ${newTab}:`, error);
+        toast.error(`Failed to refresh ${newTab}`);
+      }
+    }
   };
 
 

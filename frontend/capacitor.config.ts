@@ -27,6 +27,11 @@ const config: CapacitorConfig = {
     preferredContentMode: 'mobile'
   },
   plugins: {
+    Keyboard: {
+      resize: 'none',
+      style: 'dark',
+      hideFormAccessoryBar: true
+    },
     Camera: {
       ios: {
         usageDescription: "Kitchen Elf needs access to your camera to take photos of receipts and food items."

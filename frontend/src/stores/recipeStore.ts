@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { PantryItem, Recipe, RecipePreferences } from '@/types';
 import { recipeApi } from '@/lib/api';
 import { pantryStore } from './pantryStore';
+import { cache } from '@/lib/cache';
 
 interface RecipeStore {
   // State
@@ -10,7 +11,6 @@ interface RecipeStore {
   isLoading: boolean;
   isGenerating: boolean;
   error: string | null;
-  lastFetched: number | null;
 
   // Actions
   setRecipes: (recipes: Recipe[] | ((prevRecipes: Recipe[]) => Recipe[])) => void;
@@ -27,9 +27,11 @@ interface RecipeStore {
     servingsMade: number, 
     ingredientsUsed: Record<string, number>
   ) => Promise<void>;
+  invalidateCache: () => Promise<void>;
 }
 
-const FETCH_COOLDOWN = 5 * 60 * 1000; // 5 minutes
+const CACHE_KEY = 'recipes';
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 export const useRecipeStore = create<RecipeStore>((set, get) => ({
   // Initial state
@@ -49,7 +51,6 @@ export const useRecipeStore = create<RecipeStore>((set, get) => ({
   isLoading: false,
   isGenerating: false,
   error: null,
-  lastFetched: null,
 
   // Actions
   setRecipes: (recipesOrUpdater) => set((state) => ({
@@ -70,29 +71,35 @@ export const useRecipeStore = create<RecipeStore>((set, get) => ({
     const state = get();
     
     if (state.isLoading) return;
-    
-    const now = Date.now();
-    if (state.lastFetched && (now - state.lastFetched) < FETCH_COOLDOWN) {
-      return;
-    }
 
     try {
       set({ isLoading: true, error: null });
+
+      // Check cache first
+      const cachedRecipes = await cache.get<Recipe[]>(CACHE_KEY);
+      if (cachedRecipes) {
+        set({ recipes: cachedRecipes, isLoading: false });
+        return;
+      }
+
+      // Fetch fresh data
       const recipes = await recipeApi.getAll();
-      set({ 
-        recipes,
-        lastFetched: now,
-        error: null 
-      });
+      
+      // Cache the result
+      await cache.set(CACHE_KEY, recipes, CACHE_TTL);
+      
+      set({ recipes, isLoading: false });
     } catch (error) {
       const errorMessage = error instanceof Error 
         ? error.message 
         : 'Failed to load recipes';
-      set({ error: errorMessage });
+      set({ error: errorMessage, isLoading: false });
       console.error('Recipe fetch error:', error);
-    } finally {
-      set({ isLoading: false });
     }
+  },
+
+  invalidateCache: async () => {
+    await cache.delete(CACHE_KEY);
   },
 
   useRecipe: async (recipeId, servingsMade, ingredientsUsed) => {

@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@capacitor/keyboard": "^7.0.0"
+  }
+}
