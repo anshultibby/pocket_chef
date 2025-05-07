@@ -1,9 +1,13 @@
 import logging
+import json
+import os
+import base64
 from functools import lru_cache
 from uuid import UUID
 
 from fastapi import UploadFile
 from google.cloud import vision
+from google.oauth2 import service_account
 
 from ..models.pantry import ListOfPantryItemsCreate
 from .llm.providers.claude import ClaudeService
@@ -18,9 +22,27 @@ class ReceiptParser:
 
     @property
     def vision_client(self):
-        """Lazy initialization of vision client"""
+        """Lazy initialization of vision client with proper credentials"""
         if self._vision_client is None:
-            self._vision_client = vision.ImageAnnotatorClient()
+            try:
+                # Get base64 encoded credentials from environment variable
+                creds_base64 = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_BASE64')
+                if creds_base64:
+                    # Decode base64 to JSON string
+                    creds_json = base64.b64decode(creds_base64).decode('utf-8')
+                    # Parse the JSON string into a dictionary
+                    creds_dict = json.loads(creds_json)
+                    # Create credentials object
+                    credentials = service_account.Credentials.from_service_account_info(creds_dict)
+                    # Create the client with credentials
+                    self._vision_client = vision.ImageAnnotatorClient(credentials=credentials)
+                else:
+                    # Fallback to default credentials (not recommended)
+                    logger.warning("No explicit credentials found, falling back to default credentials")
+                    self._vision_client = vision.ImageAnnotatorClient()
+            except Exception as e:
+                logger.error(f"Error initializing Vision client: {str(e)}")
+                raise ValueError(f"Failed to initialize Vision client: {str(e)}")
         return self._vision_client
 
     async def parse_receipt(
